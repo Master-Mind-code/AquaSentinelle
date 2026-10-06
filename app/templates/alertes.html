@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block contenu %}
+<div class="entete-page"><div><p class="sur-titre">Supervision</p><h1>Alertes</h1>
+  <p class="petit">Les alertes orange partent automatiquement ; une alerte rouge n'est envoyée qu'après votre validation.</p></div></div>
+<h2>Alertes rouges en attente de validation</h2>
+{% for a in attente %}
+<div class="carte" style="border-left:8px solid #C0392B">
+  <p><span class="niveau rouge">Rouge</span> <b>{{ a.nom }}</b> · créée le {{ a.cree_le.strftime('%d/%m %H:%M') }}
+    {% if a.statut == 'escaladee' %} · <b style="color:#C0392B">ESCALADÉE</b> (sans réponse depuis {{ a.escaladee_le.strftime('%H:%M') }}){% endif %}</p>
+  <p>Pluie : <b>{{ '%.0f'|format(a.pluie_24h_mm or 0) }} mm</b>
+    {% if a.entrees %} · {{ LECTURES.get(a.entrees.lecture_retenue, '') }} · caniveaux bouchés :
+      {{ ('%.0f %%'|format(a.entrees.part_caniveaux_bouches * 100)) if a.entrees.part_caniveaux_bouches is not none else 'pas de donnée' }}{% endif %}</p>
+  <pre>{{ a.texte }}</pre>
+  <form method="post" action="/operateur/alertes/{{ a.id }}" class="ligne">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="rouge" name="decision" value="valider">Valider et envoyer</button>
+    <button class="leger" name="decision" value="rejeter">Rejeter</button>
+  </form>
+</div>
+{% else %}
+<div class="ok-boite">Aucune alerte rouge en attente.</div>
+{% endfor %}
+
+<h2>Historique</h2>
+<p class="petit">Latence automatique (score → dernier envoi, hors validation humaine) :
+  {% if latence.n %}moyenne {{ latence.moy | int | duree }}, maximum {{ latence.maxi | duree }} sur {{ latence.n }} alerte(s) · objectif : moins de 60 s{% else %}pas encore de mesure{% endif %}</p>
+<div class="tableau-defile"><table>
+<tr><th>Créée</th><th>Zone</th><th>Niveau</th><th>Statut</th><th>Validée par</th><th>Destinataires</th><th>Échecs / bloqués</th><th>Latence</th><th></th></tr>
+{% for a in historique %}
+<tr><td>{{ a.cree_le.strftime('%d/%m %H:%M') }}</td><td>{{ a.nom }}</td><td><span class="niveau {{ a.niveau }}">{{ NIVEAUX[a.niveau] }}</span></td>
+<td class="statut">{{ STATUTS.get(a.statut, a.statut) }}</td><td>{{ a.validee_par or '' }}</td><td>{{ a.nb_destinataires if a.nb_destinataires is not none else '' }}</td>
+<td>{{ a.echecs }} / {{ a.bloques }}</td><td>{{ a.latence_ms | duree }}{% if a.validee_par and a.latence_ms is not none %}<br><span class="petit">attente de validation incluse</span>{% endif %}</td>
+<td><a href="/operateur/alertes/{{ a.id }}/envois">envois</a></td></tr>
+{% endfor %}
+</table></div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titre %}Pluviomètre · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div class="mobile">
+<p class="sur-titre">Relais · pluviomètre de quartier</p>
+<h1>Relevé du matin</h1>
+{% if resultat %}
+<div class="ok-boite">Relevé de <b>{{ '%.0f'|format(pluie_mm) }} mm</b> enregistré :
+  {{ 'pris en compte' if resultat.statut == 'valide' else 'en attente de vérification' }}.<br><span class="petit">{{ resultat.motif }}</span></div>
+{% endif %}
+<form method="post" class="carte">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p class="petit">Chaque matin à la même heure : lire la hauteur d'eau dans le pluviomètre (en millimètres), la saisir, puis vider le pluviomètre.</p>
+  <label for="zone">Commune</label>
+  <select id="zone" name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select>
+  <label for="mm">Pluie tombée depuis hier matin (mm)</label>
+  <input id="mm" type="number" name="pluie_mm" min="0" max="400" step="0.5" required inputmode="decimal">
+  <label for="pseudo">Votre pseudo</label>
+  <input id="pseudo" type="text" name="pseudo" maxlength="60" value="{{ relais.pseudo if relais else '' }}">
+  <label for="tel">Téléphone (facultatif, chiffré, sert à reconnaître vos relevés)</label>
+  <input id="tel" type="tel" name="telephone">
+  <div class="choix" style="margin-top:14px"><label><input type="checkbox" name="consentement" value="oui" required>
+    J'accepte que ce relevé serve au suivi des pluies et des alertes de ma commune.</label></div>
+  <p style="margin-top:16px"><button class="orange">Envoyer le relevé</button></p>
+</form>
+<p class="petit">Un relevé de forte pluie est vérifié (2e relevé ou opérateur) avant d'entrer dans le calcul des alertes.</p>
+</div>
+{% endblock %}

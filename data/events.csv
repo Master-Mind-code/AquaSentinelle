@@ -1,0 +1,22 @@
+# Événements d'inondation / glissement documentés, District d'Abidjan. Une ligne par jour d'événement.
+# date = jour du constat (pluie souvent la NUIT précédente : évaluer avec une tolérance d'au moins 1 jour).
+# Les notes contenant « incertaine » peuvent être exclues avec : python scripts/evaluate.py --sans-incertains
+# Recherche documentaire du 2026-10-04 (à revérifier par l'équipe source par source avant le rapport).
+# Écartés : bilans cumulés sans jour précis (ONPC 2024 : 24 morts du 13 au 22 juin), articles qui recyclent les chiffres 2024.
+# Non retenu faute de source vérifiée : 27-28 juin 2026, Attécoubé / Yopougon (~20 morts selon l'AIP) -> à sourcer.
+# date;zone;source;note
+2015-06-21;abidjan-centre;https://connectionivoirienne.net/2015/06/22/au-moins-16-morts-officiellement-en-cote-divoire-suite-aux-fortes-pluies-de-juin/;6 morts (glissement Attécoubé + mur Adjamé) -incertaine : « nuit de samedi à dimanche », date déduite de la parution
+2017-06-11;abidjan-centre;https://www.worldaware.com/fr/product/212371;au moins 8 morts, 245 mm à Attécoubé le 10-11/06 -incertaine : source vue seulement en extrait
+2018-06-19;abidjan-centre;https://connectionivoirienne.net/2018/06/19/pluies-diluviennes-en-cote-divoire-les-morts-passent-a-18-a-abidjan-gon-coulibaly-constate-les-degats/;nuit du 18 au 19, 18 morts (Cocody, Attécoubé, Port-Bouët) -confirmée
+2019-05-27;yopougon;https://www.koaci.com/article/2019/05/28/cote-divoire/societe/cote-divoire-la-saison-des-pluies-fait-deja-ses-premieres-victimes-trois-morts-a-yopougon_131362.html;glissement à Micao vers 18h30, 3 morts -confirmée
+2020-06-18;anyama;https://news.abidjan.net/chronologie/1884-un-eboulement-a-anyama-fait-au-moins-13-morts-et-des-personnes-portees-disparues;nuit du 17 au 18, coulée de boue, 13 morts -confirmée
+2020-06-25;abidjan-centre;https://afrique.le360.ma/cote-divoire/societe/2020/06/26/30966-videos-cote-divoire-des-inondations-font-trois-morts-abidjan-30966/;orage de mi-journée, 2 à 3 morts (Cocody, Adjamé) -confirmée
+2021-10-22;abidjan-centre;https://www.fratmat.info/article/215639/societe/forte-pluie-a-abidjan-14-victimes-dont-6-morts-ce-vendredi;6 morts (Attécoubé-Mossikro, Yopougon) -confirmée
+2022-06-16;attecoube;https://www.koaci.com/index.php/article/2022/06/16/cote-divoire/societe/cote-divoire-forte-pluie-ce-jeudi-a-abidjan-des-personnes-ensevelies-signalees-dans-un-eboulement-a-mossikro-attecoube_160808.html;nuit du 15 au 16, coulée de boue Mossikro, 6 morts -confirmée
+2022-06-21;autre-bingerville;https://www.afrik.com/cote-d-ivoire-au-moins-quatre-morts-suite-a-des-inondations-a-abidjan;nuit du 20 au 21, mur effondré à Feh Kessé, 5 morts, ~200 mm -confirmée
+2023-06-11;attecoube;https://afrique.le360.ma/societe/cote-divoire-cinq-morts-apres-de-fortes-pluies-a-abidjan_4ODJN5757VBZBM2Z4U45G3HDF4/;nuit du 10 au 11, 185 mm Yopougon, vigilance rouge Sodexam, 5 morts -confirmée
+2023-07-07;abidjan-centre;https://afrique.le360.ma/societe/cote-divoire-au-moins-dix-morts-apres-de-fortes-pluies-a-abidjan_GBBO232CGJFERB5ANOJARSVIVY/;nuit du 6 au 7, au moins 10 morts (Yopougon, Cocody) -confirmée
+2024-06-13;abidjan-centre;https://www.voaafrique.com/a/c%C3%B4te-d-ivoire-5-morts-%C3%A0-abidjan-apr%C3%A8s-de-fortes-pluies-pompiers-/7656003.html;pluie à partir de l'après-midi, 214 mm/24 h Yopougon, 8 morts (GSPM) -confirmée
+2024-06-14;abidjan-centre;https://www.fratmat.info/article/240417/societe/saison-pluvieuse-a-abidjan-5-deces-annonces;suite de l'épisode du 13 -incertaine : part des décès du 14 non isolée
+2025-05-21;attecoube;https://www.koaci.com/article/2025/05/21/cote-divoire/societe/cote-divoire-forte-pluie-survenue-dans-la-nuit-du-mardi-a-mercredi-des-morts-signales-a-mossikro_187045.html;nuit du 20 au 21, glissement Mossikro Banco Nord, 6 puis 12 morts -confirmée
+2025-06-14;abidjan-centre;https://www.osmediainfos.com/pluies-intenses-et-drames-routiers-les-sapeurs-pompiers-en-alerte-maximale-en-ce-mois-de-juin-2025/;14 interventions GSPM, aucun mort -incertaine : source secondaire qui semble recopier 2024

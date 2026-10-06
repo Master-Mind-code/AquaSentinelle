@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titre %}Signaler un problème · AquaSentinelle{% endblock %}
+{% block tete %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% endblock %}
+{% block contenu %}
+<div class="mobile">
+<p class="sur-titre">Participer</p>
+<h1>Signaler un problème</h1>
+<p class="petit">Route inondée, quartier sous l'eau, mur prêt à tomber, caniveau bouché… Votre signalement est vérifié puis affiché sur la <a href="/carte">carte publique</a>.</p>
+<div class="alerte-boite">{{ icone('siren') }}<div>Quelqu'un est en danger ? <b>Appelez le 180</b>, puis <a href="/aide">demandez de l'aide</a>.</div></div>
+
+<form method="post" enctype="multipart/form-data" class="carte">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <fieldset style="border:0;padding:0;margin:0">
+    <legend><h2 style="margin:0 0 8px">1. Quel problème ?</h2></legend>
+    <div class="choix">
+      {% for cle, lib in types.items() %}<label><input type="radio" name="type" value="{{ cle }}" required {{ 'checked' if loop.first }}>{{ lib }}</label>{% endfor %}
+    </div>
+  </fieldset>
+
+  <h2>2. Où ?</h2>
+  <p><button type="button" id="ma-position" class="leger">{{ icone('map-pin') }}Utiliser ma position</button></p>
+  <div id="choix-position" style="height:260px;border-radius:10px;border:1px solid var(--bord)" role="application" aria-label="Carte : touchez l'endroit concerné"></div>
+  <p id="etat-position" class="info-boite" aria-live="polite">Touchez la carte à l'endroit du problème, ou utilisez votre position.</p>
+  <input type="hidden" id="lat" name="lat"><input type="hidden" id="lon" name="lon"><input type="hidden" id="precision" name="precision">
+
+  <h2>3. Photo et précisions</h2>
+  <div class="zone-photo">
+    <input id="photo" class="fichier-cache" type="file" name="photo" accept="image/*" capture="environment">
+    <label for="photo" class="bouton" style="margin:0;color:#fff">{{ icone('camera') }}Ajouter une photo</label>
+    <p class="aide">Facultative mais très utile. Évitez de photographier des personnes : les visages sont floutés.</p>
+    <img id="apercu" alt="Aperçu de la photo choisie" hidden>
+  </div>
+  <label for="description">Description (facultatif)</label>
+  <textarea id="description" name="description" maxlength="500" rows="3" placeholder=""></textarea>
+  <p class="aide">Par exemple : « boulevard coupé devant le marché, environ 40 cm d'eau ».</p>
+
+  <h2>4. Vous</h2>
+  <label for="pseudo">Votre pseudo (facultatif)</label>
+  <input id="pseudo" type="text" name="pseudo" maxlength="60" autocomplete="nickname" value="{{ relais.pseudo if relais else '' }}">
+  <label for="tel">Téléphone (facultatif)</label>
+  <input id="tel" type="tel" name="telephone" autocomplete="tel" inputmode="tel">
+  <p class="aide">Chiffré. Il permet de reconnaître vos signalements : plus ils sont confirmés, plus ils sont pris en compte vite.</p>
+  <div class="choix" style="margin-top:14px"><label><input type="checkbox" name="consentement" value="oui" required>
+    J'accepte que ce signalement et sa position soient utilisés pour la gestion des inondations.</label></div>
+  <p style="margin-top:18px"><button style="width:100%">{{ icone('send') }}Envoyer le signalement</button></p>
+</form>
+</div>
+<script src="/static/position.js" defer></script>
+{% endblock %}

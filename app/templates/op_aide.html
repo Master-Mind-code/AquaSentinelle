@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titre %}Demandes d'aide · AquaSentinelle{% endblock %}
+{% block tete %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script><meta http-equiv="refresh" content="60">{% endblock %}
+{% block contenu %}
+<div class="entete-page"><div><p class="sur-titre">Supervision</p><h1>Demandes d'aide</h1>
+  <p class="petit">Relayez chaque demande aux secours (180, 185) puis mettez à jour son statut : le demandeur le voit sur sa page de suivi. Page actualisée chaque minute.</p></div></div>
+
+<div class="deux-colonnes">
+<div>
+{% for d in demandes %}
+  {% set ouverte = d.statut in ('recue', 'transmise') %}
+  <article class="carte {{ 'niveau-rouge' if d.statut == 'recue' else 'niveau-orange' if d.statut == 'transmise' else '' }}">
+    <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap">
+      <h3>N° {{ d.id }} · {{ situations[d.situation] }}</h3>
+      <span class="statut">{{ statuts[d.statut] }}</span>
+    </div>
+    <p class="petit">Reçue le {{ d.recu_le.strftime('%d/%m à %H:%M') }}{% if d.zone %} · zone {{ d.zone }}{% endif %}
+      {% if d.nb_personnes %} · <b>{{ d.nb_personnes }} personne(s)</b>{% endif %}{% if d.contact_chiffre %} · téléphone fourni{% endif %}</p>
+    <p>{% if d.lat %}{{ icone('map-pin', 'petite') }} <a href="https://www.openstreetmap.org/?mlat={{ d.lat }}&mlon={{ d.lon }}#map=18/{{ d.lat }}/{{ d.lon }}" target="_blank" rel="noopener">{{ '%.5f'|format(d.lat) }}, {{ '%.5f'|format(d.lon) }}</a>
+      {% if d.precision_m %}<span class="petit">(± {{ d.precision_m | int }} m)</span>{% endif %}{% endif %}
+      {% if d.lieu_texte %}<br>{{ icone('house', 'petite') }} {{ d.lieu_texte }}{% endif %}</p>
+    {% if d.description %}<p>« {{ d.description }} »</p>{% endif %}
+    {% if d.note %}<p class="petit">Note : {{ d.note }} ({{ d.traite_par }})</p>{% endif %}
+    {% if ouverte %}
+    <form method="post" action="/operateur/aide/{{ d.id }}" class="ligne">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="text" name="note" placeholder="Message au demandeur (facultatif)" aria-label="Message au demandeur" style="flex:1;min-width:200px">
+      {% if d.statut == 'recue' %}<button name="statut" value="transmise">{{ icone('phone') }}Transmise aux secours</button>{% endif %}
+      <button class="vert" name="statut" value="traitee">{{ icone('check') }}Prise en charge</button>
+      <button class="leger" name="statut" value="close">Clore</button>
+    </form>
+    {% endif %}
+  </article>
+{% else %}
+  <div class="ok-boite">{{ icone('circle-check') }}<div>Aucune demande d'aide.</div></div>
+{% endfor %}
+</div>
+<section class="carte" style="padding:12px"><h2 style="margin:2px 4px 8px">Carte des demandes ouvertes</h2><div id="carte" style="height:460px"></div></section>
+</div>
+<script>
+const carte = L.map("carte").setView([5.36, -4.02], 11);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© OpenStreetMap"}).addTo(carte);
+const pts = [{% for d in demandes if d.lat and d.statut in ('recue', 'transmise') %}[{{ d.lat }}, {{ d.lon }}, {{ d.id }}],{% endfor %}];
+pts.forEach(p => L.circleMarker([p[0], p[1]], {radius: 10, color: "#fff", weight: 2, fillColor: "#B91C1C", fillOpacity: 1}).addTo(carte).bindPopup("Demande n° " + p[2]));
+if (pts.length) carte.fitBounds(pts.map(p => [p[0], p[1]]), {padding: [40, 40], maxZoom: 15});
+</script>
+{% endblock %}

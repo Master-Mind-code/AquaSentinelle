@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block contenu %}
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <h1 style="flex:1;margin:0">Étiquetage des photos</h1>
+  <a class="bouton" href="/operateur/etiquetage/accord">Accord entre étiqueteurs</a>
+</div>
+<p class="petit">Chaque photo est étiquetée par deux personnes, sans voir l'avis de l'autre. Seules les photos où les deux sont d'accord entrent dans le jeu d'entraînement. Il vous reste {{ restantes }} photo(s).</p>
+{% if obs %}
+<div class="carte" style="max-width:760px">
+  <img class="photo" src="/operateur/photos/{{ obs.photo_chemin }}" alt="Photo à étiqueter">
+  <p class="petit">Observation {{ obs.id }} · point {{ obs.point_id }}</p>
+  <form method="post" action="/operateur/etiquetage/{{ obs.id }}" class="ligne">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="vert" name="classe" value="propre">Propre</button>
+    <button class="orange" name="classe" value="partiel">Partiellement bouché</button>
+    <button class="rouge" name="classe" value="bouche">Bouché</button>
+    <button class="leger" name="classe" value="inutilisable">Inutilisable (floue, hors cadre)</button>
+  </form>
+</div>
+{% else %}
+<div class="ok-boite">Plus aucune photo à étiqueter pour vous.</div>
+{% endif %}
+{% endblock %}

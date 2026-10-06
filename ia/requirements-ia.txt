@@ -1,0 +1,6 @@
+# Entraînement du classificateur (poste de l'équipe, pas l'image Docker).
+# onnx 1.17 : compatible protobuf 5.x (les versions 1.18+ exigent protobuf 6 et cassent les paquets Google).
+torch>=2.3
+torchvision>=0.18
+onnx==1.17.0
+scikit-learn>=1.4

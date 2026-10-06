@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titre %}Accord et qualité de l'IA · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div class="entete-page"><div><p class="sur-titre">Terrain · intelligence artificielle</p><h1>Accord entre étiqueteurs et qualité de l'IA</h1>
+  <p class="petit">La référence, ce sont les photos étiquetées identiquement par deux personnes. L'IA est mesurée contre elles.</p></div></div>
+
+<div class="indicateurs">
+  <div class="indicateur ton-accent"><span class="libelle">{{ icone('tags', 'petite') }}Photos étiquetées par deux personnes</span><span class="valeur">{{ n }}</span></div>
+  <div class="indicateur {{ 'ton-vert' if kappa and kappa > 0.6 else 'ton-orange' }}"><span class="libelle">{{ icone('users', 'petite') }}Accord entre humains (kappa)</span>
+    <span class="valeur">{{ '%.2f'|format(kappa) if kappa is not none else '—' }}</span><span class="petit">accord {{ mot }}</span></div>
+  <div class="indicateur {{ 'ton-vert' if vision_disponible else 'ton-orange' }}"><span class="libelle">{{ icone('gauge', 'petite') }}IA de vision ({{ modele_vision }})</span>
+    <span class="valeur">{{ ('%.0f %%'|format(exactitude_ia * 100)) if exactitude_ia is not none else '—' }}</span>
+    <span class="petit">{% if n_ia %}d'accord avec les humains sur {{ n_ia }} photo(s){% else %}{{ 'en ligne, pas encore de photo de référence' if vision_disponible else 'Ollama injoignable' }}{% endif %}</span></div>
+  <div class="indicateur {{ 'ton-vert' if ia_disponible else 'ton-orange' }}"><span class="libelle">{{ icone('activity', 'petite') }}Modèle MobileNet entraîné</span>
+    <span class="valeur">{{ 'Oui' if ia_disponible else 'Non' }}</span><span class="petit">models/caniveaux.onnx</span></div>
+</div>
+
+{% if matrice_ia %}
+<h2>IA contre humains (lignes : étiquette humaine, colonnes : avis de l'IA)</h2>
+<div class="tableau-defile"><table style="max-width:760px">
+<tr><th></th>{% for c in classes_ia %}<th>{{ c }}</th>{% endfor %}</tr>
+{% for ligne in matrice_ia %}<tr><th>{{ classes_ia[loop.index0] }}</th>{% for v in ligne %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+</table></div>
+<p class="petit">Kappa IA / humains : {{ '%.2f'|format(kappa_ia) if kappa_ia is not none else '—' }}. La colonne « aucune » compte les photos que l'IA n'a pas classées (hors sujet ou indéterminées).</p>
+{% endif %}
+
+{% if matrice %}
+<h2>Entre humains (lignes : 1er étiqueteur, colonnes : 2e)</h2>
+<div class="tableau-defile"><table style="max-width:760px">
+<tr><th></th>{% for c in classes %}<th>{{ c }}</th>{% endfor %}</tr>
+{% for ligne in matrice %}<tr><th>{{ classes[loop.index0] }}</th>{% for v in ligne %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+</table></div>
+{% endif %}
+
+<h2>Photos utilisables pour l'entraînement (les deux d'accord)</h2>
+<ul>{% for c in par_classe %}<li>{{ CLASSES.get(c.classe, c.classe) }} : {{ c.n }}</li>{% else %}<li>Aucune pour l'instant.</li>{% endfor %}</ul>
+<div class="info-boite">{{ icone('info') }}<div>Pendant l'étiquetage, l'avis de l'IA est volontairement masqué pour ne pas influencer les étiqueteurs.
+  Ensuite : <code>python ia/exporter_jeu.py</code> puis <code>python ia/entrainer.py</code>. Si les humains s'accordent mal (kappa &lt; 0,6),
+  il faut préciser les consignes avant d'exiger mieux d'un modèle.</div></div>
+{% endblock %}

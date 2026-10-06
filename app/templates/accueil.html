@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titre %}Niveaux d'alerte inondation · AquaSentinelle CI{% endblock %}
+{% block contenu %}
+{% set niv = [] %}{% for z in zones %}{% set _ = niv.append(z.niveau_annonce or z.niveau_calcule) %}{% endfor %}
+{% set n_rouge = niv | select('equalto', 'rouge') | list | length %}
+{% set n_orange = niv | select('equalto', 'orange') | list | length %}
+{% set n_vert = niv | select('equalto', 'vert') | list | length %}
+<section class="bandeau-situation" aria-labelledby="situation">
+  <div>
+    <p class="sur-titre" style="color:#7DD3FC">Situation nationale · Côte d'Ivoire</p>
+    <h1 id="situation">{% if n_rouge %}Alerte rouge en cours{% elif n_orange %}Vigilance orange en cours{% else %}Pas d'alerte en cours{% endif %}</h1>
+    <p>{{ zones | length }} villes et communes surveillées en continu : pluies intenses en ville et crues des fleuves
+      (Bandama, Comoé, Sassandra, Bia). Données mises à jour toutes les heures.</p>
+    <p style="margin:14px 0 0"><a class="bouton" href="/abonnement">{{ icone('bell') }}Recevoir les alertes de ma ville</a></p>
+  </div>
+  <div class="repartition" aria-label="Répartition des niveaux">
+    <div><span class="niveau rouge">Rouge</span><strong>{{ n_rouge }}</strong>ville(s)</div>
+    <div><span class="niveau orange">Orange</span><strong>{{ n_orange }}</strong>ville(s)</div>
+    <div><span class="niveau vert">Vert</span><strong>{{ n_vert }}</strong>ville(s)</div>
+  </div>
+</section>
+
+{% set regions = [] %}{% for z in zones %}{% if z.region not in regions %}{% set _ = regions.append(z.region) %}{% endif %}{% endfor %}
+{% for region in regions %}
+<h2>{{ region or 'Autres' }}</h2>
+<div class="grille">
+{% for z in zones if z.region == region %}
+  {% set n = z.niveau_annonce or z.niveau_calcule %}
+  <article class="carte {{ 'niveau-' ~ n if n in ('orange', 'rouge') else '' }}">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+      <h3>{{ z.nom }}</h3>
+      {% if n %}<span class="niveau {{ n }}">{{ NIVEAUX[n] }}</span>{% else %}<span class="niveau gris">Non calculé</span>{% endif %}
+    </div>
+    <p class="petit" style="margin:0">
+      {% if z.type != 'urbaine' %}{{ icone('waves', 'petite') }} Pluie et crue du fleuve{% else %}{{ icone('cloud-rain', 'petite') }} Pluie intense{% endif %}
+    </p>
+    {% if z.calcule_le %}<p class="petit" style="margin:6px 0 0">
+      {% if z.source == 'glofas' %}Débit prévu : <b>{{ '%.0f'|format(z.pluie_24h_mm) }} m³/s</b>
+      {% else %}{{ 'Pluie prévue' if z.source == 'prevision_max' else 'Pluie observée' }} : <b>{{ '%.0f'|format(z.pluie_24h_mm) }} mm</b>{% endif %}
+      · {{ z.calcule_le.strftime('%d/%m à %H:%M') }}</p>{% endif %}
+    {% if z.niveau_annonce and z.niveau_calcule and z.niveau_calcule != z.niveau_annonce %}
+      <p class="petit" style="color:#9A3412;margin:6px 0 0">{{ icone('info', 'petite') }} Niveau {{ NIVEAUX[z.niveau_calcule] | lower }} calculé, en cours de vérification par un opérateur.</p>{% endif %}
+  </article>
+{% endfor %}
+</div>
+{% endfor %}
+
+<section class="carte" style="margin-top:28px" aria-labelledby="recevoir">
+  <h2 id="recevoir" style="margin-top:0">Recevoir les alertes</h2>
+  <div class="grille">
+    <div><h3>{{ icone('message-square') }} Par SMS</h3><p>Inscription <a href="/abonnement">en ligne</a>, ou envoyez <b>ALERTE</b> suivi du nom de votre ville. <b>STOP</b> pour arrêter.</p></div>
+    {% if bot %}<div><h3>{{ icone('send') }} Par Telegram</h3><p><a href="https://t.me/{{ bot }}">@{{ bot }}</a>, puis /abonner.</p></div>{% endif %}
+    <div><h3>{{ icone('cloud-rain') }} Relais avec un pluviomètre</h3><p><a href="/pluviometre">Saisir le relevé du matin</a> : il complète les données satellite.</p></div>
+  </div>
+</section>
+{% endblock %}

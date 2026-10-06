@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>Envois de l'alerte {{ a.id }} · {{ a.nom }}</h1>
+<pre>{{ a.texte }}</pre>
+<div class="tableau-defile"><table>
+<tr><th>Heure</th><th>Abonné</th><th>Canal</th><th>Statut</th><th>Détail</th></tr>
+{% for e in envois %}<tr><td>{{ e.le.strftime('%d/%m %H:%M:%S') }}</td><td>{{ ('n° ' ~ e.abonne_id) if e.abonne_id else 'canal de zone' }}</td>
+<td>{{ e.canal }}</td><td>{{ STATUTS.get(e.statut, e.statut) }}</td><td class="petit">{{ e.detail or '' }}</td></tr>
+{% else %}<tr><td colspan="5">Aucun abonné dans cette zone au moment de l'envoi.</td></tr>{% endfor %}
+</table></div>
+<p><a href="/operateur/alertes">← Retour aux alertes</a></p>
+{% endblock %}

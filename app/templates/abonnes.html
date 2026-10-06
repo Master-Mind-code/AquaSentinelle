@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>Abonnés</h1>
+<p class="petit">Les numéros et identifiants sont chiffrés : seuls les comptes par zone et par canal sont affichés.</p>
+<div class="tableau-defile"><table style="max-width:720px">
+<tr><th>Zone</th><th>Canal</th><th>Actifs</th><th>Désabonnés</th></tr>
+{% for s in stats %}<tr><td>{{ s.nom }}</td><td>{{ s.canal }}</td><td>{{ s.actifs }}</td><td>{{ s.desabonnes }}</td></tr>
+{% else %}<tr><td colspan="4">Aucun abonné.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

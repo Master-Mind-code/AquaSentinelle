@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block titre %}Tableau de bord · AquaSentinelle{% endblock %}
+{% block tete %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% endblock %}
+{% block contenu %}
+<div class="entete-page">
+  <div>
+    <p class="sur-titre">Supervision nationale</p>
+    <h1>Tableau de bord</h1>
+    <p class="petit">{{ icone('clock', 'petite') }} Dernière collecte des données :
+      {{ derniere_collecte.strftime('%d/%m/%Y à %H:%M') if derniere_collecte else 'aucune encore' }} · mise à jour automatique toutes les heures</p>
+  </div>
+  <a class="bouton leger" href="/operateur/simulation">{{ icone('refresh-cw') }}Lancer un cycle</a>
+</div>
+
+{% if nav.aide %}
+<div class="alerte-boite" role="alert" style="background:#FEE2E2;border-color:#FECACA;color:#7F1D1D">{{ icone('radio-tower') }}<div>
+  <b>{{ nav.aide }} demande(s) d'aide d'urgence en cours.</b> <a href="/operateur/aide">Relayer aux secours</a></div></div>
+{% endif %}
+{% if nav.alertes %}
+<div class="alerte-boite" role="alert">{{ icone('siren') }}<div><b>{{ nav.alertes }} alerte(s) rouge(s) attendent votre validation.</b>
+  Rien n'est envoyé à la population tant qu'un opérateur n'a pas validé. <a href="/operateur/alertes">Examiner maintenant</a></div></div>
+{% endif %}
+
+<div class="indicateurs">
+  <a class="indicateur {{ 'ton-rouge' if repartition.rouge else 'ton-orange' if repartition.orange else 'ton-vert' }}" href="#zones">
+    <span class="libelle">{{ icone('triangle-alert', 'petite') }}Zones en vigilance</span>
+    <span class="valeur">{{ repartition.rouge + repartition.orange }}<span class="petit"> / {{ zones | length }}</span></span>
+    <span class="petit">{{ repartition.rouge }} rouge · {{ repartition.orange }} orange · {{ repartition.vert }} vert</span></a>
+  <a class="indicateur {{ 'ton-rouge' if nav.alertes else 'ton-vert' }}" href="/operateur/alertes">
+    <span class="libelle">{{ icone('siren', 'petite') }}Alertes rouges à valider</span>
+    <span class="valeur">{{ nav.alertes }}</span><span class="petit">{{ 'Action requise' if nav.alertes else 'Rien en attente' }}</span></a>
+  <a class="indicateur {{ 'ton-rouge' if nav.aide else 'ton-vert' }}" href="/operateur/aide">
+    <span class="libelle">{{ icone('radio-tower', 'petite') }}Demandes d'aide ouvertes</span>
+    <span class="valeur">{{ nav.aide }}</span><span class="petit">{{ 'À relayer aux secours' if nav.aide else 'Aucune en cours' }}</span></a>
+  <a class="indicateur {{ 'ton-orange' if nav.signalements else 'ton-vert' }}" href="/operateur/signalements">
+    <span class="libelle">{{ icone('inbox', 'petite') }}Signalements à vérifier</span>
+    <span class="valeur">{{ nav.signalements }}</span><span class="petit">photos et relevés de pluviomètre</span></a>
+  <a class="indicateur {{ 'ton-orange' if crues else 'ton-accent' }}" href="/operateur/scores">
+    <span class="libelle">{{ icone('waves', 'petite') }}Crues prévues à 7 jours</span>
+    <span class="valeur">{{ crues }}</span><span class="petit">fleuves au-dessus de la crue annuelle</span></a>
+  <a class="indicateur ton-accent" href="/operateur/points">
+    <span class="libelle">{{ icone('map-pin', 'petite') }}Points de contrôle à jour</span>
+    <span class="valeur">{{ points_suivis[0] }}<span class="petit"> / {{ points_suivis[1] }}</span></span><span class="petit">observés il y a moins de 30 jours</span></a>
+</div>
+
+{% for c in a_curer %}
+<div class="alerte-boite">{{ icone('triangle-alert') }}<div><b>Curage prioritaire avant la pluie · {{ c.nom }}</b> : {{ '%.0f'|format(c.prevu_mm) }} mm prévus.
+  Points bouchés : <b>{{ c.points | join(', ') }}</b> (signalés depuis le {{ c.depuis.strftime('%d/%m') }}).</div></div>
+{% endfor %}
+
+<div class="deux-colonnes">
+  <section class="carte" style="padding:14px" aria-labelledby="titre-carte">
+    <h2 id="titre-carte" style="margin:2px 4px 8px">Carte de la Côte d'Ivoire</h2>
+    <div id="carte" role="application" aria-label="Carte des zones, stations de rivière et points de contrôle"></div>
+    <div class="legende">
+      <span class="niveau vert">Vert</span><span class="niveau orange">Orange</span><span class="niveau rouge">Rouge</span>
+      <span>Cercles : niveau de la ville</span>
+      <span><span class="pastille" style="background:#0369A1;border-radius:2px;transform:rotate(45deg)"></span>Station de rivière</span>
+      <span><span class="pastille" style="background:#15803D"></span>Caniveau propre</span>
+      <span><span class="pastille" style="background:#C2410C"></span>Partiel</span>
+      <span><span class="pastille" style="background:#B91C1C"></span>Bouché</span>
+      <span><span class="pastille" style="background:#94A3B8"></span>Sans donnée récente</span>
+    </div>
+  </section>
+  <section class="carte" id="zones" aria-labelledby="titre-zones">
+    <h2 id="titre-zones" style="margin-top:2px">Zones par gravité</h2>
+    <ul class="liste-zones">
+    {% for z in zones %}
+      <li>
+        {% if z.niveau %}<span class="niveau {{ z.niveau }}">{{ NIVEAUX[z.niveau] }}</span>{% else %}<span class="niveau gris">—</span>{% endif %}
+        <span class="nom">{{ z.nom }}{% if z.type != 'urbaine' %} {{ icone('waves', 'petite', 'fleuve') }}{% endif %}
+          <span class="petit" style="display:block;font-weight:400">
+            {% if z.calcule_le %}{% if z.source == 'glofas' %}{{ '%.0f'|format(z.pluie_24h_mm) }} m³/s prévus{% else %}{{ '%.0f'|format(z.pluie_24h_mm) }} mm {{ 'prévus' if z.source == 'prevision_max' else 'observés' }}{% endif %}{% endif %}
+            {% if z.niveau_calcule and z.niveau_annonce and z.niveau_calcule != z.niveau_annonce %} · <b style="color:#B91C1C">{{ NIVEAUX[z.niveau_calcule] }} à valider</b>{% endif %}
+          </span></span>
+        <a href="/operateur/scores?zone={{ z.id }}" aria-label="Détail de {{ z.nom }}" style="min-width:44px;min-height:44px;display:inline-grid;place-items:center">{{ icone('chevron-right') }}</a>
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<script>
+const COUL = {propre: "#15803D", partiel: "#C2410C", bouche: "#B91C1C", vert: "#15803D", orange: "#C2410C", rouge: "#B91C1C"};
+const NOM = {propre: "Propre", partiel: "Partiellement bouché", bouche: "Bouché", vert: "Vert", orange: "Orange", rouge: "Rouge"};
+const echap = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const carte = L.map("carte").setView([7.6, -5.5], 7);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© contributeurs OpenStreetMap"}).addTo(carte);
+const abidjan = z => z.region === "District d'Abidjan";
+fetch("/api/zones").then(r => r.json()).then(zones => {
+  zones.forEach(z => {
+    const n = z.niveau_annonce || z.niveau_calcule;
+    const valeur = z.pluie_24h_mm == null ? "" : z.source === "glofas" ? `${z.pluie_24h_mm.toFixed(0)} m³/s de débit prévu`
+      : `${z.pluie_24h_mm.toFixed(0)} mm (${z.source === "prevision_max" ? "prévus" : "observés"})`;
+    L.circle([z.lat, z.lon], {radius: abidjan(z) ? 1800 : 7000, color: COUL[n] || "#94A3B8", weight: 2, fillOpacity: 0.15}).addTo(carte)
+     .bindPopup(`<b>${echap(z.nom)}</b> · ${echap(z.region || "")}<br>Niveau : <b>${NOM[n] || "non calculé"}</b><br>${valeur}<br><a href="/operateur/scores?zone=${encodeURIComponent(z.id)}">Voir le détail</a>`);
+  });
+  carte.fitBounds(zones.map(z => [z.lat, z.lon]), {padding: [30, 30]});
+});
+fetch("/api/rivieres").then(r => r.json()).then(rs => rs.forEach(r => {
+  const n = r.pic_prevu == null || r.seuil_orange == null ? null : r.pic_prevu >= r.seuil_rouge ? "rouge" : r.pic_prevu >= r.seuil_orange ? "orange" : "vert";
+  L.marker([r.lat, r.lon], {icon: L.divIcon({className: "", iconSize: [18, 18],
+      html: `<div style="width:14px;height:14px;transform:rotate(45deg);background:#0369A1;border:2px solid ${COUL[n] || "#fff"}"></div>`})})
+   .addTo(carte).bindPopup(`<b>${echap(r.nom)}</b> (station de ${echap(r.ville)})<br>` +
+     (r.pic_prevu != null ? `Pic prévu sur 7 jours : <b>${r.pic_prevu.toFixed(0)} m³/s</b><br>` : "") +
+     (r.seuil_orange != null ? `Crue annuelle (orange) : ${r.seuil_orange.toFixed(0)} m³/s · crue de 5 ans (rouge) : ${r.seuil_rouge.toFixed(0)} m³/s` : "Seuils non calibrés"));
+}));
+fetch("/api/carte").then(r => r.json()).then(d => {
+  d.signalements.forEach(s => L.circleMarker([s.lat, s.lon], {radius: 7, color: "#fff", weight: 2, fillColor: "#B91C1C", fillOpacity: 1})
+    .addTo(carte).bindPopup(`<b>${echap(s.libelle)}</b><br>${echap(s.description)}`));
+  d.lieux.forEach(l => L.circleMarker([l.lat, l.lon], {radius: 7, color: "#15803D", weight: 3, fillColor: "#fff", fillOpacity: 1})
+    .addTo(carte).bindPopup(`<b>Lieu sûr</b> : ${echap(l.nom)}`));
+});
+fetch("/operateur/api/points").then(r => r.json()).then(pts => pts.forEach(p => {
+  const c = p.perime || !p.classe ? "#94A3B8" : COUL[p.classe];
+  const date = p.recu_le ? new Date(p.recu_le).toLocaleString("fr-FR") : "jamais";
+  L.circleMarker([p.lat, p.lon], {radius: 8, color: "#fff", weight: 2, fillColor: c, fillOpacity: 1}).addTo(carte)
+   .bindPopup(`<b>${echap(p.point_id)}</b>${p.demo ? ' <span class="demo">DÉMO</span>' : ""}<br>${echap(p.description)}<br>` +
+     `État : <b>${p.classe ? NOM[p.classe] : "inconnu"}</b>${p.perime && p.classe ? " (périmé)" : ""}<br>Dernière observation validée : ${date}` +
+     (p.photo ? `<br><img src="${p.photo}" alt="Photo du point" style="width:220px;margin-top:6px;border-radius:6px">` : "") +
+     `<br><a href="/r/${encodeURIComponent(p.point_id)}" target="_blank" rel="noopener">Formulaire du relais</a>`);
+}));
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titre %}Connexion · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div style="max-width:440px;margin:24px auto">
+  <div style="text-align:center;margin-bottom:18px">
+    <img src="/static/logo-picto.png" alt="" style="height:64px">
+    <h1 style="margin-top:10px">Espace opérateur</h1>
+    <p class="petit">Protection civile, mairies, services techniques.</p>
+  </div>
+  {% if erreur %}<div class="alerte-boite" role="alert">{{ icone('triangle-alert') }}<div>{{ erreur }}</div></div>{% endif %}
+  <form method="post" action="/connexion" class="carte">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="suite" value="{{ suite }}">
+    <label for="i" style="margin-top:0">Identifiant</label><input id="i" type="text" name="identifiant" required autocomplete="username" autofocus>
+    <label for="m">Mot de passe</label><input id="m" type="password" name="mot_de_passe" required autocomplete="current-password">
+    <p style="margin-top:18px"><button style="width:100%">{{ icone('log-in') }}Se connecter</button></p>
+    <p class="aide">{{ icone('lock', 'petite') }} Après 5 échecs, la connexion est bloquée 10 minutes.</p>
+  </form>
+</div>
+{% endblock %}

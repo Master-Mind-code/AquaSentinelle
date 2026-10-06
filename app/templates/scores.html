@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>Scores et pluie</h1>
+<form class="ligne" method="get"><label style="margin:0">Zone</label>
+  <select name="zone" onchange="this.form.submit()">{% for z in zones %}<option value="{{ z.id }}" {{ 'selected' if z.id == zone }}>{{ z.nom }}</option>{% endfor %}</select></form>
+
+<h2>Pluie des 45 derniers jours (mm par jour)</h2>
+<div class="carte">
+  <div class="legende" id="legende"></div>
+  <div class="barres" id="barres" role="img" aria-label="Pluie journalière par source"></div>
+  <p class="petit" id="axe"></p>
+</div>
+<script>
+const serie = {{ serie | safe }};
+const COUL = {chirps_max: "#E8742A", prevision_max: "#1F6F8B", openmeteo: "#9AA5AE", simulation: "#C0392B", pluviometre: "#2E7D4F", imerg_early: "#7A4FA0"};
+const NOM = {chirps_max: "CHIRPS (observé)", prevision_max: "Prévision, max de 5 modèles", openmeteo: "Open-Meteo", simulation: "Simulation", pluviometre: "Pluviomètre", imerg_early: "IMERG Early (expérimental)"};
+const jours = [...new Set(Object.values(serie).flat().map(m => m.jour))].sort();
+const max = Math.max(10, ...Object.values(serie).flat().map(m => m.mm));
+const barres = document.getElementById("barres");
+jours.forEach(j => Object.keys(serie).forEach(s => {
+  const m = serie[s].find(x => x.jour === j);
+  const d = document.createElement("div");
+  d.style.height = (m ? Math.max(1, 170 * m.mm / max) : 0) + "px";
+  d.style.background = COUL[s] || "#3E4C59";
+  d.title = `${j} · ${NOM[s] || s} : ${m ? m.mm.toFixed(1) : "—"} mm`;
+  barres.appendChild(d);
+}));
+document.getElementById("legende").innerHTML = Object.keys(serie).map(s =>
+  `<span><span class="pastille" style="background:${COUL[s] || "#3E4C59"}"></span>${NOM[s] || s}</span>`).join("") || "Aucune mesure.";
+document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au ${jours[jours.length - 1]} · maximum ${max.toFixed(0)} mm · survoler une barre pour la valeur` : "";
+</script>
+
+{% if riviere %}
+<h2>Débit prévu : {{ riviere.nom }} (m³/s)</h2>
+<div class="carte">
+  {% set haut = [riviere.seuil_rouge or 1, (debits | map(attribute='debit_m3s') | max) if debits else 0] | max %}
+  <div class="legende"><span>Crue annuelle (orange) : <b>{{ '%.0f'|format(riviere.seuil_orange or 0) }}</b></span>
+    <span>Crue de 5 ans (rouge) : <b>{{ '%.0f'|format(riviere.seuil_rouge or 0) }}</b></span></div>
+  <div class="barres" style="position:relative" role="img" aria-label="Débit prévu par jour">
+    {% for d in debits %}<div title="{{ d.jour }} : {{ '%.0f'|format(d.debit_m3s) }} m³/s"
+      style="height:{{ (170 * d.debit_m3s / haut) | round(1) }}px;background:{{ '#C0392B' if riviere.seuil_rouge and d.debit_m3s >= riviere.seuil_rouge else '#E8742A' if riviere.seuil_orange and d.debit_m3s >= riviere.seuil_orange else '#1F6F8B' }}"></div>{% endfor %}
+    {% if riviere.seuil_orange %}<span style="position:absolute;left:0;right:0;bottom:{{ (170 * riviere.seuil_orange / haut) | round(1) }}px;border-top:2px dashed #E8742A"></span>{% endif %}
+  </div>
+  <p class="petit">{{ debits | length }} jour(s) de prévision GloFAS enregistrés · barre orange ou rouge = seuil de crue dépassé · survoler pour la valeur</p>
+</div>
+{% endif %}
+
+<h2>Historique des scores (explicabilité)</h2>
+<div class="tableau-defile"><table>
+<tr><th>Calculé</th><th>Niveau</th><th>Pluie</th><th>Source</th><th>Caniveaux bouchés</th><th>Facteurs</th><th>Règles</th></tr>
+{% for s in historique %}
+<tr><td>{{ s.calcule_le.strftime('%d/%m %H:%M') }}</td><td><span class="niveau {{ s.niveau }}">{{ NIVEAUX[s.niveau] }}</span></td>
+<td>{{ '%.1f'|format(s.pluie_24h_mm) }} {{ 'm³/s' if s.source == 'glofas' else 'mm' }}</td><td>{{ s.source }}</td>
+<td>{{ ('%.0f %%'|format(s.entrees.part_caniveaux_bouches * 100)) if s.entrees.part_caniveaux_bouches is not none else '—' }}
+    <span class="petit">({{ s.entrees.points_a_statut_frais }} pt)</span></td>
+<td class="petit">{{ s.entrees.facteurs | join(' · ') }}</td><td>{{ s.version_regles }}</td></tr>
+{% else %}<tr><td colspan="7">Aucun score pour cette zone.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

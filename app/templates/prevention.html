@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block titre %}Prévention et consignes · AquaSentinelle CI{% endblock %}
+{% block contenu %}
+<div class="entete-page"><div>
+  <p class="sur-titre">Se protéger</p>
+  <h1>Prévention et consignes</h1>
+  <p class="petit">Que faire avant, pendant et après une inondation. Consignes générales, à compléter par celles de l'ONPC et de votre mairie.</p>
+</div><a class="bouton rouge" href="/aide">{{ icone('siren') }}Je suis en danger</a></div>
+
+<div class="alerte-boite" role="note">{{ icone('phone') }}<div><b>Urgence : sapeurs-pompiers 180 · SAMU 185 · police secours 170.</b>
+  En alerte rouge, les consignes officielles de l'ONPC et de la SODEXAM priment sur celles de cette page.</div></div>
+
+<div class="grille" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">
+  <section class="carte niveau-vert" aria-labelledby="avant">
+    <h2 id="avant" style="margin-top:0">{{ icone('shield-check') }} Avant : en saison des pluies</h2>
+    <ul>
+      <li><b>Ne jetez rien dans les caniveaux.</b> Un sac plastique suffit à boucher un passage d'eau.</li>
+      <li>Participez au <b>curage de votre rue</b> et signalez les caniveaux bouchés (<a href="/signaler">signaler</a>).</li>
+      <li>Repérez le <b>lieu sûr</b> le plus proche, en hauteur (<a href="/carte">voir la carte</a>).</li>
+      <li>Rangez papiers d'identité, ordonnances et argent dans un <b>sac plastique fermé</b>, facile à emporter.</li>
+      <li>Préparez une lampe, une batterie de téléphone chargée, de l'eau potable et vos médicaments.</li>
+      <li>Si vous habitez un <b>bas-fond ou au pied d'une pente</b> : prévoyez où dormir en cas d'alerte rouge.</li>
+      <li>Inscrivez-vous aux alertes de votre ville (<a href="/abonnement">SMS</a>).</li>
+    </ul>
+  </section>
+  <section class="carte niveau-orange" aria-labelledby="pendant">
+    <h2 id="pendant" style="margin-top:0">{{ icone('triangle-alert') }} Pendant : l'eau monte</h2>
+    <ul>
+      <li><b>Ne traversez jamais une eau en mouvement</b>, à pied ou en voiture : quelques dizaines de centimètres suffisent à emporter une personne ou un véhicule.</li>
+      <li><b>Éloignez-vous des pentes, des murs fissurés et des berges</b> : c'est là que surviennent les glissements et les effondrements.</li>
+      <li>Coupez l'électricité si l'eau entre chez vous, sans toucher les installations les pieds dans l'eau.</li>
+      <li>Montez à l'étage ou rejoignez un <b>lieu sûr en hauteur</b>. N'allez pas chercher vos biens.</li>
+      <li>Gardez les enfants près de vous et loin des caniveaux et des canaux.</li>
+      <li>En danger : appelez le <b>180</b>, puis <a href="/aide">envoyez votre position</a>.</li>
+    </ul>
+  </section>
+  <section class="carte" aria-labelledby="apres">
+    <h2 id="apres" style="margin-top:0">{{ icone('circle-check') }} Après : la décrue</h2>
+    <ul>
+      <li>Ne rentrez chez vous qu'avec l'accord des autorités ; méfiez-vous des murs et planchers fragilisés.</li>
+      <li><b>Ne buvez pas l'eau</b> du robinet ou du puits sans l'avoir fait bouillir ou traitée.</li>
+      <li>Évitez le contact prolongé avec l'eau de crue : elle peut transmettre des maladies, dont la <b>leptospirose</b>.
+        Portez bottes et gants pour nettoyer ; en cas de fièvre dans les semaines suivantes, consultez.</li>
+      <li>Jetez les aliments qui ont trempé dans l'eau.</li>
+      <li>Photographiez les dégâts avant de nettoyer, pour les aides et assurances.</li>
+    </ul>
+  </section>
+</div>
+
+<section class="carte" aria-labelledby="dechets" style="margin-top:16px">
+  <h2 id="dechets" style="margin-top:0">{{ icone('waves') }} Déchets et caniveaux : le geste qui protège tout le quartier</h2>
+  <div class="grille">
+    <div><h3>Pourquoi ?</h3><p>Un caniveau bouché ne laisse plus passer l'eau : la rue se transforme en rivière en quelques minutes.
+      Notre système suit l'état des caniveaux : quand ils sont bouchés, les seuils d'alerte baissent.</p></div>
+    <div><h3>Trier et confier ses déchets</h3><p>Utilisez la pré-collecte de votre quartier et les points de dépôt.
+      Les plastiques, les sachets d'eau et les bouteilles sont les premiers responsables des bouchons.</p></div>
+    <div><h3>Agir ensemble</h3><p>Organisez un curage de rue avec vos voisins avant la saison des pluies, et devenez <b>relais</b> :
+      une photo du caniveau peint près de chez vous suffit (QR code sur le mur).</p></div>
+  </div>
+</section>
+<p class="petit">Contenu de sensibilisation rédigé pour le prototype : à faire relire et valider par l'ONPC et la mairie avant diffusion.</p>
+{% endblock %}

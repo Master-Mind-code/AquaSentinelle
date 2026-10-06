@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>Signalements à vérifier</h1>
+<p class="petit">« Bouché » n'est validé automatiquement que par un relais fiable (≥ 0,8) ou une deuxième source indépendante sous 72 h. Votre décision met à jour la fiabilité du relais.</p>
+<h2>Signalements géolocalisés des habitants</h2>
+<p class="petit">Routes inondées, dangers, caniveaux hors points peints. Validés automatiquement si un 2e habitant signale la même chose à moins de 300 m.</p>
+{% for s in libres %}
+<div class="carte niveau-orange" style="display:flex;gap:18px;flex-wrap:wrap">
+  <div style="flex:0 0 260px;max-width:100%">
+    {% if s.photo_chemin %}<img class="photo" src="/operateur/photos-signalements/{{ s.photo_chemin }}" alt="Photo du signalement">{% else %}<p class="petit">Pas de photo.</p>{% endif %}
+  </div>
+  <div style="flex:1;min-width:260px">
+    <h3>{{ types_signalement[s.type] }}{% if s.zone %} · {{ s.zone }}{% endif %}</h3>
+    <p class="petit">Reçu le {{ s.recu_le.strftime('%d/%m à %H:%M') }} · relais {{ s.pseudo or 'anonyme' }}{% if s.fiabilite is not none %} (fiabilité {{ '%.2f'|format(s.fiabilite) }}){% endif %}</p>
+    {% if s.description %}<p>« {{ s.description }} »</p>{% endif %}
+    <p>{{ icone('map-pin', 'petite') }} <a href="https://www.openstreetmap.org/?mlat={{ s.lat }}&mlon={{ s.lon }}#map=18/{{ s.lat }}/{{ s.lon }}" target="_blank" rel="noopener">{{ '%.5f'|format(s.lat) }}, {{ '%.5f'|format(s.lon) }}</a>
+      {% if s.precision_m %}<span class="petit">(± {{ s.precision_m | int }} m)</span>{% endif %}</p>
+    <form method="post" action="/operateur/signalements-libres/{{ s.id }}" class="ligne">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="vert" name="decision" value="valide">{{ icone('check') }}Valider et afficher</button>
+      <button class="rouge" name="decision" value="rejete">{{ icone('x') }}Rejeter</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="ok-boite">{{ icone('circle-check') }}<div>Aucun signalement géolocalisé en attente.</div></div>
+{% endfor %}
+
+<h2>Photos des points de contrôle</h2>
+{% for o in obs %}
+<div class="carte" style="display:flex;gap:18px;flex-wrap:wrap">
+  <div style="flex:0 0 320px;max-width:100%">
+    {% if o.photo_chemin %}<img class="photo" src="/operateur/photos/{{ o.photo_chemin }}" alt="Photo du point {{ o.point_id }}">{% else %}<p class="petit">Pas de photo.</p>{% endif %}
+  </div>
+  <div style="flex:1;min-width:260px">
+    <p><b>{{ o.point_id }}</b> ({{ o.zone_id }}) {% if o.demo %}<span class="demo">DÉMO</span>{% endif %} · reçu le {{ o.recu_le.strftime('%d/%m/%Y %H:%M') }}</p>
+    <p>Relais : <b>{{ o.pseudo or '—' }}</b>{% if o.fiabilite is not none %} · fiabilité {{ '%.2f'|format(o.fiabilite) }}{% endif %}</p>
+    <p>Avis du relais : <b>{{ CLASSES[o.avis_relais] if o.avis_relais else '—' }}</b><br>
+       Eau stagnante : {{ {True:'oui', False:'non'}.get(o.eau_stagnante, '—') }} · Déchets : {{ {True:'oui', False:'non'}.get(o.dechets_visibles, '—') }}</p>
+    <div class="info-boite" style="margin:8px 0">{{ icone('gauge') }}<div>
+      {% if o.ia_analyse_le %}
+        <b>Avis de l'IA ({{ o.modele_ia }})</b> :
+        {% if o.est_caniveau_ia == false %}<b style="color:#B91C1C">la photo ne semble pas montrer un caniveau</b>
+        {% else %}<b>{{ CLASSES[o.classe_ia] if o.classe_ia else 'indéterminé' }}</b>{% if o.obstruction_pct_ia is not none %}, environ {{ o.obstruction_pct_ia }} % d'obstruction{% endif %}{% endif %}
+        <br><span class="petit">« {{ o.justification_ia }} »</span>
+        {% if o.personne_visible_ia %}<br><span class="petit">{{ icone('users', 'petite') }} Personne visible : vérifier le floutage avant toute diffusion.</span>{% endif %}
+        <br><span class="petit">Avis indicatif : l'IA ne valide jamais seule.</span>
+      {% elif o.photo_chemin %}Analyse de la photo par l'IA en cours…{% else %}Pas de photo à analyser.{% endif %}
+    </div></div>
+    <p class="petit">{{ o.motif }}</p>
+    <form method="post" action="/operateur/signalements/{{ o.id }}" class="ligne">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <select name="classe"><option value="">Garder : {{ CLASSES[o.classe] if o.classe else '?' }}</option>
+        {% for k, v in CLASSES.items() %}<option value="{{ k }}">Corriger : {{ v }}</option>{% endfor %}</select>
+      <button class="vert" name="decision" value="valide">Valider</button>
+      <button class="rouge" name="decision" value="rejete">Rejeter</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="ok-boite">Aucun signalement en attente.</div>
+{% endfor %}
+
+<h2>Relevés de pluviomètre à vérifier</h2>
+<p class="petit">Au-dessus de 35 mm, un relevé n'entre dans le score que s'il vient d'un relais fiable, s'il concorde avec un 2e relevé du jour ou si vous le validez.</p>
+{% for v in releves %}
+<div class="carte" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+  <div style="flex:1;min-width:260px"><b>{{ v.nom }}</b> · {{ v.jour.strftime('%d/%m/%Y') }} · <span class="compteur" style="font-size:22px">{{ '%.0f'|format(v.pluie_mm) }} mm</span><br>
+    <span class="petit">Relais {{ v.pseudo or '—' }}{% if v.fiabilite is not none %} (fiabilité {{ '%.2f'|format(v.fiabilite) }}){% endif %} · {{ v.motif }}</span></div>
+  <form method="post" action="/operateur/releves/{{ v.id }}" class="ligne"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="vert" name="decision" value="valide">Valider</button><button class="rouge" name="decision" value="rejete">Rejeter</button></form>
+</div>
+{% else %}<div class="ok-boite">Aucun relevé en attente.</div>{% endfor %}
+
+<h2>Décisions récentes</h2>
+<div class="tableau-defile"><table>
+<tr><th>Reçu</th><th>Point</th><th>Relais</th><th>Classe</th><th>Statut</th><th>Par</th><th>Motif</th></tr>
+{% for r in recents %}<tr><td>{{ r.recu_le.strftime('%d/%m %H:%M') }}</td><td>{{ r.point_id }}</td><td>{{ r.pseudo or '—' }}</td>
+<td>{{ CLASSES[r.classe] if r.classe else '—' }}</td><td>{{ STATUTS.get(r.statut, r.statut) }}</td><td>{{ r.valide_par or '' }}</td><td class="petit">{{ r.motif or '' }}</td></tr>{% endfor %}
+</table></div>
+
+<h2>Relais</h2>
+<div class="tableau-defile"><table>
+<tr><th>Pseudo</th><th>Fiabilité</th><th>Signalements</th><th>Confirmés</th><th>Rejetés</th></tr>
+{% for r in relais %}<tr><td>{{ r.pseudo }}</td><td>{{ '%.2f'|format(r.fiabilite) }}</td><td>{{ r.nb_observations }}</td><td>{{ r.nb_confirmees }}</td><td>{{ r.nb_rejetees }}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

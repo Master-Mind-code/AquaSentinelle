@@ -1,0 +1,72 @@
+# AquaSentinelle CI : base PostGIS + API/tableau de bord + bot Telegram (optionnel).
+#   docker compose up -d --build                       # base + application sur http://localhost:8000
+#   docker compose --profile telegram up -d --build    # + bot Telegram (TELEGRAM_TOKEN requis)
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: aquasentinelle
+      POSTGRES_USER: aqua
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aqua}
+    ports:
+      - "5434:5432"            # 5432 et 5433 sont souvent pris par un PostgreSQL local
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aqua -d aquasentinelle"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://aqua:${POSTGRES_PASSWORD:-aqua}@db:5432/aquasentinelle
+      # adresse réelle des visiteurs transmise par le tunnel (réseau Docker) : sinon tous les téléphones
+      # partageraient la même adresse et les mêmes limites anti-abus
+      FORWARDED_ALLOW_IPS: "172.16.0.0/12"
+      # modèle de vision local (Ollama sur le PC hôte) : second regard sur les photos des caniveaux
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODELE_VISION: ${OLLAMA_MODELE_VISION:-gemma4:e4b}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data       # photos, cache CHIRPS, journal des envois
+      - ./models:/app/models   # modèle IA (caniveaux.onnx)
+      - ./config:/app/config
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  bot:
+    build: .
+    profiles: ["telegram"]
+    command: ["python", "-m", "bot.telegram_bot"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://aqua:${POSTGRES_PASSWORD:-aqua}@db:5432/aquasentinelle
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./config:/app/config
+    depends_on:
+      app:
+        condition: service_started
+    restart: unless-stopped
+
+  # Démonstration sur téléphones : adresse HTTPS publique temporaire (Cloudflare, sans compte).
+  # Lancer avec : python scripts/demo_telephone.py   (met aussi BASE_URL à jour pour les QR codes)
+  tunnel:
+    image: cloudflare/cloudflared:2025.9.1
+    profiles: ["demo"]
+    command: ["tunnel", "--no-autoupdate", "--url", "http://app:8000"]
+    depends_on:
+      app:
+        condition: service_started
+    restart: "no"
+
+volumes:
+  pgdata:

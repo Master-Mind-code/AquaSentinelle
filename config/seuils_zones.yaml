@@ -1,0 +1,120 @@
+# Généré par scripts/transposer_seuils.py (pluie observée, CHIRPS) et scripts/caler_previsions.py
+# (pluie prévue : même fréquence d'alerte qu'Abidjan). NE PAS éditer à la main, relancer les scripts.
+# Seuils PROVISOIRES hors Abidjan. Les zones absentes utilisent les seuils d'Abidjan (config/zones.yaml).
+aboisso:
+  facteur: 0.95
+  p99_chirps_mm: 93.8
+  seuils_pluie_24h_mm:
+    orange: 67
+    rouge: 95
+  seuils_prevision_24h_mm:
+    orange: 33
+    rouge: 97
+agboville:
+  facteur: 0.67
+  p99_chirps_mm: 65.8
+  seuils_pluie_24h_mm:
+    orange: 47
+    rouge: 67
+  seuils_prevision_24h_mm:
+    orange: 29
+    rouge: 55
+bangolo:
+  facteur: 0.93
+  p99_chirps_mm: 91.6
+  seuils_pluie_24h_mm:
+    orange: 65
+    rouge: 93
+  seuils_prevision_24h_mm:
+    orange: 44
+    rouge: 121
+bouake:
+  facteur: 0.65
+  p99_chirps_mm: 63.9
+  seuils_pluie_24h_mm:
+    orange: 46
+    rouge: 65
+  seuils_prevision_24h_mm:
+    orange: 30
+    rouge: 86
+daloa:
+  facteur: 0.68
+  p99_chirps_mm: 67.0
+  seuils_pluie_24h_mm:
+    orange: 48
+    rouge: 68
+  seuils_prevision_24h_mm:
+    orange: 35
+    rouge: 94
+grand-bassam:
+  facteur: 0.91
+  p99_chirps_mm: 89.8
+  seuils_pluie_24h_mm:
+    orange: 64
+    rouge: 91
+  seuils_prevision_24h_mm:
+    orange: 35
+    rouge: 112
+issia:
+  facteur: 0.76
+  p99_chirps_mm: 74.6
+  seuils_pluie_24h_mm:
+    orange: 53
+    rouge: 76
+  seuils_prevision_24h_mm:
+    orange: 33
+    rouge: 74
+korhogo:
+  facteur: 0.6
+  p99_chirps_mm: 57.6
+  seuils_pluie_24h_mm:
+    orange: 42
+    rouge: 60
+  seuils_prevision_24h_mm:
+    orange: 35
+    rouge: 82
+man:
+  facteur: 0.9
+  p99_chirps_mm: 88.6
+  seuils_pluie_24h_mm:
+    orange: 63
+    rouge: 90
+  seuils_prevision_24h_mm:
+    orange: 44
+    rouge: 95
+san-pedro:
+  facteur: 1.04
+  p99_chirps_mm: 102.3
+  seuils_pluie_24h_mm:
+    orange: 73
+    rouge: 104
+  seuils_prevision_24h_mm:
+    orange: 28
+    rouge: 91
+soubre:
+  facteur: 0.67
+  p99_chirps_mm: 65.9
+  seuils_pluie_24h_mm:
+    orange: 47
+    rouge: 67
+  seuils_prevision_24h_mm:
+    orange: 34
+    rouge: 71
+tiassale:
+  facteur: 0.64
+  p99_chirps_mm: 62.8
+  seuils_pluie_24h_mm:
+    orange: 45
+    rouge: 64
+  seuils_prevision_24h_mm:
+    orange: 28
+    rouge: 82
+yamoussoukro:
+  facteur: 0.68
+  p99_chirps_mm: 66.8
+  seuils_pluie_24h_mm:
+    orange: 48
+    rouge: 68
+  seuils_prevision_24h_mm:
+    orange: 31
+    rouge: 86

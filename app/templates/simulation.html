@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titre %}Simulation · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div class="entete-page"><div><p class="sur-titre">Terrain · démonstration</p><h1>Simulation et cycle manuel</h1></div></div>
+<div class="info-boite">{{ icone('info') }}<div>Une pluie simulée est enregistrée comme une pluie <b>observée</b> aujourd'hui (source « simulation ») :
+  le score et la décision d'alerte s'exécutent alors comme en réel. Pensez à effacer les simulations après la démonstration.</div></div>
+
+{% set ACTIONS = {"envoyee": "Alerte envoyée", "en_attente": "Rouge en attente de validation", "deja_en_attente": "Rouge déjà en attente",
+                  "rien": "Pas de nouveau message"} %}
+{% if resultat %}
+<section class="carte" aria-labelledby="titre-resultat">
+  <h2 id="titre-resultat" style="margin-top:0">{{ icone('clipboard-check') }} Résultat</h2>
+  <div class="tableau-defile" style="box-shadow:none"><table>
+    <tr><th>Zone</th><th>Niveau calculé</th><th>Valeur retenue</th><th>Décision</th><th>Raison</th></tr>
+    {% for r in resultat %}
+    <tr><td><b>{{ noms.get(r.zone, r.zone) }}</b></td>
+      <td>{% if r.niveau %}<span class="niveau {{ r.niveau }}">{{ NIVEAUX[r.niveau] }}</span>{% else %}—{% endif %}</td>
+      <td>{% if r.valeur is not none %}{{ '%.0f'|format(r.valeur) }} {{ 'm³/s' if r.source == 'glofas' else 'mm' }} <span class="petit">({{ r.source }})</span>{% endif %}</td>
+      <td>{{ ACTIONS.get(r.action, r.action) }}{% if r.action == 'en_attente' %} · <a href="/operateur/alertes">valider</a>{% endif %}</td>
+      <td class="petit">{{ r.raison }}</td></tr>
+    {% endfor %}
+  </table></div>
+</section>
+{% endif %}
+
+<div class="grille">
+  <form method="post" class="carte">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="pluie">
+    <h2 style="margin-top:0">{{ icone('cloud-rain') }} Simuler une pluie</h2>
+    <label for="sim-zone">Zone</label><select id="sim-zone" name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select>
+    <label for="sim-mm">Pluie sur 24 h (mm)</label><input id="sim-mm" type="number" name="pluie_mm" min="0" max="500" step="1" value="120" inputmode="numeric">
+    <p class="aide">À Abidjan : orange 70 mm, rouge 100 mm, abaissés si des caniveaux sont bouchés. Ailleurs : seuils propres à la ville.</p>
+    <button>{{ icone('play') }}Simuler</button>
+  </form>
+  <form method="post" class="carte">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="cycle">
+    <h2 style="margin-top:0">{{ icone('refresh-cw') }} Lancer un cycle</h2>
+    <p>Collecte les prévisions et les débits, recalcule le score de chaque zone, décide des alertes et des escalades.</p>
+    <p class="aide">Le planificateur le fait seul toutes les heures.</p>
+    <button>{{ icone('play') }}Lancer le cycle</button>
+  </form>
+  <form method="post" class="carte">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="effacer">
+    <h2 style="margin-top:0">{{ icone('eraser') }} Effacer les simulations</h2>
+    <p><b>{{ sims | length }}</b> pluie(s) simulée(s) en base{% if sims %} : {{ sims | map(attribute='zone_id') | join(', ') }}{% endif %}.</p>
+    <p class="aide">Les scores sont recalculés juste après.</p>
+    <button class="leger">{{ icone('eraser') }}Effacer</button>
+  </form>
+</div>
+{% endblock %}

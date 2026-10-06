@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titre %}Merci · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div class="mobile">
+<div class="ok-boite" role="status">{{ icone('circle-check') }}<div><b>Signalement reçu : {{ libelle }}.</b> Merci, vous aidez tout le quartier.</div></div>
+<div class="carte">
+  {% if res.statut == 'valide' %}
+  <p><b>Il est déjà affiché sur la carte publique.</b></p><p class="petit">{{ res.motif }}</p>
+  {% else %}
+  <p><b>Il sera affiché après vérification</b> par un opérateur ou dès qu'un autre habitant signale la même chose à proximité.</p>
+  {% endif %}
+</div>
+<p style="display:flex;gap:10px;flex-wrap:wrap"><a class="bouton" href="/carte">{{ icone('map') }}Voir la carte</a>
+  <a class="bouton leger" href="/signaler">{{ icone('plus') }}Nouveau signalement</a></p>
+</div>
+{% endblock %}

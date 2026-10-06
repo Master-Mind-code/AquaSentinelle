@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titre %}Capteurs · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div class="entete-page"><div><p class="sur-titre">Terrain · option IoT</p><h1>Capteurs de niveau d'eau</h1>
+  <p class="petit">Chaque capteur envoie sa hauteur d'eau à l'API avec sa clé. Une mesure de moins d'une heure entre dans le score de sa zone ;
+    un capteur muet depuis plus d'une heure est signalé (panne, batterie ou arrachement).</p></div></div>
+
+{% if cle %}
+<div class="alerte-boite" role="alert">{{ icone('lock') }}<div><b>Clé d'API du capteur {{ cle.id }} : notez-la maintenant, elle ne sera plus affichée.</b>
+  <pre style="margin:8px 0">{{ cle.valeur }}</pre>
+  Exemple d'envoi : <code>curl -X POST {{ base_url }}/api/capteurs/{{ cle.id }}/mesures -H "X-Cle-API: {{ cle.valeur }}" -H "Content-Type: application/json" -d "{\"niveau_cm\": 42}"</code>
+  <br>Simulateur : <code>python scripts/simuler_capteur.py {{ cle.id }} {{ cle.valeur }}</code></div></div>
+{% endif %}
+
+<div class="tableau-defile"><table>
+  <tr><th>Capteur</th><th>Zone</th><th>Dernière mesure</th><th>Seuils (cm)</th><th>Batterie</th><th>État</th><th></th></tr>
+  {% for c in capteurs %}
+  {% set n = 'rouge' if c.niveau_cm is not none and c.niveau_cm >= c.seuil_rouge_cm else 'orange' if c.niveau_cm is not none and c.niveau_cm >= c.seuil_orange_cm else 'vert' %}
+  <tr><td><b>{{ c.id }}</b> {% if c.simule %}<span class="demo">SIMULÉ</span>{% endif %}<br><span class="petit">{{ c.nom }}</span></td>
+    <td>{{ c.zone }}</td>
+    <td>{% if c.niveau_cm is not none %}<span class="niveau {{ n }}">{{ '%.0f'|format(c.niveau_cm) }} cm</span><br><span class="petit">{{ c.le.strftime('%d/%m %H:%M') }}</span>{% else %}—{% endif %}</td>
+    <td>{{ c.seuil_orange_cm | int }} / {{ c.seuil_rouge_cm | int }}</td><td>{{ ('%.2f V'|format(c.batterie_v)) if c.batterie_v else '—' }}</td>
+    <td>{% if not c.actif %}Désactivé{% elif c.muet %}<b style="color:#B91C1C">{{ icone('triangle-alert', 'petite') }} Muet</b>{% elif c.dernier_signal %}En ligne{% else %}Jamais connecté{% endif %}</td>
+    <td>{% if op.role == 'admin' %}<form method="post" action="/operateur/capteurs/{{ c.id }}/basculer"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="leger">{{ 'Désactiver' if c.actif else 'Réactiver' }}</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7">Aucun capteur. Le projet n'en prévoit que 0 à 3, cachés, aux points les plus critiques.</td></tr>{% endfor %}
+</table></div>
+
+{% if op.role == 'admin' %}
+<h2>Enregistrer un capteur</h2>
+<form method="post" class="carte" style="max-width:760px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px"><label for="cid">Identifiant</label><input id="cid" type="text" name="capteur_id" required placeholder="" value="CAP-ATT-01"></div>
+    <div style="flex:2;min-width:240px"><label for="cnom">Emplacement</label><input id="cnom" type="text" name="nom" required maxlength="80" placeholder=""></div></div>
+  <label for="czone">Zone</label><select id="czone" name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select>
+  <div style="display:flex;gap:10px"><div style="flex:1"><label for="clat">Latitude</label><input id="clat" type="number" step="any" name="lat" required></div>
+    <div style="flex:1"><label for="clon">Longitude</label><input id="clon" type="number" step="any" name="lon" required></div></div>
+  <div style="display:flex;gap:10px"><div style="flex:1"><label for="so">Seuil orange (cm d'eau)</label><input id="so" type="number" name="seuil_orange_cm" value="30" required></div>
+    <div style="flex:1"><label for="sr">Seuil rouge (cm d'eau)</label><input id="sr" type="number" name="seuil_rouge_cm" value="60" required></div></div>
+  <div class="choix" style="margin-top:12px"><label><input type="checkbox" name="simule" value="oui" checked>Capteur simulé (démonstration, sans matériel)</label></div>
+  <p style="margin-top:16px"><button>{{ icone('plus') }}Enregistrer et obtenir la clé</button></p>
+</form>
+{% endif %}
+{% endblock %}

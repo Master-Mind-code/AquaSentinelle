@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titre %}Lieux sûrs · AquaSentinelle{% endblock %}
+{% block tete %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% endblock %}
+{% block contenu %}
+<div class="entete-page"><div><p class="sur-titre">Terrain</p><h1>Lieux sûrs</h1>
+  <p class="petit">Sites de regroupement, écoles, mairies… affichés sur la carte publique. À valider avec la mairie et l'ONPC.</p></div></div>
+
+<div class="tableau-defile"><table>
+  <tr><th>Nom</th><th>Type</th><th>Zone</th><th>Capacité</th><th>Position</th><th>État</th><th></th></tr>
+  {% for l in lieux %}
+  <tr><td><b>{{ l.nom }}</b> {% if l.demo %}<span class="demo">DÉMO</span>{% endif %}<br><span class="petit">{{ l.description or '' }}</span></td>
+    <td>{{ types[l.type] }}</td><td>{{ l.zone or '—' }}</td><td>{{ l.capacite or '—' }}</td>
+    <td class="petit">{{ '%.5f'|format(l.lat) }}, {{ '%.5f'|format(l.lon) }}</td><td>{{ 'Affiché' if l.actif else 'Masqué' }}</td>
+    <td><form method="post" action="/operateur/lieux/{{ l.id }}/basculer"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="leger">{{ 'Masquer' if l.actif else 'Afficher' }}</button></form></td></tr>
+  {% else %}<tr><td colspan="7">Aucun lieu sûr pour l'instant.</td></tr>{% endfor %}
+</table></div>
+
+<h2>Ajouter un lieu sûr</h2>
+<form method="post" class="carte" style="max-width:760px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="nom">Nom</label><input id="nom" type="text" name="nom" required maxlength="120">
+  <label for="type">Type</label><select id="type" name="type">{% for k, v in types.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+  <label>Position : touchez la carte</label>
+  <div id="choix-position" style="height:280px;border-radius:10px;border:1px solid var(--bord)"></div>
+  <p id="etat-position" class="info-boite" aria-live="polite">Touchez la carte à l'emplacement du lieu.</p>
+  <div style="display:flex;gap:10px"><div style="flex:1"><label for="lat">Latitude</label><input id="lat" type="number" step="any" name="lat" required></div>
+    <div style="flex:1"><label for="lon">Longitude</label><input id="lon" type="number" step="any" name="lon" required></div></div>
+  <input type="hidden" id="precision" name="precision">
+  <label for="cap">Capacité approximative (personnes)</label><input id="cap" type="number" name="capacite" min="1" inputmode="numeric">
+  <label for="desc">Description (accès, étage, contact)</label><input id="desc" type="text" name="description" maxlength="300">
+  <p style="margin-top:16px"><button>{{ icone('plus') }}Ajouter</button></p>
+</form>
+<script src="/static/position.js" defer></script>
+{% endblock %}

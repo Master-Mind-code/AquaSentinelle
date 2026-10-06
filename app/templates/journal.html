@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>Journal</h1>
+<form class="ligne" method="get"><select name="type" onchange="this.form.submit()"><option value="">Tous les types</option>
+{% for t in types %}<option value="{{ t }}" {{ 'selected' if t == type }}>{{ t }}</option>{% endfor %}</select></form>
+<div class="tableau-defile" style="margin-top:12px"><table>
+<tr><th>Date</th><th>Type</th><th>Message</th></tr>
+{% for l in lignes %}<tr><td style="white-space:nowrap">{{ l.le.strftime('%d/%m %H:%M:%S') }}</td><td>{{ l.type }}</td><td class="petit">{{ l.message }}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

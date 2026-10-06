@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titre %}Demande d'aide d'urgence · AquaSentinelle{% endblock %}
+{% block tete %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% endblock %}
+{% block contenu %}
+<div class="mobile">
+<h1>Vous êtes en danger ?</h1>
+<section class="carte" style="border:2px solid #B91C1C;text-align:center" aria-labelledby="appel">
+  <h2 id="appel" style="margin:0 0 6px">D'abord : appelez les secours</h2>
+  <p><a class="bouton rouge" href="tel:180" style="font-size:22px;padding:14px 26px">{{ icone('phone') }}Appeler le 180</a></p>
+  <p class="petit" style="margin:0">Sapeurs-pompiers 180 · SAMU 185 · Police secours 170</p>
+</section>
+
+<div class="info-boite">{{ icone('info') }}<div>Ce formulaire <b>ne remplace pas l'appel</b>. Il transmet votre position et votre situation
+  aux opérateurs de la plateforme, qui les relaient aux secours. Vous pourrez suivre votre demande.</div></div>
+
+<form method="post" class="carte" id="form-aide" novalidate>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <fieldset style="border:0;padding:0;margin:0">
+    <legend><h2 style="margin:0 0 8px">Votre situation</h2></legend>
+    <div class="choix">{% for cle, lib in situations.items() %}<label><input type="radio" name="situation" value="{{ cle }}" required>{{ lib }}</label>{% endfor %}</div>
+  </fieldset>
+  <label for="nb">Nombre de personnes concernées</label>
+  <input id="nb" type="number" name="nb_personnes" min="1" max="500" inputmode="numeric">
+
+  <h2>Où êtes-vous ?</h2>
+  <p><button type="button" id="ma-position">{{ icone('map-pin') }}Envoyer ma position GPS</button></p>
+  <div id="choix-position" style="height:240px;border-radius:10px;border:1px solid var(--bord)" role="application" aria-label="Carte : touchez l'endroit où vous êtes"></div>
+  <p id="etat-position" class="info-boite" aria-live="polite">Utilisez votre position, ou touchez la carte.</p>
+  <input type="hidden" id="lat" name="lat"><input type="hidden" id="lon" name="lon"><input type="hidden" id="precision" name="precision">
+  <label for="lieu">Quartier et repère (si pas de GPS)</label>
+  <input id="lieu" type="text" name="lieu_texte" maxlength="200">
+  <p class="aide">Par exemple : « Mossikro, derrière l'école primaire, maison bleue ».</p>
+  <label for="desc">Détails utiles (facultatif)</label>
+  <textarea id="desc" name="description" maxlength="500" rows="3"></textarea>
+  <label for="tel">Téléphone pour vous rappeler (facultatif, chiffré)</label>
+  <input id="tel" type="tel" name="telephone" autocomplete="tel" inputmode="tel">
+  <p id="erreur-aide" class="alerte-boite" role="alert" hidden></p>
+  <p style="margin-top:18px"><button class="rouge" style="width:100%">{{ icone('siren') }}Envoyer ma demande d'aide</button></p>
+</form>
+</div>
+<script src="/static/position.js" defer></script>
+<script>
+document.getElementById("form-aide").addEventListener("submit", function (e) {
+  var msg = document.getElementById("erreur-aide"), manque = null;
+  if (!document.querySelector("input[name=situation]:checked")) manque = ["Choisissez votre situation.", "input[name=situation]"];
+  else if (!document.getElementById("lat").value && !document.getElementById("lieu").value.trim())
+    manque = ["Indiquez où vous êtes : position GPS, toucher la carte, ou écrire le quartier et un repère.", "#lieu"];
+  if (manque) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    msg.textContent = manque[0]; msg.hidden = false; document.querySelector(manque[1]).focus();
+  }
+}, true);
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titre %}Erreur · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div class="mobile">
+  {% if urgence %}
+  <section class="carte" style="border:2px solid #B91C1C;text-align:center">
+    <p style="margin:0 0 10px"><b>En danger ? N'attendez pas : appelez les secours.</b></p>
+    <a class="bouton rouge" href="tel:180">{{ icone('phone') }}Appeler le 180</a>
+  </section>
+  {% endif %}
+  <div class="alerte-boite" role="alert">{{ icone('triangle-alert') }}<div><b>{{ message }}</b></div></div>
+  <p style="display:flex;gap:10px;flex-wrap:wrap">
+    <a class="bouton" href="javascript:history.back()">{{ icone('chevron-right') }}Revenir au formulaire</a>
+    <a class="bouton leger" href="/">{{ icone('house') }}Accueil</a></p>
+  <p class="petit">Code {{ code }}.</p>
+</div>
+{% endblock %}

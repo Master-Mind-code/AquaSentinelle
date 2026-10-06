@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titre %}Merci · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div class="mobile">
+<div class="ok-boite" role="status">{{ icone('circle-check') }}<div><b>Signalement reçu.</b> Point {{ point.id }}, à {{ obs.recu_le.strftime('%H:%M') }}. Merci pour votre aide.</div></div>
+<div class="carte">
+  <h2 style="margin-top:0">Ce que nous avons enregistré</h2>
+  <p>État retenu : <b>{{ CLASSES[obs.classe] if obs.classe else 'à déterminer par un opérateur' }}</b></p>
+  {% if obs.classe_ia %}<p class="petit">Analyse automatique de la photo : {{ CLASSES[obs.classe_ia] }} ({{ '%.0f'|format(obs.confiance_ia * 100) }} %)</p>{% endif %}
+  <p>Statut : <b>{{ 'validé' if obs.statut == 'valide' else 'en attente de vérification' }}</b></p>
+  <p class="petit">{{ obs.motif }}</p>
+  {% if obs.visages_floutes %}<p class="petit">{{ icone('shield-check', 'petite') }} {{ obs.visages_floutes }} visage(s) flouté(s) automatiquement.</p>{% endif %}
+</div>
+<p><a class="bouton" href="/r/{{ point.id }}">{{ icone('plus') }}Nouveau signalement sur ce point</a></p>
+</div>
+{% endblock %}

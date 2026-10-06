@@ -1,0 +1,50 @@
+# Zones surveillées en Côte d'Ivoire. Coordonnées approximatives (centre de la ville).
+# Pour ajouter ou retirer une zone : modifier ce fichier, pas le code, puis redémarrer l'application.
+#   type : urbaine (pluie intense sur la ville) | fluviale (crue d'un fleuve) | mixte (les deux)
+#   riviere : cellule GloFAS (grille 5 km) qui porte le fleuve, trouvée automatiquement autour de la ville
+#             (scripts/calibrer_rivieres.py) ; à vérifier sur la carte.
+#   region : pour regrouper l'affichage.
+zones:
+  # --- District d'Abidjan (zone pilote) ---
+  - {id: abidjan-centre, nom: Abidjan (centre), region: District d'Abidjan, type: urbaine, lat: 5.3600, lon: -4.0083}
+  - {id: attecoube, nom: Attécoubé, region: District d'Abidjan, type: urbaine, lat: 5.3333, lon: -4.0333}
+  - {id: yopougon, nom: Yopougon, region: District d'Abidjan, type: urbaine, lat: 5.3350, lon: -4.0870}
+  - {id: abobo, nom: Abobo, region: District d'Abidjan, type: urbaine, lat: 5.4167, lon: -4.0167}
+  - {id: anyama, nom: Anyama, region: District d'Abidjan, type: urbaine, lat: 5.4950, lon: -4.0517}
+  # --- Littoral ---
+  - {id: grand-bassam, nom: Grand-Bassam, region: Sud-Comoé, type: mixte, lat: 5.2110, lon: -3.7390,
+     riviere: {nom: Comoé, lat: 5.325, lon: -3.675}}
+  - {id: san-pedro, nom: San-Pédro, region: San-Pédro, type: mixte, lat: 4.7480, lon: -6.6360,
+     riviere: {nom: San-Pédro, lat: 4.775, lon: -6.625}}
+  - {id: aboisso, nom: Aboisso, region: Sud-Comoé, type: fluviale, lat: 5.4670, lon: -3.2070,
+     riviere: {nom: Bia, lat: 5.325, lon: -3.275}}
+  # --- Grands fleuves ---
+  - {id: tiassale, nom: Tiassalé, region: Agnéby-Tiassa, type: fluviale, lat: 5.8980, lon: -4.8230,
+     riviere: {nom: Bandama, lat: 5.875, lon: -4.875}}
+  - {id: soubre, nom: Soubré, region: Nawa, type: fluviale, lat: 5.7850, lon: -6.5940,
+     riviere: {nom: Sassandra, lat: 5.675, lon: -6.575}}
+  - {id: bangolo, nom: Bangolo, region: Guémon, type: fluviale, lat: 7.0120, lon: -7.4860,
+     riviere: {nom: Tarsca / Débao (Sassandra amont), lat: 6.925, lon: -7.625}}
+  # --- Villes de l'intérieur ---
+  - {id: agboville, nom: Agboville, region: Agnéby-Tiassa, type: urbaine, lat: 5.9280, lon: -4.2130}
+  - {id: yamoussoukro, nom: Yamoussoukro, region: District de Yamoussoukro, type: urbaine, lat: 6.8200, lon: -5.2770}
+  - {id: bouake, nom: Bouaké, region: Gbêkê, type: urbaine, lat: 7.6900, lon: -5.0300}
+  - {id: daloa, nom: Daloa, region: Haut-Sassandra, type: urbaine, lat: 6.8770, lon: -6.4500}
+  - {id: issia, nom: Issia, region: Haut-Sassandra, type: urbaine, lat: 6.4920, lon: -6.5860}
+  - {id: man, nom: Man, region: Tonkpi, type: urbaine, lat: 7.4120, lon: -7.5540}
+  - {id: korhogo, nom: Korhogo, region: Poro, type: urbaine, lat: 9.4580, lon: -5.6290}
+
+# Seuils de pluie OBSERVÉE sur 24 h (mm, CHIRPS maximum sur ~25 km).
+# Calibrés le 2026-10-04 sur 11 événements confirmés (python scripts/evaluate.py --sans-incertains) :
+#   orange 70 -> 8/11 détectés, 2,8 jours d'alerte/mois en saison (50 mm : même détection, 4,8 jours/mois)
+#   rouge 100 -> 3/11 détectés, 1,0 jour/mois
+# Échantillon petit : à revoir à chaque nouvel événement documenté.
+seuils_pluie_24h_mm:
+  orange: 70
+  rouge: 100
+
+# Seuils de pluie PRÉVUE sur 24 h (mm, prévision courte échéance) : les modèles sous-estiment
+# fortement les orages d'Abidjan, d'où des seuils bas. 30 mm (max de 5 modèles) -> 4/7 détectés, 2,5 j/mois.
+seuils_prevision_24h_mm:
+  orange: 30
+  rouge: 80

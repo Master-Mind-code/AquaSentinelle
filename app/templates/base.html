@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0F172A">
+<title>{% block titre %}AquaSentinelle CI{% endblock %}</title>
+<link rel="icon" href="/static/logo-picto.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+{% block tete %}{% endblock %}
+</head>
+<body>
+<a class="saut" href="#contenu">Aller au contenu</a>
+{% macro lien(chemin_lien, libelle, nom_icone, compte=0) -%}
+  {%- set actif = chemin == chemin_lien or (chemin_lien not in ('/', '/operateur') and chemin.startswith(chemin_lien)) -%}
+  <a href="{{ chemin_lien }}" {% if actif %}aria-current="page"{% endif %}>{{ icone(nom_icone) }}<span>{{ libelle }}</span>
+    {%- if compte %}<span class="compte" aria-label="{{ compte }} en attente">{{ compte }}</span>{% endif %}</a>
+{%- endmacro %}
+
+{% if op %}
+<div class="coque">
+  <aside class="laterale" id="laterale" aria-label="Navigation de l'espace opérateur">
+    <a class="marque" href="/operateur"><img src="/static/logo-picto.png" alt=""><span>AquaSentinelle <b>CI</b></span></a>
+    <nav>
+      <div class="groupe">Supervision</div>
+      {{ lien('/operateur', 'Tableau de bord', 'layout-dashboard') }}
+      {{ lien('/operateur/alertes', 'Alertes', 'siren', nav.alertes) }}
+      {{ lien('/operateur/aide', "Demandes d'aide", 'radio-tower', nav.aide) }}
+      {{ lien('/operateur/signalements', 'Signalements', 'inbox', nav.signalements) }}
+      <div class="groupe">Analyse</div>
+      {{ lien('/operateur/scores', 'Scores et pluie', 'chart-column') }}
+      {{ lien('/operateur/journal', 'Journal', 'scroll-text') }}
+      <div class="groupe">Terrain</div>
+      {{ lien('/operateur/points', 'Points et QR codes', 'qr-code') }}
+      {{ lien('/operateur/etiquetage', 'Étiquetage photos', 'tags') }}
+      {{ lien('/operateur/lieux', 'Lieux sûrs', 'shield-check') }}
+      {{ lien('/operateur/capteurs', 'Capteurs', 'activity') }}
+      {{ lien('/operateur/simulation', 'Simulation', 'flask-conical') }}
+      <div class="groupe">Administration</div>
+      {{ lien('/operateur/abonnes', 'Abonnés', 'users') }}
+      {% if op.role == 'admin' %}{{ lien('/operateur/comptes', 'Comptes', 'user-cog') }}{% endif %}
+      {{ lien('/', 'Portail public', 'house') }}
+    </nav>
+    <div class="utilisateur">
+      <b>{{ op.nom }}</b>{{ 'Administrateur' if op.role == 'admin' else 'Opérateur' }}
+      <form method="post" action="/deconnexion"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <button>{{ icone('log-out') }}Se déconnecter</button></form>
+    </div>
+  </aside>
+  <div class="principal">
+    <header class="barre-haut">
+      <button id="ouvrir-menu" class="leger" aria-controls="laterale" aria-expanded="false" style="min-width:44px;padding:8px">{{ icone('menu', titre='Ouvrir le menu') }}</button>
+      <a class="marque" href="/operateur"><img src="/static/logo-picto.png" alt="" style="height:30px"><span>AquaSentinelle <b>CI</b></span></a>
+    </header>
+    <main id="contenu">{% block contenu %}{% endblock %}</main>
+  </div>
+</div>
+{% else %}
+<header class="entete-public">
+  <div class="interieur">
+    <a class="marque" href="/"><img src="/static/logo-picto.png" alt=""><span>AquaSentinelle <b>CI</b></span></a>
+    <nav class="nav-public" aria-label="Navigation principale">
+      <a href="/" {% if chemin == '/' %}aria-current="page"{% endif %}>{{ icone('gauge') }}Niveaux d'alerte</a>
+      <a href="/carte" {% if chemin == '/carte' %}aria-current="page"{% endif %}>{{ icone('map') }}Carte</a>
+      <a href="/signaler" {% if chemin == '/signaler' %}aria-current="page"{% endif %}>{{ icone('upload') }}Signaler</a>
+      <a href="/prevention" {% if chemin == '/prevention' %}aria-current="page"{% endif %}>{{ icone('shield-check') }}Consignes</a>
+      <a href="/abonnement" {% if chemin == '/abonnement' %}aria-current="page"{% endif %}>{{ icone('bell') }}Alertes SMS</a>
+      <a href="/pluviometre" {% if chemin == '/pluviometre' %}aria-current="page"{% endif %}>{{ icone('cloud-rain') }}Pluviomètre</a>
+    </nav>
+    <a class="bouton rouge" href="/aide">{{ icone('siren') }}Urgence</a>
+    <a class="bouton leger" href="/connexion" aria-label="Espace opérateur">{{ icone('lock') }}<span class="masque-mobile">Opérateurs</span></a>
+  </div>
+</header>
+<main id="contenu" class="public">{% block contenu_public %}{{ self.contenu() }}{% endblock %}</main>
+<footer class="pied">
+  <div class="interieur">
+    <div><b>AquaSentinelle CI</b><br>Plateforme d'alerte aux inondations par ville et de suivi des caniveaux. Projet APP3, ESATIC, 2026-2027.</div>
+    <div><b>Urgences</b><br>Sapeurs-pompiers : 180 · Police secours : 170<br>En alerte rouge, les consignes de l'ONPC et de la SODEXAM priment.</div>
+    <div><b>Données</b><br>Pluie : CHIRPS, Open-Meteo, pluviomètres des relais · Débits : GloFAS (Copernicus) · Fond de carte : © OpenStreetMap.</div>
+  </div>
+</footer>
+{% endif %}
+<script src="/static/app.js" defer></script>
+</body>
+</html>

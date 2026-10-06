@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block contenu %}
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <h1 style="flex:1;margin:0">Points de contrôle</h1>
+  <a class="bouton orange" href="/operateur/planche-qr">Planche de QR à imprimer</a>
+</div>
+<div class="tableau-defile" style="margin-top:16px"><table>
+<tr><th>Point</th><th>Zone</th><th>Position</th><th>Description</th><th>État validé</th><th>Dernière observation</th><th>QR</th></tr>
+{% for p in points %}
+<tr><td><b>{{ p.point_id }}</b> {% if p.demo %}<span class="demo">DÉMO</span>{% endif %}</td><td>{{ p.zone_id }}</td>
+<td class="petit">{{ '%.5f'|format(p.lat) }}, {{ '%.5f'|format(p.lon) }}</td><td class="petit">{{ p.description or '' }}</td>
+<td>{% if p.classe and not p.perime %}{{ CLASSES[p.classe] }}{% elif p.classe %}<span class="petit">{{ CLASSES[p.classe] }} (périmé)</span>{% else %}—{% endif %}</td>
+<td>{{ p.recu_le.strftime('%d/%m/%Y') if p.recu_le else 'jamais' }}</td>
+<td><a href="/operateur/points/{{ p.point_id }}/qr.png" target="_blank">QR</a> · <a href="/r/{{ p.point_id }}" target="_blank">formulaire</a></td></tr>
+{% endfor %}
+</table></div>
+
+<h2>Ajouter un point</h2>
+<form method="post" class="carte" style="max-width:640px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Zone</label><select name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select>
+  <div style="display:flex;gap:10px"><div style="flex:1"><label>Latitude</label><input type="number" step="any" name="lat" required placeholder="5.3365"></div>
+  <div style="flex:1"><label>Longitude</label><input type="number" step="any" name="lon" required placeholder="-4.0390"></div></div>
+  <label>Description (repère, accès, tronçon)</label><input type="text" name="description" maxlength="300">
+  <p class="petit">L'identifiant est attribué automatiquement (ex. ATT-004) : c'est lui que l'on peint au pochoir.</p>
+  <button>Créer le point</button>
+</form>
+{% endblock %}

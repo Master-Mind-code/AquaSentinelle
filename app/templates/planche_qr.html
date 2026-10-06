@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block contenu %}
+<div class="pas-imprimer">
+  <h1>Planche de QR codes</h1>
+  <p class="petit">Imprimer (Ctrl+P) puis découper : chaque carré sert de modèle pour le pochoir. Le QR ouvre le formulaire du relais pour ce point.
+  Adresse codée : <b>{{ base_url }}</b> (réglage BASE_URL) — elle doit être joignable depuis les téléphones des relais.</p>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px">
+{% for p in points %}
+  <div style="border:2px dashed #3E4C59;border-radius:8px;padding:14px;text-align:center;background:#fff;break-inside:avoid">
+    <div style="font:800 34px/1.1 'Arial Black',Arial,sans-serif;letter-spacing:3px;color:#14202B">{{ p.id }}</div>
+    <img src="/operateur/points/{{ p.id }}/qr.png" alt="QR {{ p.id }}" style="width:190px;height:190px;margin-top:8px">
+    <div class="petit" style="word-break:break-all">{{ url_point(p.id) }}</div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

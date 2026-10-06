@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block contenu %}
+<div class="mobile">
+<h1>Recevoir les alertes par SMS</h1>
+{% if ok == 'abonne' %}<div class="ok-boite">Inscription enregistrée. Envoyez STOP à tout moment pour arrêter.</div>{% endif %}
+{% if ok == 'desabonne' %}<div class="ok-boite">Désabonnement enregistré.</div>{% endif %}
+<form method="post" class="carte">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="zone">Votre commune</label>
+  <select id="zone" name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select>
+  <label for="tel">Numéro de téléphone</label>
+  <input id="tel" type="tel" name="telephone" required placeholder="07 00 00 00 00">
+  <div class="choix" style="margin-top:14px"><label><input type="checkbox" name="consentement" value="oui">
+    J'accepte de recevoir les alertes d'inondation pour cette commune. Mon numéro est chiffré et ne sert qu'à cela.</label></div>
+  <p style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+    <button class="orange" name="action" value="abonner">M'inscrire</button>
+    <button class="leger" name="action" value="desabonner">Me désabonner</button>
+  </p>
+</form>
+<p class="petit">Au plus quelques messages par jour, seulement quand le niveau change. Les alertes rouges sont validées par un opérateur avant envoi.</p>
+</div>
+{% endblock %}

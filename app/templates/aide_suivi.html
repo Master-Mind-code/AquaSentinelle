@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titre %}Suivi de votre demande · AquaSentinelle{% endblock %}
+{% block tete %}<meta http-equiv="refresh" content="60">{% endblock %}
+{% block contenu %}
+<div class="mobile">
+<h1>Demande n° {{ d.id }}</h1>
+<div class="{{ 'ok-boite' if d.statut in ('traitee', 'close') else 'info-boite' }}" role="status">{{ icone('clipboard-check') }}<div>
+  <b>{{ statuts[d.statut] }}</b><br>{{ situations[d.situation] }} · envoyée à {{ d.recu_le.strftime('%H:%M') }} · mise à jour à {{ d.maj_le.strftime('%H:%M') }}
+  {% if d.note %}<br>Message des opérateurs : {{ d.note }}{% endif %}</div></div>
+<section class="carte" style="border:2px solid #B91C1C;text-align:center">
+  <p style="margin:0 0 10px"><b>Le danger augmente ou personne ne vient ?</b></p>
+  <a class="bouton rouge" href="tel:180">{{ icone('phone') }}Appeler le 180</a>
+</section>
+<ol class="etapes" aria-label="Étapes du traitement">
+  {% for cle, lib in statuts.items() if cle != 'close' %}<li><b>{{ loop.index }}</b>{{ lib }}{% if cle == d.statut %} ←{% endif %}</li>{% endfor %}
+</ol>
+<p class="petit">Gardez cette page : elle se met à jour toute seule chaque minute. Son adresse est votre lien de suivi personnel.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titre %}Point {{ point.id }} · AquaSentinelle{% endblock %}
+{% block contenu %}
+<div class="mobile">
+<p class="sur-titre">Point de contrôle {% if point.demo %}<span class="demo">DÉMO</span>{% endif %}</p>
+<h1>{{ point.id }} · {{ point.zone }}</h1>
+{% if point.description %}<p class="petit">{{ icone('map-pin', 'petite') }} {{ point.description }}</p>{% endif %}
+{% if bot %}<p><a class="bouton leger" href="https://t.me/{{ bot }}?start={{ point.id }}">{{ icone('send') }}Signaler plutôt par Telegram</a></p>{% endif %}
+
+<ol class="etapes" aria-label="Étapes"><li><b>1</b>Photo</li><li><b>2</b>Questions</li><li><b>3</b>Envoi</li></ol>
+
+<form method="post" enctype="multipart/form-data" class="carte">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <h2 style="margin-top:0">1. Photo du caniveau</h2>
+  <div class="zone-photo">
+    <input id="photo" class="fichier-cache" type="file" name="photo" accept="image/*" capture="environment">
+    <label for="photo" class="bouton" style="margin:0;color:#fff">{{ icone('camera') }}Prendre la photo</label>
+    <p class="aide">Cadrez le repère peint (bande et carré orange) à la distance du gabarit. Évitez de photographier des personnes.</p>
+    <img id="apercu" alt="Aperçu de la photo choisie" hidden>
+  </div>
+
+  <h2>2. Ce que vous voyez</h2>
+  <fieldset style="border:0;padding:0;margin:0">
+    <legend style="font-weight:600;margin-bottom:6px">De l'eau stagne-t-elle ?</legend>
+    <div class="choix"><label><input type="radio" name="eau" value="oui">Oui</label><label><input type="radio" name="eau" value="non">Non</label></div>
+  </fieldset>
+  <fieldset style="border:0;padding:0;margin:14px 0 0">
+    <legend style="font-weight:600;margin-bottom:6px">Des déchets sont-ils visibles dans le caniveau ?</legend>
+    <div class="choix"><label><input type="radio" name="dechets" value="oui">Oui</label><label><input type="radio" name="dechets" value="non">Non</label></div>
+  </fieldset>
+  <fieldset style="border:0;padding:0;margin:14px 0 0">
+    <legend style="font-weight:600;margin-bottom:6px">Selon vous, le caniveau est…</legend>
+    <div class="choix">
+      <label><input type="radio" name="avis" value="propre">Propre</label>
+      <label><input type="radio" name="avis" value="partiel">Partiellement bouché</label>
+      <label><input type="radio" name="avis" value="bouche">Bouché</label>
+    </div>
+    <p class="aide">Sans photo, cette réponse est obligatoire.</p>
+  </fieldset>
+
+  <h2>3. Vous</h2>
+  <label for="pseudo">Votre pseudo</label>
+  <input id="pseudo" type="text" name="pseudo" maxlength="60" autocomplete="nickname" value="{{ relais.pseudo if relais else '' }}">
+  <p class="aide">Par exemple Kouadio-Mossikro. Il apparaît aux opérateurs, pas au public.</p>
+  <label for="tel">Téléphone (facultatif)</label>
+  <input id="tel" type="tel" name="telephone" autocomplete="tel" inputmode="tel">
+  <p class="aide">Chiffré, il sert seulement à reconnaître vos envois pour fiabiliser vos signalements.</p>
+
+  <div class="choix" style="margin-top:16px"><label><input type="checkbox" name="consentement" value="oui" required>
+    J'accepte que cette photo serve uniquement à suivre l'état des caniveaux. Les visages sont floutés automatiquement.</label></div>
+  <p style="margin-top:18px"><button style="width:100%">{{ icone('send') }}Envoyer le signalement</button></p>
+</form>
+<p class="petit">{{ icone('shield-check', 'petite') }} L'heure du signalement est fixée par le serveur. Données protégées (loi n° 2013-450).</p>
+</div>
+{% endblock %}

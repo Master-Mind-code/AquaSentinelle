@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titre %}Carte des risques · AquaSentinelle CI{% endblock %}
+{% block tete %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% endblock %}
+{% block contenu %}
+<div class="entete-page"><div>
+  <p class="sur-titre">Carte</p>
+  <h1>Zones à risque, inondations signalées et lieux sûrs</h1>
+  <p class="petit">Signalements vérifiés des dernières 48 h pour les inondations, 7 jours pour les dangers. Lieux sûrs saisis par les autorités locales.</p>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+  <a class="bouton leger" href="/signaler">{{ icone('upload') }}Signaler</a>
+  <a class="bouton rouge" href="/aide">{{ icone('siren') }}Je suis en danger</a>
+</div></div>
+
+<fieldset class="carte" style="padding:10px 14px;margin-bottom:12px">
+  <legend class="petit" style="padding:0 4px">Afficher</legend>
+  <div class="choix" id="couches">
+    <label><input type="checkbox" value="zones" checked>Niveaux d'alerte</label>
+    <label><input type="checkbox" value="signalements" checked>Inondations et dangers signalés</label>
+    <label><input type="checkbox" value="lieux" checked>Lieux sûrs</label>
+    <label><input type="checkbox" value="rivieres">Stations de rivière</label>
+    <label><input type="checkbox" value="capteurs">Capteurs</label>
+  </div>
+</fieldset>
+<div id="carte" style="height:min(70vh,640px)" role="application" aria-label="Carte des risques d'inondation"></div>
+<div class="legende">
+  <span class="niveau vert">Vert</span><span class="niveau orange">Orange</span><span class="niveau rouge">Rouge</span>
+  <span><span class="pastille" style="background:#B91C1C;border-radius:3px"></span>Inondation ou danger signalé</span>
+  <span><span class="pastille" style="background:#15803D;border:2px solid #fff;outline:2px solid #15803D"></span>Lieu sûr</span>
+  <span><span class="pastille" style="background:#0369A1;border-radius:2px;transform:rotate(45deg)"></span>Station de rivière</span>
+  <span><span class="pastille" style="background:#7C3AED"></span>Capteur de niveau</span>
+</div>
+<p class="petit">Cliquez sur une ville pour voir les inondations passées documentées. Données de démonstration marquées « DÉMO ».</p>
+
+<script>
+const COUL = {vert: "#15803D", orange: "#C2410C", rouge: "#B91C1C"};
+const NOM = {vert: "Vert", orange: "Orange", rouge: "Rouge"};
+const echap = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const carte = L.map("carte").setView([7.6, -5.5], 7);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© contributeurs OpenStreetMap"}).addTo(carte);
+const couches = {zones: L.layerGroup().addTo(carte), signalements: L.layerGroup().addTo(carte), lieux: L.layerGroup().addTo(carte),
+                 rivieres: L.layerGroup(), capteurs: L.layerGroup()};
+document.querySelectorAll("#couches input").forEach(c => c.addEventListener("change", () =>
+  c.checked ? couches[c.value].addTo(carte) : carte.removeLayer(couches[c.value])));
+const pastille = (couleur, forme) => L.divIcon({className: "", iconSize: [22, 22],
+  html: `<div style="width:18px;height:18px;background:${couleur};border:2px solid #fff;box-shadow:0 0 0 1px ${couleur};border-radius:${forme}"></div>`});
+
+Promise.all([fetch("/api/zones").then(r => r.json()), fetch("/api/carte").then(r => r.json())]).then(([zones, d]) => {
+  zones.forEach(z => {
+    const n = z.niveau_annonce || z.niveau_calcule, h = d.historique[z.id];
+    const passe = h ? `<br><b>${h.nombre} inondation(s) documentée(s)</b>, la dernière le ${echap(h.derniere)}<ul style="padding-left:18px;margin:4px 0">` +
+      h.liste.map(e => `<li>${echap(e.date)} : ${echap(e.note)}</li>`).join("") + "</ul>" : "<br>Aucune inondation documentée dans notre base.";
+    L.circle([z.lat, z.lon], {radius: z.region === "District d'Abidjan" ? 1800 : 7000, color: COUL[n] || "#94A3B8", weight: 2, fillOpacity: .15})
+     .addTo(couches.zones).bindPopup(`<b>${echap(z.nom)}</b> · niveau <b>${NOM[n] || "non calculé"}</b>${passe}`);
+  });
+  carte.fitBounds(zones.map(z => [z.lat, z.lon]), {padding: [30, 30]});
+  d.signalements.forEach(s => L.marker([s.lat, s.lon], {icon: pastille("#B91C1C", "3px")}).addTo(couches.signalements)
+    .bindPopup(`<b>${echap(s.libelle)}</b><br>${echap(s.description)}<br><span style="color:#475569">Signalé le ${new Date(s.recu_le).toLocaleString("fr-FR")}</span>`));
+  d.lieux.forEach(l => L.marker([l.lat, l.lon], {icon: pastille("#15803D", "50%")}).addTo(couches.lieux)
+    .bindPopup(`<b>${echap(l.nom)}</b>${l.demo ? ' <span class="demo">DÉMO</span>' : ""}<br>Lieu sûr${l.capacite ? " · environ " + l.capacite + " personnes" : ""}<br>${echap(l.description)}`));
+  d.capteurs.forEach(c => L.marker([c.lat, c.lon], {icon: pastille("#7C3AED", "50%")}).addTo(couches.capteurs)
+    .bindPopup(`<b>Capteur ${echap(c.id)}</b>${c.simule ? ' <span class="demo">SIMULÉ</span>' : ""}<br>${echap(c.nom)}<br>` +
+      (c.niveau_cm != null ? `Niveau : <b>${c.niveau_cm.toFixed(0)} cm</b> (orange ${c.seuil_orange_cm}, rouge ${c.seuil_rouge_cm})` : "Pas encore de mesure")));
+});
+fetch("/api/rivieres").then(r => r.json()).then(rs => rs.forEach(r => {
+  L.marker([r.lat, r.lon], {icon: L.divIcon({className: "", iconSize: [18, 18],
+    html: '<div style="width:14px;height:14px;transform:rotate(45deg);background:#0369A1;border:2px solid #fff"></div>'})})
+   .addTo(couches.rivieres).bindPopup(`<b>${echap(r.nom)}</b> (${echap(r.ville)})<br>` +
+     (r.pic_prevu != null ? `Débit maximal prévu sur 7 jours : <b>${r.pic_prevu.toFixed(0)} m³/s</b>` : ""));
+}));
+</script>
+{% endblock %}
