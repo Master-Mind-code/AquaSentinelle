@@ -93,4 +93,5 @@ Après la démonstration : python scripts/demo_telephone.py --arret""")
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")   # console Windows (cp1252) : blocs du QR code et accents
     arret() if "--arret" in sys.argv else demarrer()

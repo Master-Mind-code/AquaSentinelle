@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% from "_gouti.html" import gouti %}
+{% block titre %}Comment utiliser AquaSentinelle · vidéo{% endblock %}
+{% block contenu %}
+{#- Vidéo animée en HTML : légère sur un réseau mobile (aucun fichier vidéo à télécharger), sous-titrée,
+    commentée par la synthèse vocale du téléphone (Web Speech, sans internet une fois la page chargée).
+    Chaque scène : data-duree (secondes), data-texte (sous-titre et voix). Comportement : app/static/video.js. -#}
+<p class="sur-titre">Guide en vidéo</p>
+<h1>AquaSentinelle en 2 minutes</h1>
+<p class="petit">Gouti vous montre comment voir les niveaux d'alerte, recevoir les SMS, signaler un problème et demander de l'aide.</p>
+
+<div class="video" id="video" aria-roledescription="vidéo animée" aria-label="Guide d'utilisation en 7 chapitres">
+  <div class="video-ecran">
+
+    <div class="scene scene-intro" data-titre="Bonjour" data-duree="11"
+         data-texte="Bonjour ! Je suis Gouti, la sentinelle de l'eau. En deux minutes, je vous montre comment AquaSentinelle vous protège des inondations.">
+      <div class="sc-gouti">{{ gouti('salut', 200) }}</div>
+      <div class="sc-texte"><p class="sc-sur">AquaSentinelle CI</p><p class="sc-grand">Anticiper · Alerter · Protéger</p></div>
+    </div>
+
+    <div class="scene" data-titre="Les couleurs" data-duree="20"
+         data-texte="Sur la page d'accueil, chaque ville a une couleur. Vert : rien à signaler. Orange : soyez prêts et évitez les bas-fonds. Rouge : danger, éloignez-vous des caniveaux et des pentes.">
+      <div class="sc-gouti">{{ gouti('montre', 150) }}</div>
+      <div class="sc-pile">
+        <div class="sc-carte a1"><span class="niveau vert">Vert</span><b>Rien à signaler</b></div>
+        <div class="sc-carte a2"><span class="niveau orange">Orange</span><b>Soyez prêts</b></div>
+        <div class="sc-carte a3"><span class="niveau rouge">Rouge</span><b>Éloignez-vous</b></div>
+      </div>
+    </div>
+
+    <div class="scene" data-titre="Les alertes SMS" data-duree="20"
+         data-texte="Pour être prévenu même la nuit, touchez « Alertes SMS », choisissez votre commune et entrez votre numéro. Le SMS arrive même sans internet. Pour arrêter, envoyez STOP.">
+      <div class="sc-gouti">{{ gouti('alerte', 150) }}</div>
+      <div class="tel">
+        <div class="tel-ecran">
+          <p class="tel-heure">02:14</p>
+          <div class="tel-sms a1"><b>ALERTE ROUGE - Attécoubé.</b> Quittez les bas-fonds et les pentes instables et rejoignez un point sûr.</div>
+          <p class="tel-note a2">{{ icone('bell', 'petite') }} Même sans internet</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="scene" data-titre="Signaler" data-duree="22"
+         data-texte="Vous voyez une route inondée ou un caniveau bouché ? Touchez « Signaler », choisissez le problème, prenez une photo et indiquez l'endroit. Quand un voisin confirme, votre signalement apparaît sur la carte.">
+      <div class="sc-gouti">{{ gouti('montre', 150) }}</div>
+      <div class="tel">
+        <div class="tel-ecran">
+          <p class="tel-titre">Signaler un problème</p>
+          <p class="tel-choix a1">Route inondée</p>
+          <p class="tel-choix actif a2">Caniveau bouché</p>
+          <p class="tel-bouton a3">{{ icone('camera', 'petite') }} Photo</p>
+          <p class="tel-bouton a4">{{ icone('map-pin', 'petite') }} Ma position</p>
+          <p class="tel-bouton envoi a5">{{ icone('send', 'petite') }} Envoyer</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="scene" data-titre="Les relais" data-duree="20"
+         data-texte="Vous êtes relais de quartier ? Scannez le QR code peint près du caniveau, photographiez le repère orange et répondez à trois questions. Une minute suffit.">
+      <div class="sc-gouti">{{ gouti('salut', 150) }}</div>
+      <div class="sc-caniveau">
+        <div class="caniveau"><span class="repere"></span><span class="qr">{{ icone('qr-code') }}</span></div>
+        <p class="sc-etiquette a1">{{ icone('qr-code', 'petite') }} Scanner</p>
+        <p class="sc-etiquette a2">{{ icone('camera', 'petite') }} Photographier</p>
+        <p class="sc-etiquette a3">{{ icone('clipboard-check', 'petite') }} 3 questions</p>
+      </div>
+    </div>
+
+    <div class="scene" data-titre="Urgence" data-duree="16"
+         data-texte="En danger ? Appelez d'abord le 180. Le bouton rouge « Urgence » envoie en plus votre position aux opérateurs.">
+      <div class="sc-gouti">{{ gouti('alerte', 150) }}</div>
+      <div class="sc-pile">
+        <div class="sc-urgence a1">{{ icone('phone') }} Appelez le <b>180</b></div>
+        <div class="sc-carte a2"><span class="bouton rouge" style="pointer-events:none">{{ icone('siren') }}Urgence</span><b>Envoie votre position</b></div>
+      </div>
+    </div>
+
+    <div class="scene scene-intro" data-titre="Merci" data-duree="10"
+         data-texte="Anticiper, alerter, protéger. Inscrivez-vous aux alertes SMS, et parlez-en à vos voisins. À bientôt !">
+      <div class="sc-gouti">{{ gouti('salut', 200) }}</div>
+      <div class="sc-texte"><p class="sc-grand">Merci, et prenez soin de vous !</p>
+        <p class="sc-actions"><a class="bouton" href="/abonnement">{{ icone('bell') }}Recevoir les alertes</a></p></div>
+    </div>
+
+    <button type="button" class="video-lancer" id="video-lancer">{{ icone('play') }}<span>Lancer la vidéo</span></button>
+  </div>
+
+  <p class="video-sous-titres" id="video-sous-titres" aria-live="polite"></p>
+
+  <div class="video-commandes">
+    <button type="button" id="video-lecture" class="leger" aria-label="Lecture">{{ icone('play') }}</button>
+    <div class="video-barre" id="video-barre" aria-hidden="true"><span></span></div>
+    <span class="video-temps chiffres" id="video-temps">0:00 / 2:00</span>
+    <button type="button" id="video-son" class="leger" aria-pressed="true" aria-label="Couper la voix">{{ icone("volume-2") }}<span class="masque-mobile">Voix</span></button>
+  </div>
+  <ol class="video-chapitres" id="video-chapitres" aria-label="Chapitres"></ol>
+</div>
+
+<p class="petit">La voix utilise celle de votre téléphone ; sans voix française installée, seuls les sous-titres s'affichent.
+  Vous préférez lire ? Le <a href="/?guide=1">guide en 5 étapes</a> dit la même chose.</p>
+<script src="/static/video.js" defer></script>
+{% endblock %}

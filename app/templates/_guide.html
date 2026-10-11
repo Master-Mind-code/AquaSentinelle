@@ -1,0 +1,96 @@
+{#- Accompagnement des visiteurs du portail public : guide de première visite (Gouti) et bouton d'aide par page.
+    Le guide s'ouvre seul à la première visite, jamais sur /aide (urgence) ; il se rouvre depuis le bouton d'aide.
+    Comportement : app/static/guide.js ; vidéo : /guide. -#}
+{% from "_gouti.html" import gouti %}
+{% set page_relais = chemin.startswith('/r/') %}
+{% set conseils = {
+  '/': "Cherchez votre ville : sa couleur donne le niveau. Vert, rien à faire ; orange, soyez prêts ; rouge, éloignez-vous des caniveaux et des pentes.",
+  '/carte': "Déplacez la carte avec le doigt et touchez un symbole pour voir le détail : signalements vérifiés, lieux sûrs, niveaux des villes.",
+  '/signaler': "Quatre étapes : choisissez le problème, indiquez l'endroit (bouton GPS ou toucher la carte), ajoutez une photo si possible, puis envoyez.",
+  '/prevention': "Lisez ces consignes avant la saison des pluies : en alerte rouge, il sera trop tard pour les découvrir.",
+  '/abonnement': "Choisissez votre commune et entrez votre numéro : vous recevrez un SMS en cas d'alerte, même sans internet. Envoyez STOP pour arrêter.",
+  '/pluviometre': "Relevez votre pluviomètre chaque matin à la même heure, notez les millimètres, puis videz-le.",
+  '/aide': "Danger immédiat : appelez d'abord le 180. Ce formulaire envoie en plus votre position aux opérateurs.",
+  '/guide': "Touchez « Lancer la vidéo ». Le son se coupe avec le bouton haut-parleur ; les sous-titres restent affichés.",
+} %}
+{% set conseil = "Photographiez le repère peint orange, répondez aux trois questions, puis envoyez. Une minute suffit." if page_relais
+                 else conseils.get(chemin, "Le menu du haut mène à tout : niveaux d'alerte, carte, signalement, consignes et alertes SMS.") %}
+
+<dialog class="guide" id="guide" data-jeu="{{ 'relais' if page_relais else 'general' }}" data-auto="{{ 'non' if chemin in ('/aide', '/guide') else 'oui' }}" aria-labelledby="guide-titre-1">
+  <form method="dialog" class="guide-fermer-form"><button class="guide-fermer leger" aria-label="Fermer le guide">{{ icone('x') }}</button></form>
+  {% if page_relais %}
+  <div class="guide-etape" data-etape="1">
+    {{ gouti('salut', 120) }}
+    <h2 id="guide-titre-1">Merci d'être relais !</h2>
+    <p>Je suis <b>Gouti</b>. Vous venez de scanner un point de contrôle : votre photo aide à savoir si ce caniveau risque de déborder.</p>
+  </div>
+  <div class="guide-etape" data-etape="2" hidden>
+    {{ gouti('montre', 120) }}
+    <h2 id="guide-titre-2">1. La photo</h2>
+    <p>Touchez <b>Prendre la photo</b> et cadrez le <b>repère peint orange</b>, tout le caniveau visible. Évitez de photographier des personnes.</p>
+  </div>
+  <div class="guide-etape" data-etape="3" hidden>
+    {{ gouti('montre', 120) }}
+    <h2 id="guide-titre-3">2. Trois questions</h2>
+    <p>De l'eau stagne ? Des déchets ? Le caniveau est propre, partiellement bouché ou bouché ? Répondez simplement, selon ce que vous voyez.</p>
+  </div>
+  <div class="guide-etape" data-etape="4" hidden>
+    {{ gouti('salut', 120) }}
+    <h2 id="guide-titre-4">3. Envoyez</h2>
+    <p>Un pseudo suffit ; le téléphone est facultatif et chiffré. Si un autre relais confirme, le caniveau est signalé aux équipes de curage.</p>
+  </div>
+  {% else %}
+  <div class="guide-etape" data-etape="1">
+    {{ gouti('salut', 120) }}
+    <h2 id="guide-titre-1">Bonjour, je suis Gouti !</h2>
+    <p>Je vous aide à vous protéger des inondations. Voici les <b>4 choses à savoir</b>, en 30 secondes.</p>
+  </div>
+  <div class="guide-etape" data-etape="2" hidden>
+    {{ gouti('montre', 120) }}
+    <h2 id="guide-titre-2">1. Les trois couleurs</h2>
+    <ul class="guide-niveaux">
+      <li><span class="niveau vert">Vert</span> Rien à signaler.</li>
+      <li><span class="niveau orange">Orange</span> Soyez prêts, évitez les bas-fonds.</li>
+      <li><span class="niveau rouge">Rouge</span> Danger : éloignez-vous des caniveaux et des pentes.</li>
+    </ul>
+  </div>
+  <div class="guide-etape" data-etape="3" hidden>
+    {{ gouti('alerte', 120) }}
+    <h2 id="guide-titre-3">2. Être prévenu, même la nuit</h2>
+    <p>Touchez <b>{{ icone('bell', 'petite') }} Alertes SMS</b>, choisissez votre commune, entrez votre numéro. Le SMS arrive <b>même sans internet</b>. STOP pour arrêter.</p>
+  </div>
+  <div class="guide-etape" data-etape="4" hidden>
+    {{ gouti('montre', 120) }}
+    <h2 id="guide-titre-4">3. Signaler un problème</h2>
+    <p>Route inondée, caniveau bouché ? Touchez <b>{{ icone('upload', 'petite') }} Signaler</b>, prenez une photo, indiquez l'endroit. Quand un voisin confirme, c'est sur la carte.</p>
+  </div>
+  <div class="guide-etape" data-etape="5" hidden>
+    {{ gouti('alerte', 120) }}
+    <h2 id="guide-titre-5">4. En danger ?</h2>
+    <p><b>Appelez d'abord le 180.</b> Le bouton rouge <b>Urgence</b> envoie en plus votre position aux opérateurs.</p>
+  </div>
+  {% endif %}
+  <div class="guide-pied">
+    <div class="guide-points" aria-hidden="true"></div>
+    <p class="guide-compte petit" aria-live="polite"></p>
+    <div class="guide-actions">
+      <button type="button" class="leger" data-guide="precedent">Précédent</button>
+      <button type="button" data-guide="suivant">Suivant</button>
+      <button type="button" data-guide="fin" hidden>C'est parti !</button>
+    </div>
+    {% if not page_relais %}<p class="guide-video"><a href="/guide">{{ icone('play', 'petite') }} Voir la vidéo (2 min)</a></p>{% endif %}
+  </div>
+</dialog>
+
+<div class="gouti-aide pas-imprimer">
+  <div class="gouti-bulle" id="gouti-bulle" role="region" aria-label="Aide de Gouti" hidden>
+    <p>{{ conseil }}</p>
+    <p class="gouti-bulle-actions">
+      <button type="button" class="leger" data-guide="ouvrir">{{ icone('circle-help', 'petite') }}Revoir le guide</button>
+      {% if chemin != '/guide' %}<a class="bouton leger" href="/guide">{{ icone('play', 'petite') }}La vidéo</a>{% endif %}
+    </p>
+  </div>
+  <button type="button" class="gouti-bouton" id="gouti-bouton" aria-controls="gouti-bulle" aria-expanded="false" aria-label="Besoin d'aide ? Gouti vous explique cette page">
+    {{ gouti('salut', 52) }}
+  </button>
+</div>
