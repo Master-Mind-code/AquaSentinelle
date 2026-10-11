@@ -33,6 +33,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      - ./app:/app/app         # code de l'application (synchronisation dynamique)
       - ./data:/app/data       # photos, cache CHIRPS, journal des envois
       - ./models:/app/models   # modèle IA (caniveaux.onnx)
       - ./config:/app/config

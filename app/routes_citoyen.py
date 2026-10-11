@@ -33,6 +33,12 @@ def prevention(request: Request):
     return rendu(request, "prevention.html")
 
 
+@router.get("/guide")
+def guide_video(request: Request):
+    """Mode d'emploi en vidéo animée, présenté par Gouti (voir aussi le guide de première visite, _guide.html)."""
+    return rendu(request, "guide_video.html")
+
+
 # --- Carte publique ------------------------------------------------------------------------------
 
 @router.get("/carte")

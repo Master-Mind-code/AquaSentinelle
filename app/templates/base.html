@@ -7,7 +7,7 @@
 <title>{% block titre %}AquaSentinelle CI{% endblock %}</title>
 <link rel="icon" href="/static/logo-picto.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap">
 <link rel="stylesheet" href="/static/style.css">
 {% block tete %}{% endblock %}
 </head>
@@ -68,6 +68,7 @@
       <a href="/prevention" {% if chemin == '/prevention' %}aria-current="page"{% endif %}>{{ icone('shield-check') }}Consignes</a>
       <a href="/abonnement" {% if chemin == '/abonnement' %}aria-current="page"{% endif %}>{{ icone('bell') }}Alertes SMS</a>
       <a href="/pluviometre" {% if chemin == '/pluviometre' %}aria-current="page"{% endif %}>{{ icone('cloud-rain') }}Pluviomètre</a>
+      <a href="/guide" {% if chemin == '/guide' %}aria-current="page"{% endif %}>{{ icone('circle-help') }}Mode d'emploi</a>
     </nav>
     <a class="bouton rouge" href="/aide">{{ icone('siren') }}Urgence</a>
     <a class="bouton leger" href="/connexion" aria-label="Espace opérateur">{{ icone('lock') }}<span class="masque-mobile">Opérateurs</span></a>
@@ -76,11 +77,13 @@
 <main id="contenu" class="public">{% block contenu_public %}{{ self.contenu() }}{% endblock %}</main>
 <footer class="pied">
   <div class="interieur">
-    <div><b>AquaSentinelle CI</b><br>Plateforme d'alerte aux inondations par ville et de suivi des caniveaux. Projet APP3, ESATIC, 2026-2027.</div>
+    <div><b>AquaSentinelle CI</b><br>Plateforme d'alerte aux inondations par ville et de suivi des caniveaux. Projet APP3, ESATIC, 2026-2027.<br><a href="/guide">Mode d'emploi en vidéo</a> · <a href="?guide=1">Revoir le guide</a></div>
     <div><b>Urgences</b><br>Sapeurs-pompiers : 180 · Police secours : 170<br>En alerte rouge, les consignes de l'ONPC et de la SODEXAM priment.</div>
     <div><b>Données</b><br>Pluie : CHIRPS, Open-Meteo, pluviomètres des relais · Débits : GloFAS (Copernicus) · Fond de carte : © OpenStreetMap.</div>
   </div>
 </footer>
+{% include "_guide.html" %}
+<script src="/static/guide.js" defer></script>
 {% endif %}
 <script src="/static/app.js" defer></script>
 </body>

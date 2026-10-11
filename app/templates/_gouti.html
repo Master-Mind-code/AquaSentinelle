@@ -1,0 +1,37 @@
+{#- Gouti, la mascotte : une goutte d'eau au bandeau orange de sentinelle. SVG en ligne, sans dégradé ni id
+    (plusieurs exemplaires par page). Poses : salut (bras qui s'agite), montre (bras tendu vers la droite),
+    neutre, alerte (deux bras levés). Décorative par défaut : le texte à côté porte le message. -#}
+{% macro gouti(pose='neutre', taille=96, classe='') -%}
+<svg class="gouti gouti-{{ pose }} {{ classe }}" width="{{ taille }}" height="{{ (taille * 140 / 120) | round | int }}" viewBox="0 0 120 140" aria-hidden="true" focusable="false">
+  <ellipse cx="60" cy="133" rx="30" ry="5" fill="#0F172A" opacity=".12"/>
+  {%- if pose == 'alerte' %}
+  <path class="bras" d="M24 92 L8 66" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="8" cy="64" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- else %}
+  <path d="M22 98 L12 114" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="11" cy="116" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- endif %}
+  <g class="bras-droit">
+  {%- if pose == 'salut' or pose == 'alerte' %}
+    <path d="M97 92 L112 66" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="113" cy="63" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- elif pose == 'montre' %}
+    <path d="M98 96 L116 92" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="117" cy="91" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- else %}
+    <path d="M98 98 L108 114" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="109" cy="116" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- endif %}
+  </g>
+  <path d="M60 6 C60 6 18 60 18 91 a42 42 0 0 0 84 0 C102 60 60 6 60 6 Z" fill="#0EA5E9" stroke="#0369A1" stroke-width="3"/>
+  <path d="M60 18 C52 30 30 62 28 86 C34 64 50 40 60 26 Z" fill="#7DD3FC" opacity=".7"/>
+  <path d="M30 50 Q60 41 90 50 L93 61 Q60 52 27 61 Z" fill="#EA580C"/>
+  <path d="M84 49 L98 42 L95 55 Z" fill="#C2410C"/>
+  <g class="yeux">
+    <ellipse cx="46" cy="82" rx="9" ry="11" fill="#FFFFFF"/><ellipse cx="74" cy="82" rx="9" ry="11" fill="#FFFFFF"/>
+    <circle cx="{{ 49 if pose == 'montre' else 47 }}" cy="84" r="5" fill="#0F172A"/><circle cx="{{ 77 if pose == 'montre' else 75 }}" cy="84" r="5" fill="#0F172A"/>
+    <circle cx="{{ 50 if pose == 'montre' else 48.5 }}" cy="82" r="1.8" fill="#FFFFFF"/><circle cx="{{ 78 if pose == 'montre' else 76.5 }}" cy="82" r="1.8" fill="#FFFFFF"/>
+  </g>
+  <circle cx="36" cy="98" r="5" fill="#FDBA74" opacity=".7"/><circle cx="84" cy="98" r="5" fill="#FDBA74" opacity=".7"/>
+  {%- if pose == 'alerte' %}
+  <ellipse cx="60" cy="106" rx="6" ry="7" fill="#0F172A"/>
+  {%- else %}
+  <path d="M49 101 Q60 112 71 101" stroke="#0F172A" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+  {%- endif %}
+</svg>
+{%- endmacro %}

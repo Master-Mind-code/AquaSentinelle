@@ -1,50 +1,72 @@
-# AquaSentinelle CI — système de conception (référence)
+# AquaSentinelle CI — Système de Conception (Référence Master)
 
-Établi avec la compétence ui-ux-pro-max (« government public safety emergency alert monitoring dashboard »),
-puis ajusté au produit. Toute page nouvelle suit ce document ; une page qui s'en écarte le justifie dans `pages/<page>.md`.
+Établi et mis à niveau avec la compétence **ui-ux-pro-max** (« water monitoring iot environmental platform / public safety dashboard »).
+Ce document est la Source Unique de Vérité (Master) pour l'ensemble de l'interface publique et de l'espace opérateur.
 
-## Produit
-- **Public** : habitants (souvent sur téléphone, réseau moyen), relais de quartier. Lisibilité et rapidité avant tout.
-- **Opérateurs** : protection civile, mairies, ONAD. Tableau de bord dense mais lisible, décisions sous pression.
-- **Style** : « Accessible & Ethical » (services publics) : contraste élevé, texte ≥ 16 px, focus visibles, WCAG AA minimum.
-- **Écarts assumés par rapport à la recommandation brute** :
-  - couleur principale rouge refusée : le rouge est réservé au niveau d'alerte rouge (sinon l'interface entière « crie ») ;
-  - titres en Fira Code refusés : trop technique pour un portail public → paire « Corporate Trust ».
+---
 
-## Couleurs (variables CSS dans app/static/style.css)
-| Rôle | Valeur | Usage |
-|---|---|---|
-| `--nuit` | #0F172A | texte principal, barre latérale |
-| `--ardoise` | #334155 | texte secondaire |
-| `--doux` | #475569 | texte d'aide (4,6:1 minimum sur fond clair) |
-| `--accent` | #0369A1 | liens, boutons principaux, focus (bleu du logo) |
-| `--fond` | #F8FAFC | fond de page |
-| `--carte` | #FFFFFF | cartes, tableaux |
-| `--bord` | #E2E8F0 | bordures |
-| `--marque` | #EA580C | touche orange du logo, avec parcimonie |
-| `--vert` / `--orange` / `--rouge` | #15803D / #C2410C / #B91C1C | **niveaux d'alerte uniquement**, toujours avec mot + icône |
+## 1. Direction Artistique & Style
 
-## Typographie
-- Titres : **Lexend** 600 ; texte : **Source Sans 3** 400/600 ; repli système.
-- Base 16 px, interligne 1,5 ; chiffres `tabular-nums` dans les tableaux et indicateurs.
-- Échelle : 14 (aide) / 16 (texte) / 18 (sous-titre) / 22 (titre de section) / 28 (titre de page) / 36 (indicateur).
+- **Style Principal** : **Glassmorphism / Bento Box Grid**
+  - Cartes modulaires Bento avec asymétrie structurée et hiérarchie visuelle claire.
+  - Arrière-plans en verre dépoli (`backdrop-filter: blur(16px)` / `-webkit-backdrop-filter`), bordures subtiles (`rgba(255, 255, 255, 0.09)`) et lueurs ambiantes directionnelles.
+  - Élévation douce au survol (`transform: translateY(-2px)` et intensification des bordures néon/cyan).
+- **Ambiance** : **Dark Tech (#0B1120 / #0F172A)** avec accents d'état dynamiques haute visibilité.
+- **Accents d'état dynamiques** :
+  - **Cyan dynamique (`#38BDF8`)** : Accent principal, focus, liens, interactions clés (ratio de contraste > 8:1).
+  - **Vert Sécurité (`#22C55E` / `#4ADE80`)** : Situation normale, niveau d'alerte vert, validation (ratio > 7:1).
+  - **Orange Vigilance (`#FB923C`)** : Vigilance météo/crues, alertes modérées (ratio > 7:1).
+  - **Rouge Urgence (`#EF4444` / `#F87171`)** : Alerte rouge, évacuation, danger critique (ratio > 5:1).
 
-## Composants
-- **Badge de niveau** : pastille couleur + icône + mot (« Vert », « Orange », « Rouge ») — jamais la couleur seule.
-- **Boutons** : principal (accent), danger (rouge, seulement pour une action irréversible ou une alerte rouge), secondaire
-  (contour). Hauteur ≥ 44 px, état de chargement (désactivé + libellé « … ») à l'envoi.
-- **Indicateurs** (tableau de bord) : grand chiffre + libellé + lien vers l'action.
-- **Tableaux** : en-tête collant, lignes séparées, nombres alignés à droite, défilement horizontal sur mobile.
-- **Icônes** : Lucide (`app/static/icones.svg`), 20 px, trait 2 ; pas d'émoji.
+---
 
-## Mise en page
-- Public : en-tête + contenu centré (max 1180 px) + pied de page avec sources et mentions.
-- Opérateur : barre latérale groupée (Supervision, Analyse, Terrain, Administration), compteurs sur Alertes et
-  Signalements ; tiroir sur mobile (< 960 px).
-- Points de rupture : 375 / 768 / 960 / 1440 px ; aucun défilement horizontal de page.
+## 2. Variables & Tokens (CSS : `app/static/style.css`)
 
-## Mouvement
-- Transitions 150–200 ms (couleur, ombre) ; aucune animation décorative ; `prefers-reduced-motion` respecté.
+| Rôle | Token CSS | Valeur Hex / RGBA | Usage & Accessibilité |
+|---|---|---|---|
+| Fond principal | `--fond` | `#0B1120` | Fond global Dark Tech avec mesh radial |
+| Surface sombre | `--nuit` | `#0F172A` | En-têtes, barres d'outils, modales |
+| Verre / Carte Bento | `--carte` | `rgba(30, 41, 59, 0.68)` | Surfaces de cartes avec flou 16px |
+| Bordure subtile | `--bord` | `rgba(255, 255, 255, 0.09)` | Séparateurs, délimitations de cartes |
+| Bordure active | `--bord-accent` | `rgba(56, 189, 248, 0.40)` | Cartes en vedette, focus, états actifs |
+| Texte principal | `--texte` | `#F8FAFC` | Texte lisible haute fidélité (ratio > 15:1) |
+| Texte secondaire | `--ardoise` | `#CBD5E1` | Paragraphes, sous-titres (ratio > 10:1) |
+| Texte d'aide | `--doux` | `#94A3B8` | Métadonnées, légendes (ratio > 5.5:1, conforme AA) |
+| Accent Cyan | `--accent` | `#38BDF8` | Boutons primaires, liens, indicateurs vivants |
+| Alerte Vert | `--vert` | `#22C55E` | Pastille et contour niveau Vert |
+| Alerte Orange | `--orange` | `#FB923C` | Pastille et contour niveau Orange |
+| Alerte Rouge | `--rouge` | `#EF4444` | Pastille, cartes en alerte rouge, bouton Urgence |
+| Marque logo | `--marque` | `#EA580C` | Bandeau de Gouti et accentuation du logo |
 
-## À éviter
-- Ombres complexes, effets 3D, dégradés décoratifs ; information portée par la couleur seule ; libellés en placeholder.
+---
+
+## 3. Typographie
+
+- **Police unique** : **Plus Jakarta Sans** (Google Fonts).
+  - Poids utilisés : 400 (normal), 500 (moyen), 600 (semi-gras), 700 (gras), 800 (extra-gras).
+  - Rendu numérique : `tabular-nums` pour tous les compteurs, tableaux de bord et indicateurs de débit/pluie.
+- **Échelle typographique** :
+  - **36 px / 700** : Grands indicateurs KPI (`.indicateur .valeur`).
+  - **30-32 px / 700-800** : Titre principal de page (`h1`).
+  - **22 px / 700** : Titre de section (`h2`).
+  - **18 px / 600** : Titre de composant ou carte (`h3`).
+  - **16 px / 400-500** : Corps de texte (base).
+  - **14 px / 500** : Texte d'aide, badges et métadonnées secondaires (`.petit`, `.aide`).
+
+---
+
+## 4. Vérifications Qualité & Rigueur UX (Checklist ui-ux-pro-max)
+
+1. **Contraste WCAG 2.1 AA/AAA** :
+   - Tous les textes et icônes informatives dépassent le seuil obligatoire de 4.5:1 sur fond sombre (texte principal jusqu'à 15:1).
+   - Aucun texte gris-sur-gris illisible.
+2. **Zones Tactiles Ergonomiques (≥ 44×44 px)** :
+   - Tous les boutons (`button`, `.bouton`), liens de navigation (`nav a`), champs de formulaire (`input`, `select`, `textarea`) et cases à cocher possèdent une zone d'interaction d'au moins 44 px de haut avec espacement adéquat.
+3. **Zéro Émoji pour les Icônes** :
+   - Utilisation exclusive des icônes vectorielles SVG Lucide (`app/static/icones.svg` via le macro Jinja `{{ icone(...) }}`).
+   - Préservation stricte des rôles sémantiques (`aria-hidden="true"` si décoratif, libellé `aria-label` si action seule).
+4. **Prise en charge de `prefers-reduced-motion`** :
+   - Coupe immédiatement toutes les transitions, translations, lueurs pulsantes et animations de la mascotte Gouti lorsque l'utilisateur l'exige au niveau système.
+5. **Disposition Bento Box Responsive** :
+   - Points de rupture adaptatifs : 375 px (mobile), 768 px (tablette), 960 px (tiroir opérateur), 1220 px (desktop).
+   - Zéro défilement horizontal parasite.
