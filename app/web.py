@@ -11,6 +11,7 @@ from markupsafe import Markup, escape
 from sqlalchemy import text
 
 from app.settings import ROOT, reglages
+from src.messages import MODELES
 
 gabarits = Jinja2Templates(directory=ROOT / "app" / "templates")
 NIVEAUX = {"vert": "Vert", "orange": "Orange", "rouge": "Rouge"}
@@ -21,13 +22,25 @@ STATUTS = {"envoyee": "Envoyée", "annulee": "Annulée (pluie retombée)", "reje
 LECTURES = {"observee": "pluie observée", "prevision": "pluie prévue"}
 
 
+def statique(chemin: str) -> str:
+    """URL d'un fichier de app/static suivie de sa date de modification (?v=…) : le navigateur recharge
+    la feuille de style ou le script dès qu'il change, au lieu de garder une ancienne copie en cache."""
+    try:
+        version = int((ROOT / "app" / "static" / chemin).stat().st_mtime)
+    except OSError:
+        return f"/static/{chemin}"
+    return f"/static/{chemin}?v={version}"
+
+
 def icone(nom: str, classe: str = "", titre: str = "") -> Markup:
     """Icône Lucide du sprite app/static/icones.svg. Décorative (aria-hidden) sauf si un titre est donné."""
     aria = f'role="img" aria-label="{escape(titre)}"' if titre else 'aria-hidden="true"'
-    return Markup(f'<svg class="ic {escape(classe)}" {aria}><use href="/static/icones.svg#{escape(nom)}"></use></svg>')
+    sprite = statique("icones.svg")
+    return Markup(f'<svg class="ic {escape(classe)}" {aria}><use href="{sprite}#{escape(nom)}"></use></svg>')
 
 
-gabarits.env.globals.update(NIVEAUX=NIVEAUX, CLASSES=CLASSES, STATUTS=STATUTS, LECTURES=LECTURES, icone=icone)
+gabarits.env.globals.update(NIVEAUX=NIVEAUX, CLASSES=CLASSES, STATUTS=STATUTS, LECTURES=LECTURES, icone=icone,
+                            statique=statique, MESSAGES_SMS=MODELES)
 
 
 def duree(ms: int | None) -> str:
@@ -85,11 +98,14 @@ def verifier_csrf(request: Request, jeton: str) -> None:
 
 
 def rendu(request: Request, gabarit: str, **ctx):
+    # Toutes les pages partagent un seul fichier HTML ; le nom historique
+    # du gabarit sélectionne la branche de contenu correspondante.
+    ctx["page"] = gabarit.removesuffix(".html")
     op = request.session.get("op")
     ctx.update(request=request, csrf=jeton_csrf(request), op=op, chemin=request.url.path,
                base_url=reglages().base_url, bot=reglages().telegram_bot_nom,
                nav=compteurs_navigation() if op else {})
-    return gabarits.TemplateResponse(request, gabarit, ctx)
+    return gabarits.TemplateResponse(request, "index.html", ctx)
 
 
 def operateur(request: Request) -> dict:

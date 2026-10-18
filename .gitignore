@@ -10,3 +10,6 @@ dataset/
 models/*.onnx
 models/*.json
 data/sauvegardes/
+
+# captures et rapports de l'inspecteur de design
+.taste-skill/

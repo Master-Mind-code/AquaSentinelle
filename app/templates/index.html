@@ -1,0 +1,1731 @@
+<!doctype html>
+{% macro gouti(pose='neutre', taille=96, classe='') -%}
+<svg class="gouti gouti-{{ pose }} {{ classe }}" width="{{ taille }}" height="{{ (taille * 140 / 120) | round | int }}" viewBox="0 0 120 140" aria-hidden="true" focusable="false">
+  <ellipse cx="60" cy="133" rx="30" ry="5" fill="#0F172A" opacity=".12"/>
+  {%- if pose == 'alerte' %}
+  <path class="bras" d="M24 92 L8 66" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="8" cy="64" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- else %}
+  <path d="M22 98 L12 114" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="11" cy="116" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- endif %}
+  <g class="bras-droit">
+  {%- if pose == 'salut' or pose == 'alerte' %}
+    <path d="M97 92 L112 66" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="113" cy="63" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- elif pose == 'montre' %}
+    <path d="M98 96 L116 92" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="117" cy="91" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- else %}
+    <path d="M98 98 L108 114" stroke="#0369A1" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="109" cy="116" r="6" fill="#0EA5E9" stroke="#0369A1" stroke-width="2.5"/>
+  {%- endif %}
+  </g>
+  <path d="M60 6 C60 6 18 60 18 91 a42 42 0 0 0 84 0 C102 60 60 6 60 6 Z" fill="#0EA5E9" stroke="#0369A1" stroke-width="3"/>
+  <path d="M60 18 C52 30 30 62 28 86 C34 64 50 40 60 26 Z" fill="#7DD3FC" opacity=".7"/>
+  <path d="M30 50 Q60 41 90 50 L93 61 Q60 52 27 61 Z" fill="#EA580C"/>
+  <path d="M84 49 L98 42 L95 55 Z" fill="#C2410C"/>
+  <g class="yeux">
+    <ellipse cx="46" cy="82" rx="9" ry="11" fill="#FFFFFF"/><ellipse cx="74" cy="82" rx="9" ry="11" fill="#FFFFFF"/>
+    <circle cx="{{ 49 if pose == 'montre' else 47 }}" cy="84" r="5" fill="#0F172A"/><circle cx="{{ 77 if pose == 'montre' else 75 }}" cy="84" r="5" fill="#0F172A"/>
+    <circle cx="{{ 50 if pose == 'montre' else 48.5 }}" cy="82" r="1.8" fill="#FFFFFF"/><circle cx="{{ 78 if pose == 'montre' else 76.5 }}" cy="82" r="1.8" fill="#FFFFFF"/>
+  </g>
+  <circle cx="36" cy="98" r="5" fill="#FDBA74" opacity=".7"/><circle cx="84" cy="98" r="5" fill="#FDBA74" opacity=".7"/>
+  {%- if pose == 'alerte' %}
+  <ellipse cx="60" cy="106" rx="6" ry="7" fill="#0F172A"/>
+  {%- else %}
+  <path d="M49 101 Q60 112 71 101" stroke="#0F172A" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+  {%- endif %}
+</svg>
+{%- endmacro %}
+{#- Page d'accueil : état de chaque ville, préparé ici pour colorer toute la page (attribut data-champ du body)
+    et pour le choix de la ville en direct (app.js lit le JSON « etats »). -#}
+{%- if page == 'accueil' %}
+  {%- set villes = [] %}
+  {%- set regions = [] %}
+  {%- for z in zones %}
+    {%- set n = z.niveau_annonce or z.niveau_calcule or 'gris' %}
+    {%- if z.calcule_le and z.pluie_24h_mm is not none %}
+      {%- if z.source == 'glofas' %}{% set fait = 'Débit prévu ' ~ ('%.0f' | format(z.pluie_24h_mm)) ~ ' m³/s' %}
+      {%- else %}{% set fait = ('Pluie prévue ' if z.source == 'prevision_max' else 'Pluie observée ') ~ ('%.0f' | format(z.pluie_24h_mm)) ~ ' mm' %}{% endif %}
+    {%- else %}{% set fait = 'Pas encore calculé' %}{% endif %}
+    {%- set verif = NIVEAUX[z.niveau_calcule] if z.niveau_annonce and z.niveau_calcule and z.niveau_calcule != z.niveau_annonce else '' %}
+    {%- if (z.region or 'Autres') not in regions %}{% set _ = regions.append(z.region or 'Autres') %}{% endif %}
+    {%- set _ = villes.append({'id': z.id, 'nom': z.nom, 'region': z.region or 'Autres', 'niveau': n,
+                               'rang': {'rouge': 0, 'orange': 1, 'vert': 2}.get(n, 3), 'fait': fait, 'verif': verif,
+                               'heure': z.calcule_le.strftime('%d/%m à %H:%M') if z.calcule_le else ''}) %}
+  {%- endfor %}
+  {%- set rouges = villes | selectattr('niveau', 'equalto', 'rouge') | map(attribute='nom') | list %}
+  {%- set oranges = villes | selectattr('niveau', 'equalto', 'orange') | map(attribute='nom') | list %}
+  {%- set n_vert = villes | selectattr('niveau', 'equalto', 'vert') | list | length %}
+  {#- « Abobo, Yopougon et Attécoubé » ; filtres plutôt que macro, pour garder du texte simple dans le JSON -#}
+  {%- set noms_rouges = (rouges[:-1] | join(', ') ~ ' et ' ~ rouges[-1]) if rouges | length > 1 else (rouges | join('')) %}
+  {%- set noms_oranges = (oranges[:-1] | join(', ') ~ ' et ' ~ oranges[-1]) if oranges | length > 1 else (oranges | join('')) %}
+  {%- set calculs = zones | map(attribute='calcule_le') | select | list %}
+  {%- set dernier = (calculs | max).strftime('%d/%m à %H:%M') if calculs else '' %}
+  {%- if rouges %}
+    {%- set national = {'champ': 'rouge', 'l1': 'Alerte', 'l2': 'rouge', 'long': false,
+          'phrase': noms_rouges ~ ' : éloignez-vous des caniveaux, des pentes et des bas-fonds. En danger, appelez le 180.'
+                    ~ ((' Vigilance orange à ' ~ noms_oranges ~ '.') if oranges else '')} %}
+  {%- elif oranges %}
+    {%- set national = {'champ': 'orange', 'l1': 'Vigilance', 'l2': 'orange', 'long': false,
+          'phrase': noms_oranges ~ ' : soyez prêts et évitez les bas-fonds. Les ' ~ (villes | length - oranges | length) ~ ' autres villes sont au vert.'} %}
+  {%- elif n_vert %}
+    {%- set national = {'champ': 'vert', 'l1': 'Aucune alerte', 'l2': 'en cours', 'long': false,
+          'phrase': 'Les ' ~ (villes | length) ~ ' villes surveillées sont au vert. Pluie et crues recalculées toutes les heures'
+                    ~ ((', dernier calcul le ' ~ dernier) if dernier else '') ~ '.'} %}
+  {%- else %}
+    {%- set national = {'champ': 'gris', 'l1': 'Niveaux', 'l2': 'en calcul', 'long': false,
+          'phrase': 'Les niveaux des ' ~ (villes | length) ~ ' villes surveillées s\'afficheront après le premier calcul.'} %}
+  {%- endif %}
+  {%- set etats = {'': national} %}
+  {%- set consignes = {'vert': 'Pas d\'alerte.', 'orange': 'Soyez prêts et évitez les bas-fonds.',
+                       'rouge': 'Éloignez-vous des caniveaux et des pentes. En danger, appelez le 180.',
+                       'gris': 'Le niveau de cette ville n\'est pas encore calculé.'} %}
+  {%- for v in villes %}
+    {%- set _ = etats.update({v.id: {'champ': v.niveau, 'l1': v.nom, 'l2': 'Niveau ' ~ (NIVEAUX[v.niveau] | lower) if v.niveau in NIVEAUX else 'Non calculé',
+          'long': v.nom | length > 10,
+          'phrase': consignes[v.niveau] ~ ((' ' ~ v.fait ~ ', calcul du ' ~ v.heure ~ '.') if v.heure else '')
+                    ~ ((' Niveau ' ~ (v.verif | lower) ~ ' calculé, en cours de vérification par un opérateur.') if v.verif else '')}}) %}
+  {%- endfor %}
+  {%- set ville_choisie = request.query_params.get('ville', '') %}
+  {%- if ville_choisie not in etats %}{% set ville_choisie = '' %}{% endif %}
+  {%- set etat = etats[ville_choisie] %}
+{%- endif %}
+{#- Chaque page publique s'ouvre sur un champ de couleur qui lui est propre ; l'en-tête en prend la couleur.
+    Vert, orange et rouge gardent leur sens : niveau d'alerte, urgence (rouge), réussite (vert). -#}
+{%- set champ_page = {'carte_publique': 'nuit', 'signaler': 'ciel', 'signaler_merci': 'vert', 'prevention': 'eau',
+                      'abonnement': 'brume', 'pluviometre': 'nuit', 'guide_video': 'brume', 'aide': 'rouge',
+                      'aide_suivi': 'vert' if (d is defined and d.statut in ('traitee', 'close')) else 'rouge',
+                      'relais': 'nuit', 'relais_merci': 'vert', 'connexion': 'nuit',
+                      'erreur': 'rouge' if urgence else 'brume'}.get(page, 'nuit') %}
+{%- if page == 'accueil' %}{% set champ_page = etat.champ %}{% endif %}
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0B1120">
+<meta name="description" content="Niveau d'alerte inondation (vert, orange, rouge) de 18 villes de Côte d'Ivoire, mis à jour toutes les heures, et alertes par SMS.">
+<meta name="color-scheme" content="light dark">
+<script>(function () { var t; try { t = localStorage.getItem("aqua-theme"); } catch (e) {}
+  if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", t); })();</script>
+<title>{% if page == "accord" %}Accord et qualité de l'IA · AquaSentinelle{% elif page == "accueil" %}Niveaux d'alerte inondation · AquaSentinelle CI{% elif page == "aide" %}Demande d'aide d'urgence · AquaSentinelle{% elif page == "aide_suivi" %}Suivi de votre demande · AquaSentinelle{% elif page == "carte" %}Tableau de bord · AquaSentinelle{% elif page == "carte_publique" %}Carte des risques · AquaSentinelle CI{% elif page == "connexion" %}Connexion · AquaSentinelle{% elif page == "erreur" %}Erreur · AquaSentinelle{% elif page == "guide_video" %}Comment utiliser AquaSentinelle · vidéo{% elif page == "op_aide" %}Demandes d'aide · AquaSentinelle{% elif page == "op_capteurs" %}Capteurs · AquaSentinelle{% elif page == "op_lieux" %}Lieux sûrs · AquaSentinelle{% elif page == "pluviometre" %}Pluviomètre · AquaSentinelle{% elif page == "prevention" %}Prévention et consignes · AquaSentinelle CI{% elif page == "relais" %}Point {{ point.id }} · AquaSentinelle{% elif page == "relais_merci" %}Merci · AquaSentinelle{% elif page == "signaler" %}Signaler un problème · AquaSentinelle{% elif page == "signaler_merci" %}Merci · AquaSentinelle{% elif page == "simulation" %}Simulation · AquaSentinelle{% else %}AquaSentinelle CI{% endif %}</title>
+<link rel="icon" href="/static/logo-picto.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+{% if page == 'accueil' %}<link rel="preload" as="image" href="/static/img/pluie-abidjan-averse.webp" fetchpriority="high">{% endif %}
+<link rel="stylesheet" href="{{ statique('style.css') }}">
+{% if page == "aide" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "aide_suivi" %}<meta http-equiv="refresh" content="60">{% elif page == "carte" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "carte_publique" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "op_aide" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script><meta http-equiv="refresh" content="60">{% elif page == "op_lieux" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "signaler" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% else %}{% endif %}
+</head>
+<body data-champ="{{ champ_page }}">
+<a class="saut" href="#contenu">Aller au contenu</a>
+<div id="haut-de-page" aria-hidden="true"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <clipPath id="forme-goutte" clipPathUnits="objectBoundingBox">
+    <path d="M0.5,0 C0.5,0 0,0.425 0,0.669 A0.5,0.331 0 0 0 1,0.669 C1,0.425 0.5,0 0.5,0 Z"/>
+  </clipPath>
+</svg>
+{% macro lien(chemin_lien, libelle, nom_icone, compte=0) -%}
+  {%- set actif = chemin == chemin_lien or (chemin_lien not in ('/', '/operateur') and chemin.startswith(chemin_lien)) -%}
+  <a href="{{ chemin_lien }}" {% if actif %}aria-current="page"{% endif %}>{{ icone(nom_icone) }}<span>{{ libelle }}</span>
+    {%- if compte %}<span class="compte" aria-label="{{ compte }} en attente">{{ compte }}</span>{% endif %}</a>
+{%- endmacro %}
+
+{#- Contenu propre à chaque page, partagé par la coque opérateur et le portail public. -#}
+{% set contenu_page %}{% if page == "abonnement" %}
+{% set zone_choisie = request.query_params.get('zone', '') %}
+<section class="tete tete-large" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Les alertes par SMS</h1>
+    <p class="tete-chapeau">Un message quand le niveau de votre commune change, même sans internet. Au plus quelques SMS par jour ;
+      les alertes rouges sont validées par un opérateur avant l'envoi.</p>
+    {% if ok == 'abonne' %}<div class="ok-boite" role="status">{{ icone('circle-check') }}<div><b>Inscription enregistrée.</b> Envoyez STOP à tout moment pour arrêter.</div></div>{% endif %}
+    {% if ok == 'desabonne' %}<div class="ok-boite" role="status">{{ icone('circle-check') }}<div><b>Désabonnement enregistré.</b></div></div>{% endif %}
+    <form method="post" class="form-champ verre-champ" id="form-abonnement">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="champs-deux">
+        <div><label for="zone">Votre commune</label>
+          <select id="zone" name="zone_id">{% for z in zones %}<option value="{{ z.id }}" data-type="{{ z.type }}"{% if z.id == zone_choisie %} selected{% endif %}>{{ z.nom }}</option>{% endfor %}</select></div>
+        <div><label for="tel">Numéro de téléphone</label>
+          <input id="tel" type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="07 00 00 00 00"></div>
+      </div>
+      <div class="choix"><label><input type="checkbox" name="consentement" value="oui">
+        J'accepte de recevoir les alertes d'inondation pour cette commune. Mon numéro est chiffré et ne sert qu'à cela.</label></div>
+      <p class="actions-form">
+        <button name="action" value="abonner">{{ icone('bell') }}M'inscrire</button>
+        <button class="leger" name="action" value="desabonner">Me désabonner</button>
+      </p>
+    </form>
+  </div>
+  <figure class="telephone" aria-label="Exemple de SMS d'alerte">
+    <div class="telephone-ecran">
+      <p class="telephone-heure">06:12</p>
+      <div class="telephone-sms">
+        <b>AquaSentinelle</b>
+        <span data-sms data-pluie="{{ MESSAGES_SMS.fr.orange }}" data-crue="{{ MESSAGES_SMS.fr_crue.orange }}">{{ MESSAGES_SMS.fr.orange.format(zone=(zones[0].nom if zones else 'Abobo')) }}</span>
+      </div>
+      <p class="telephone-sms telephone-sms-2"><b>AquaSentinelle</b><span>Abobo : retour a la normale.</span></p>
+    </div>
+    <figcaption>Le message que vous recevriez en vigilance orange, pour la commune choisie.</figcaption>
+  </figure>
+</section>
+
+<section class="trois-faits" aria-label="Autres façons de recevoir les alertes" data-revele>
+  <div><h2>Sans internet</h2><p>Envoyez <b>ALERTE</b> suivi du nom de votre ville par SMS. Vous êtes inscrit tout de suite.</p></div>
+  <div><h2>Pour arrêter</h2><p>Répondez <b>STOP</b> à n'importe quel message, ou utilisez le bouton « Me désabonner » ci-dessus.</p></div>
+  <div><h2>Sur Telegram</h2><p>{% if bot %}Écrivez à <a href="https://t.me/{{ bot }}">@{{ bot }}</a> puis /abonner.{% else %}Le canal Telegram s'ajoute quand la plateforme le configure.{% endif %}</p></div>
+</section>
+{% elif page == "abonnes" %}
+<h1>Abonnés</h1>
+<p class="petit">Les numéros et identifiants sont chiffrés : seuls les comptes par zone et par canal sont affichés.</p>
+<div class="tableau-defile"><table style="max-width:720px">
+<tr><th>Zone</th><th>Canal</th><th>Actifs</th><th>Désabonnés</th></tr>
+{% for s in stats %}<tr><td>{{ s.nom }}</td><td>{{ s.canal }}</td><td>{{ s.actifs }}</td><td>{{ s.desabonnes }}</td></tr>
+{% else %}<tr><td colspan="4">Aucun abonné.</td></tr>{% endfor %}
+</table></div>
+{% elif page == "accord" %}
+<div class="entete-page"><div><p class="sur-titre">Terrain · intelligence artificielle</p><h1>Accord entre étiqueteurs et qualité de l'IA</h1>
+  <p class="petit">La référence, ce sont les photos étiquetées identiquement par deux personnes. L'IA est mesurée contre elles.</p></div></div>
+
+<div class="indicateurs">
+  <div class="indicateur ton-accent"><span class="libelle">{{ icone('tags', 'petite') }}Photos étiquetées par deux personnes</span><span class="valeur">{{ n }}</span></div>
+  <div class="indicateur {{ 'ton-vert' if kappa and kappa > 0.6 else 'ton-orange' }}"><span class="libelle">{{ icone('users', 'petite') }}Accord entre humains (kappa)</span>
+    <span class="valeur">{{ '%.2f'|format(kappa) if kappa is not none else '—' }}</span><span class="petit">accord {{ mot }}</span></div>
+  <div class="indicateur {{ 'ton-vert' if vision_disponible else 'ton-orange' }}"><span class="libelle">{{ icone('gauge', 'petite') }}IA de vision ({{ modele_vision }})</span>
+    <span class="valeur">{{ ('%.0f %%'|format(exactitude_ia * 100)) if exactitude_ia is not none else '—' }}</span>
+    <span class="petit">{% if n_ia %}d'accord avec les humains sur {{ n_ia }} photo(s){% else %}{{ 'en ligne, pas encore de photo de référence' if vision_disponible else 'Ollama injoignable' }}{% endif %}</span></div>
+  <div class="indicateur {{ 'ton-vert' if ia_disponible else 'ton-orange' }}"><span class="libelle">{{ icone('activity', 'petite') }}Modèle MobileNet entraîné</span>
+    <span class="valeur">{{ 'Oui' if ia_disponible else 'Non' }}</span><span class="petit">models/caniveaux.onnx</span></div>
+</div>
+
+{% if matrice_ia %}
+<h2>IA contre humains (lignes : étiquette humaine, colonnes : avis de l'IA)</h2>
+<div class="tableau-defile"><table style="max-width:760px">
+<tr><th></th>{% for c in classes_ia %}<th>{{ c }}</th>{% endfor %}</tr>
+{% for ligne in matrice_ia %}<tr><th>{{ classes_ia[loop.index0] }}</th>{% for v in ligne %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+</table></div>
+<p class="petit">Kappa IA / humains : {{ '%.2f'|format(kappa_ia) if kappa_ia is not none else '—' }}. La colonne « aucune » compte les photos que l'IA n'a pas classées (hors sujet ou indéterminées).</p>
+{% endif %}
+
+{% if matrice %}
+<h2>Entre humains (lignes : 1er étiqueteur, colonnes : 2e)</h2>
+<div class="tableau-defile"><table style="max-width:760px">
+<tr><th></th>{% for c in classes %}<th>{{ c }}</th>{% endfor %}</tr>
+{% for ligne in matrice %}<tr><th>{{ classes[loop.index0] }}</th>{% for v in ligne %}<td>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+</table></div>
+{% endif %}
+
+<h2>Photos utilisables pour l'entraînement (les deux d'accord)</h2>
+<ul>{% for c in par_classe %}<li>{{ CLASSES.get(c.classe, c.classe) }} : {{ c.n }}</li>{% else %}<li>Aucune pour l'instant.</li>{% endfor %}</ul>
+<div class="info-boite">{{ icone('info') }}<div>Pendant l'étiquetage, l'avis de l'IA est volontairement masqué pour ne pas influencer les étiqueteurs.
+  Ensuite : <code>python ia/exporter_jeu.py</code> puis <code>python ia/entrainer.py</code>. Si les humains s'accordent mal (kappa &lt; 0,6),
+  il faut préciser les consignes avant d'exiger mieux d'un modèle.</div></div>
+{% elif page == "accueil" %}
+{#- Quatre chapitres de couleur pleine. Le premier prend la couleur du niveau (national, ou de la ville choisie) ;
+    la goutte du logo sert de fenêtre sur une averse à Abidjan. Comportement : app.js (choix de la ville, accordéon). -#}
+<script type="application/json" id="etats-villes">{{ etats | tojson }}</script>
+
+<section class="champ champ-situation" id="situation" aria-labelledby="titre-situation">
+  <div class="goutte">
+    <img src="/static/img/pluie-abidjan-averse.webp" width="1600" height="1200" fetchpriority="high"
+         alt="Averse dans une rue d'Abidjan : l'eau tombe des toits en rideaux, un enfant court sous la pluie.">
+  </div>
+  <div class="situation-texte">
+    <h1 id="titre-situation"{% if etat.long %} class="long"{% endif %}><span data-l1>{{ etat.l1 }}</span> <span data-l2>{{ etat.l2 }}</span></h1>
+    <p class="situation-phrase" data-phrase aria-live="polite">{{ etat.phrase }}</p>
+    <form class="choix-ville" method="get" action="/">
+      <label for="ville">Votre ville</label>
+      <div class="choix-ville-ligne">
+        <select id="ville" name="ville">
+          <option value="">Toute la Côte d'Ivoire</option>
+          {% for region in regions %}<optgroup label="{{ region }}">{% for v in villes if v.region == region %}
+            <option value="{{ v.id }}"{% if v.id == ville_choisie %} selected{% endif %}>{{ v.nom }}</option>{% endfor %}
+          </optgroup>{% endfor %}
+        </select>
+        <button type="submit" class="bouton-voir">Voir</button>
+      </div>
+    </form>
+    <div class="situation-actions">
+      <a class="bouton" href="#sms">{{ icone('bell') }}Recevoir l'alerte par SMS</a>
+    </div>
+  </div>
+  <aside class="fiche-niveaux verre" aria-label="Répartition des niveaux d'alerte">
+    <p>{{ villes | length }} villes, en ce moment</p>
+    <ul>
+      <li><span class="niveau rouge">Rouge</span><b>{{ rouges | length }}</b></li>
+      <li><span class="niveau orange">Orange</span><b>{{ oranges | length }}</b></li>
+      <li><span class="niveau vert">Vert</span><b>{{ n_vert }}</b></li>
+    </ul>
+  </aside>
+</section>
+
+<section class="champ champ-villes" id="villes" aria-labelledby="titre-villes">
+  <div class="intro-deux" data-revele>
+    <h2 id="titre-villes">{{ villes | length }} villes surveillées</h2>
+    <p>Chaque ville a sa couleur, recalculée toutes les heures{% if dernier %} (dernier calcul le {{ dernier }}){% endif %}.
+      Les villes en alerte passent en tête. Touchez la vôtre pour la suivre en haut de page.</p>
+  </div>
+  <figure class="bandeau-photo revele">
+    <img src="/static/img/pluie-cocody.webp" width="1800" height="760" loading="lazy"
+         alt="Toits de Cocody sous un ciel de pluie, du linge étendu sur une terrasse mouillée, un pylône au loin.">
+    <figcaption>La pluie sur Cocody, Abidjan (photo Maxence, CC BY 2.0).</figcaption>
+  </figure>
+  <ul class="affiche-villes">
+  {% for v in villes | sort(attribute='rang') %}
+    <li class="ville {{ v.niveau }} revele">
+      <a href="/?ville={{ v.id }}#situation" data-ville="{{ v.id }}">
+        <span class="ville-nom">{{ v.nom }}</span>
+        <span class="ville-fait">
+          <span class="niveau {{ v.niveau }}">{{ NIVEAUX.get(v.niveau, 'Non calculé') }}</span>
+          <span>{{ v.fait }}</span>
+          <span class="ville-region">{{ v.region }}</span>
+          {% if v.verif %}<span class="ville-verif">Niveau {{ v.verif | lower }} calculé, en cours de vérification</span>{% endif %}
+        </span>
+      </a>
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+
+<section class="champ champ-calcul" id="calcul" aria-labelledby="titre-calcul">
+  <div class="intro-deux" data-revele>
+    <h2 id="titre-calcul">D'où vient la couleur</h2>
+    <p>Chaque heure, pour chaque ville, la plateforme croise la pluie, les fleuves et l'état des caniveaux.
+      <b>Le vert et l'orange sont publiés seuls ; le rouge ne part qu'après la validation d'un opérateur.</b></p>
+  </div>
+  <div class="accordeon revele" data-accordeon>
+    <div class="etape e1 ouverte">
+      <h3><button type="button" class="etape-bouton" id="etape-b1" aria-expanded="true" aria-controls="etape-c1"><span>La pluie</span></button></h3>
+      <div class="etape-corps" id="etape-c1" role="region" aria-labelledby="etape-b1">
+        <div class="texte"><p>La pluie tombée, mesurée par satellite (CHIRPS), et la pluie prévue par cinq modèles météo.
+          Les seuils de chaque ville sont calés sur ses inondations documentées.</p></div>
+        <figure><img src="/static/img/cote-ivoire-iss.webp" width="1062" height="1610" loading="lazy" style="object-position:50% 40%"
+                     alt="La côte ivoirienne vue de l'espace : un fleuve brun serpente dans la forêt jusqu'à l'océan.">
+          <figcaption>La côte ivoirienne vue de la Station spatiale internationale, 2009 (NASA, domaine public).</figcaption></figure>
+      </div>
+    </div>
+    <div class="etape e2">
+      <h3><button type="button" class="etape-bouton" id="etape-b2" aria-expanded="false" aria-controls="etape-c2"><span>Les fleuves</span></button></h3>
+      <div class="etape-corps" id="etape-c2" role="region" aria-labelledby="etape-b2">
+        <div class="texte"><p>Au bord du Bandama, de la Comoé, du Sassandra et de la Bia, le débit prévu sur sept jours (GloFAS)
+          est comparé à la crue annuelle, puis à la crue de cinq ans. Quelques jours d'avance, là où la pluie n'en donne que quelques heures.</p></div>
+        <figure><img src="/static/img/sassandra-soubre.webp" width="1600" height="1200" loading="lazy"
+                     alt="Le Sassandra à Soubré, large et brun, entre deux rives de forêt.">
+          <figcaption>Le Sassandra à Soubré (photo Cyriac Gbogou, CC BY-SA 4.0).</figcaption></figure>
+      </div>
+    </div>
+    <div class="etape e3">
+      <h3><button type="button" class="etape-bouton" id="etape-b3" aria-expanded="false" aria-controls="etape-c3"><span>Les caniveaux</span></button></h3>
+      <div class="etape-corps" id="etape-c3" role="region" aria-labelledby="etape-b3">
+        <div class="texte"><p>Des relais photographient les caniveaux marqués d'un repère orange et d'un QR code. Une IA classe la photo ;
+          quand deux relais voient le même caniveau bouché, les seuils de la ville baissent jusqu'à 15 %.</p></div>
+        <figure><img src="/static/img/pluie-abidjan-rue.webp" width="1600" height="1200" loading="lazy" style="object-position:60% 60%"
+                     alt="Une rue d'Abidjan sous l'eau après une averse, un minibus les roues dans l'eau.">
+          <figcaption>Rue inondée à Abidjan, juin 2009 (photo WILLAV-FR, CC BY-SA 4.0).</figcaption></figure>
+      </div>
+    </div>
+    <div class="etape e4">
+      <h3><button type="button" class="etape-bouton" id="etape-b4" aria-expanded="false" aria-controls="etape-c4"><span>Les relevés</span></button></h3>
+      <div class="etape-corps" id="etape-c4" role="region" aria-labelledby="etape-b4">
+        <div class="texte"><p>Chaque matin, des relais lisent leur pluviomètre et <a href="/pluviometre">saisissent la hauteur d'eau</a>.
+          Ces relevés rattrapent les orages d'une ou deux heures que le satellite ne voit pas.</p></div>
+        <figure><img src="/static/img/pluviometre.webp" width="1000" height="1333" loading="lazy" style="object-position:50% 45%"
+                     alt="Un pluviomètre en plastique transparent, gradué, fixé à un poteau.">
+          <figcaption>Un pluviomètre à cylindre gradué (photo Famartin, CC BY-SA 3.0).</figcaption></figure>
+      </div>
+    </div>
+    <div class="etape e5">
+      <h3><button type="button" class="etape-bouton" id="etape-b5" aria-expanded="false" aria-controls="etape-c5"><span>La décision</span></button></h3>
+      <div class="etape-corps" id="etape-c5" role="region" aria-labelledby="etape-b5">
+        <div class="texte"><p>Le vert et l'orange sont publiés automatiquement. Le rouge attend la validation d'un opérateur,
+          relancé au bout de 15 minutes, puis part par SMS et Telegram aux abonnés de la ville.</p></div>
+        <figure><img src="/static/img/pluie-abidjan-averse.webp" width="1600" height="1200" loading="lazy" style="object-position:30% 20%"
+                     alt="Des rideaux d'eau tombent des toits d'une rue d'Abidjan pendant une averse.">
+          <figcaption>Averse à Abidjan, juin 2009 (photo WILLAV-FR, CC BY-SA 4.0).</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="champ champ-sms" id="sms" aria-labelledby="titre-sms">
+  <img class="sms-fond" src="/static/img/bandama-tiassale.webp" width="1600" height="1067" loading="lazy"
+       alt="Le Bandama à Tiassalé : eau calme, berges vertes, pylônes électriques au loin.">
+  <div class="sms-panneau verre" data-revele>
+    <div>
+      <h2 id="titre-sms">L'alerte arrive par SMS</h2>
+      <p>Même sans internet. Un message seulement quand le niveau de votre ville change ; les alertes rouges sont validées
+        par un opérateur. Envoyez STOP pour arrêter.</p>
+    </div>
+    <form method="post" action="/abonnement" class="form-sms">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label for="sms-zone">Votre commune</label>
+      <select id="sms-zone" name="zone_id">
+        {% for region in regions %}<optgroup label="{{ region }}">{% for v in villes if v.region == region %}
+          <option value="{{ v.id }}"{% if v.id == ville_choisie %} selected{% endif %}>{{ v.nom }}</option>{% endfor %}
+        </optgroup>{% endfor %}
+      </select>
+      <label for="sms-tel">Numéro de téléphone</label>
+      <div class="champ-tel">
+        <input id="sms-tel" type="tel" name="telephone" required autocomplete="tel" inputmode="tel" placeholder="07 00 00 00 00">
+        <button name="action" value="abonner">M'inscrire</button>
+      </div>
+      <div class="choix"><label><input type="checkbox" name="consentement" value="oui" required>
+        J'accepte de recevoir les alertes de cette commune. Mon numéro est chiffré et ne sert qu'à cela.</label></div>
+      <p class="autres-canaux">Sans internet : envoyez <b>ALERTE</b> suivi du nom de votre ville.
+        {% if bot %}Sur Telegram : <a href="https://t.me/{{ bot }}">@{{ bot }}</a>.{% endif %}
+        <a href="/abonnement">Se désabonner</a>.</p>
+    </form>
+  </div>
+  <p class="sms-legende">Le Bandama à Tiassalé (photo Durand ndri, CC BY-SA 4.0)</p>
+</section>
+{% elif page == "aide" %}
+<section class="tete tete-urgence" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Vous êtes en danger ?</h1>
+    <p class="tete-chapeau">D'abord, appelez les secours. Ce formulaire <b>ne remplace pas l'appel</b> : il transmet votre position et
+      votre situation aux opérateurs, qui les relaient. Vous pourrez suivre votre demande.</p>
+  </div>
+  <div class="tete-visuel">
+    <a class="appel" href="tel:180">{{ icone('phone') }}<span><b>180</b>Appeler les sapeurs-pompiers</span></a>
+    <p class="appel-autres">SAMU <a href="tel:185">185</a> · Police secours <a href="tel:170">170</a></p>
+  </div>
+</section>
+
+<div class="formulaire-etapes">
+  <ol class="progression" aria-label="Avancement de la demande">
+    <li data-pour="1">Votre situation</li><li data-pour="2">Où vous êtes</li><li data-pour="3">Vous rappeler</li>
+  </ol>
+<form method="post" class="carte formulaire" id="form-aide" novalidate data-progression>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <fieldset data-etape="1" data-fait="input[name=situation]:checked">
+    <legend><h2>Votre situation</h2></legend>
+    <div class="choix">{% for cle, lib in situations.items() %}<label><input type="radio" name="situation" value="{{ cle }}" required>{{ lib }}</label>{% endfor %}</div>
+    <label for="nb">Nombre de personnes concernées</label>
+    <input id="nb" type="number" name="nb_personnes" min="1" max="500" inputmode="numeric">
+  </fieldset>
+
+  <section data-etape="2" data-fait="#lat, #lieu">
+    <h2>Où êtes-vous ?</h2>
+    <p><button type="button" id="ma-position">{{ icone('map-pin') }}Envoyer ma position GPS</button></p>
+    <div id="choix-position" class="carte-saisie" role="application" aria-label="Carte : touchez l'endroit où vous êtes"></div>
+    <p id="etat-position" class="info-boite" aria-live="polite">Utilisez votre position, ou touchez la carte.</p>
+    <input type="hidden" id="lat" name="lat"><input type="hidden" id="lon" name="lon"><input type="hidden" id="precision" name="precision">
+    <label for="lieu">Quartier et repère (si pas de GPS)</label>
+    <input id="lieu" type="text" name="lieu_texte" maxlength="200">
+    <p class="aide">Par exemple : « Mossikro, derrière l'école primaire, maison bleue ».</p>
+  </section>
+
+  <section data-etape="3" data-fait="#tel, #desc">
+    <h2>Pour vous rappeler</h2>
+    <label for="desc">Détails utiles (facultatif)</label>
+    <textarea id="desc" name="description" maxlength="500" rows="3"></textarea>
+    <label for="tel">Téléphone pour vous rappeler (facultatif, chiffré)</label>
+    <input id="tel" type="tel" name="telephone" autocomplete="tel" inputmode="tel">
+  </section>
+  <p id="erreur-aide" class="alerte-boite" role="alert" hidden></p>
+  <p class="envoi-form"><button class="rouge">{{ icone('siren') }}Envoyer ma demande d'aide</button></p>
+</form>
+</div>
+<script src="{{ statique('position.js') }}" defer></script>
+<script>
+document.getElementById("form-aide").addEventListener("submit", function (e) {
+  var msg = document.getElementById("erreur-aide"), manque = null;
+  if (!document.querySelector("input[name=situation]:checked")) manque = ["Choisissez votre situation.", "input[name=situation]"];
+  else if (!document.getElementById("lat").value && !document.getElementById("lieu").value.trim())
+    manque = ["Indiquez où vous êtes : position GPS, toucher la carte, ou écrire le quartier et un repère.", "#lieu"];
+  if (manque) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    msg.textContent = manque[0]; msg.hidden = false; document.querySelector(manque[1]).focus();
+  }
+}, true);
+</script>
+{% elif page == "aide_suivi" %}
+<section class="tete" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Demande n° {{ d.id }}</h1>
+    <p class="tete-chapeau" role="status"><b>{{ statuts[d.statut] }}.</b> {{ situations[d.situation] }}, envoyée à {{ d.recu_le.strftime('%H:%M') }},
+      mise à jour à {{ d.maj_le.strftime('%H:%M') }}.</p>
+    {% if d.note %}<p class="tete-note">Message des opérateurs : {{ d.note }}</p>{% endif %}
+  </div>
+  <div class="tete-visuel">
+    <a class="appel" href="tel:180">{{ icone('phone') }}<span><b>180</b>Le danger augmente ou personne ne vient</span></a>
+  </div>
+</section>
+{% set ordre_statuts = statuts.keys() | list %}
+{% set rang_actuel = ordre_statuts.index(d.statut) if d.statut in ordre_statuts else 0 %}
+<ol class="suivi" aria-label="Étapes du traitement" data-revele>
+  {% for cle, lib in statuts.items() if cle != 'close' %}
+  <li class="{{ 'fait' if loop.index0 < rang_actuel else ('actuel' if loop.index0 == rang_actuel else '') }}"{% if loop.index0 == rang_actuel %} aria-current="step"{% endif %}>{{ lib }}</li>
+  {% endfor %}
+</ol>
+<p class="petit">Gardez cette page : elle se met à jour toute seule chaque minute. Son adresse est votre lien de suivi personnel.</p>
+{% elif page == "alertes" %}
+<div class="entete-page"><div><p class="sur-titre">Supervision</p><h1>Alertes</h1>
+  <p class="petit">Les alertes orange partent automatiquement ; une alerte rouge n'est envoyée qu'après votre validation.</p></div></div>
+<h2>Alertes rouges en attente de validation</h2>
+{% for a in attente %}
+<div class="carte" style="border-left:8px solid #C0392B">
+  <p><span class="niveau rouge">Rouge</span> <b>{{ a.nom }}</b> · créée le {{ a.cree_le.strftime('%d/%m %H:%M') }}
+    {% if a.statut == 'escaladee' %} · <b style="color:#C0392B">ESCALADÉE</b> (sans réponse depuis {{ a.escaladee_le.strftime('%H:%M') }}){% endif %}</p>
+  <p>Pluie : <b>{{ '%.0f'|format(a.pluie_24h_mm or 0) }} mm</b>
+    {% if a.entrees %} · {{ LECTURES.get(a.entrees.lecture_retenue, '') }} · caniveaux bouchés :
+      {{ ('%.0f %%'|format(a.entrees.part_caniveaux_bouches * 100)) if a.entrees.part_caniveaux_bouches is not none else 'pas de donnée' }}{% endif %}</p>
+  <pre>{{ a.texte }}</pre>
+  <form method="post" action="/operateur/alertes/{{ a.id }}" class="ligne">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="rouge" name="decision" value="valider">Valider et envoyer</button>
+    <button class="leger" name="decision" value="rejeter">Rejeter</button>
+  </form>
+</div>
+{% else %}
+<div class="ok-boite">Aucune alerte rouge en attente.</div>
+{% endfor %}
+
+<h2>Historique</h2>
+<p class="petit">Latence automatique (score → dernier envoi, hors validation humaine) :
+  {% if latence.n %}moyenne {{ latence.moy | int | duree }}, maximum {{ latence.maxi | duree }} sur {{ latence.n }} alerte(s) · objectif : moins de 60 s{% else %}pas encore de mesure{% endif %}</p>
+<div class="tableau-defile"><table>
+<tr><th>Créée</th><th>Zone</th><th>Niveau</th><th>Statut</th><th>Validée par</th><th>Destinataires</th><th>Échecs / bloqués</th><th>Latence</th><th></th></tr>
+{% for a in historique %}
+<tr><td>{{ a.cree_le.strftime('%d/%m %H:%M') }}</td><td>{{ a.nom }}</td><td><span class="niveau {{ a.niveau }}">{{ NIVEAUX[a.niveau] }}</span></td>
+<td class="statut">{{ STATUTS.get(a.statut, a.statut) }}</td><td>{{ a.validee_par or '' }}</td><td>{{ a.nb_destinataires if a.nb_destinataires is not none else '' }}</td>
+<td>{{ a.echecs }} / {{ a.bloques }}</td><td>{{ a.latence_ms | duree }}{% if a.validee_par and a.latence_ms is not none %}<br><span class="petit">attente de validation incluse</span>{% endif %}</td>
+<td><a href="/operateur/alertes/{{ a.id }}/envois">envois</a></td></tr>
+{% endfor %}
+</table></div>
+{% elif page == "carte" %}
+<div class="entete-page">
+  <div>
+    <p class="sur-titre">Supervision nationale</p>
+    <h1>Tableau de bord</h1>
+    <p class="petit">{{ icone('clock', 'petite') }} Dernière collecte des données :
+      {{ derniere_collecte.strftime('%d/%m/%Y à %H:%M') if derniere_collecte else 'aucune encore' }} · mise à jour automatique toutes les heures</p>
+  </div>
+  <a class="bouton leger" href="/operateur/simulation">{{ icone('refresh-cw') }}Lancer un cycle</a>
+</div>
+
+{% if nav.aide %}
+<div class="alerte-boite" role="alert" style="background:#FEE2E2;border-color:#FECACA;color:#7F1D1D">{{ icone('radio-tower') }}<div>
+  <b>{{ nav.aide }} demande(s) d'aide d'urgence en cours.</b> <a href="/operateur/aide">Relayer aux secours</a></div></div>
+{% endif %}
+{% if nav.alertes %}
+<div class="alerte-boite" role="alert">{{ icone('siren') }}<div><b>{{ nav.alertes }} alerte(s) rouge(s) attendent votre validation.</b>
+  Rien n'est envoyé à la population tant qu'un opérateur n'a pas validé. <a href="/operateur/alertes">Examiner maintenant</a></div></div>
+{% endif %}
+
+<div class="indicateurs">
+  <a class="indicateur {{ 'ton-rouge' if repartition.rouge else 'ton-orange' if repartition.orange else 'ton-vert' }}" href="#zones">
+    <span class="libelle">{{ icone('triangle-alert', 'petite') }}Zones en vigilance</span>
+    <span class="valeur">{{ repartition.rouge + repartition.orange }}<span class="petit"> / {{ zones | length }}</span></span>
+    <span class="petit">{{ repartition.rouge }} rouge · {{ repartition.orange }} orange · {{ repartition.vert }} vert</span></a>
+  <a class="indicateur {{ 'ton-rouge' if nav.alertes else 'ton-vert' }}" href="/operateur/alertes">
+    <span class="libelle">{{ icone('siren', 'petite') }}Alertes rouges à valider</span>
+    <span class="valeur">{{ nav.alertes }}</span><span class="petit">{{ 'Action requise' if nav.alertes else 'Rien en attente' }}</span></a>
+  <a class="indicateur {{ 'ton-rouge' if nav.aide else 'ton-vert' }}" href="/operateur/aide">
+    <span class="libelle">{{ icone('radio-tower', 'petite') }}Demandes d'aide ouvertes</span>
+    <span class="valeur">{{ nav.aide }}</span><span class="petit">{{ 'À relayer aux secours' if nav.aide else 'Aucune en cours' }}</span></a>
+  <a class="indicateur {{ 'ton-orange' if nav.signalements else 'ton-vert' }}" href="/operateur/signalements">
+    <span class="libelle">{{ icone('inbox', 'petite') }}Signalements à vérifier</span>
+    <span class="valeur">{{ nav.signalements }}</span><span class="petit">photos et relevés de pluviomètre</span></a>
+  <a class="indicateur {{ 'ton-orange' if crues else 'ton-accent' }}" href="/operateur/scores">
+    <span class="libelle">{{ icone('waves', 'petite') }}Crues prévues à 7 jours</span>
+    <span class="valeur">{{ crues }}</span><span class="petit">fleuves au-dessus de la crue annuelle</span></a>
+  <a class="indicateur ton-accent" href="/operateur/points">
+    <span class="libelle">{{ icone('map-pin', 'petite') }}Points de contrôle à jour</span>
+    <span class="valeur">{{ points_suivis[0] }}<span class="petit"> / {{ points_suivis[1] }}</span></span><span class="petit">observés il y a moins de 30 jours</span></a>
+</div>
+
+{% for c in a_curer %}
+<div class="alerte-boite">{{ icone('triangle-alert') }}<div><b>Curage prioritaire avant la pluie · {{ c.nom }}</b> : {{ '%.0f'|format(c.prevu_mm) }} mm prévus.
+  Points bouchés : <b>{{ c.points | join(', ') }}</b> (signalés depuis le {{ c.depuis.strftime('%d/%m') }}).</div></div>
+{% endfor %}
+
+<div class="deux-colonnes">
+  <section class="carte" style="padding:14px" aria-labelledby="titre-carte">
+    <h2 id="titre-carte" style="margin:2px 4px 8px">Carte de la Côte d'Ivoire</h2>
+    <div id="carte" role="application" aria-label="Carte des zones, stations de rivière et points de contrôle"></div>
+    <div class="legende">
+      <span class="niveau vert">Vert</span><span class="niveau orange">Orange</span><span class="niveau rouge">Rouge</span>
+      <span>Cercles : niveau de la ville</span>
+      <span><span class="pastille" style="background:#0369A1;border-radius:2px;transform:rotate(45deg)"></span>Station de rivière</span>
+      <span><span class="pastille" style="background:#15803D"></span>Caniveau propre</span>
+      <span><span class="pastille" style="background:#C2410C"></span>Partiel</span>
+      <span><span class="pastille" style="background:#B91C1C"></span>Bouché</span>
+      <span><span class="pastille" style="background:#94A3B8"></span>Sans donnée récente</span>
+    </div>
+  </section>
+  <section class="carte" id="zones" aria-labelledby="titre-zones">
+    <h2 id="titre-zones" style="margin-top:2px">Zones par gravité</h2>
+    <ul class="liste-zones">
+    {% for z in zones %}
+      <li>
+        {% if z.niveau %}<span class="niveau {{ z.niveau }}">{{ NIVEAUX[z.niveau] }}</span>{% else %}<span class="niveau gris">—</span>{% endif %}
+        <span class="nom">{{ z.nom }}{% if z.type != 'urbaine' %} {{ icone('waves', 'petite', 'fleuve') }}{% endif %}
+          <span class="petit" style="display:block;font-weight:400">
+            {% if z.calcule_le %}{% if z.source == 'glofas' %}{{ '%.0f'|format(z.pluie_24h_mm) }} m³/s prévus{% else %}{{ '%.0f'|format(z.pluie_24h_mm) }} mm {{ 'prévus' if z.source == 'prevision_max' else 'observés' }}{% endif %}{% endif %}
+            {% if z.niveau_calcule and z.niveau_annonce and z.niveau_calcule != z.niveau_annonce %} · <b style="color:#B91C1C">{{ NIVEAUX[z.niveau_calcule] }} à valider</b>{% endif %}
+          </span></span>
+        <a href="/operateur/scores?zone={{ z.id }}" aria-label="Détail de {{ z.nom }}" style="min-width:44px;min-height:44px;display:inline-grid;place-items:center">{{ icone('chevron-right') }}</a>
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<script>
+const COUL = {propre: "#15803D", partiel: "#C2410C", bouche: "#B91C1C", vert: "#15803D", orange: "#C2410C", rouge: "#B91C1C"};
+const NOM = {propre: "Propre", partiel: "Partiellement bouché", bouche: "Bouché", vert: "Vert", orange: "Orange", rouge: "Rouge"};
+const echap = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const carte = L.map("carte").setView([7.6, -5.5], 7);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© contributeurs OpenStreetMap"}).addTo(carte);
+const abidjan = z => z.region === "District d'Abidjan";
+fetch("/api/zones").then(r => r.json()).then(zones => {
+  zones.forEach(z => {
+    const n = z.niveau_annonce || z.niveau_calcule;
+    const valeur = z.pluie_24h_mm == null ? "" : z.source === "glofas" ? `${z.pluie_24h_mm.toFixed(0)} m³/s de débit prévu`
+      : `${z.pluie_24h_mm.toFixed(0)} mm (${z.source === "prevision_max" ? "prévus" : "observés"})`;
+    L.circle([z.lat, z.lon], {radius: abidjan(z) ? 1800 : 7000, color: COUL[n] || "#94A3B8", weight: 2, fillOpacity: 0.15}).addTo(carte)
+     .bindPopup(`<b>${echap(z.nom)}</b> · ${echap(z.region || "")}<br>Niveau : <b>${NOM[n] || "non calculé"}</b><br>${valeur}<br><a href="/operateur/scores?zone=${encodeURIComponent(z.id)}">Voir le détail</a>`);
+  });
+  carte.fitBounds(zones.map(z => [z.lat, z.lon]), {padding: [30, 30]});
+});
+fetch("/api/rivieres").then(r => r.json()).then(rs => rs.forEach(r => {
+  const n = r.pic_prevu == null || r.seuil_orange == null ? null : r.pic_prevu >= r.seuil_rouge ? "rouge" : r.pic_prevu >= r.seuil_orange ? "orange" : "vert";
+  L.marker([r.lat, r.lon], {icon: L.divIcon({className: "", iconSize: [18, 18],
+      html: `<div style="width:14px;height:14px;transform:rotate(45deg);background:#0369A1;border:2px solid ${COUL[n] || "#fff"}"></div>`})})
+   .addTo(carte).bindPopup(`<b>${echap(r.nom)}</b> (station de ${echap(r.ville)})<br>` +
+     (r.pic_prevu != null ? `Pic prévu sur 7 jours : <b>${r.pic_prevu.toFixed(0)} m³/s</b><br>` : "") +
+     (r.seuil_orange != null ? `Crue annuelle (orange) : ${r.seuil_orange.toFixed(0)} m³/s · crue de 5 ans (rouge) : ${r.seuil_rouge.toFixed(0)} m³/s` : "Seuils non calibrés"));
+}));
+fetch("/api/carte").then(r => r.json()).then(d => {
+  d.signalements.forEach(s => L.circleMarker([s.lat, s.lon], {radius: 7, color: "#fff", weight: 2, fillColor: "#B91C1C", fillOpacity: 1})
+    .addTo(carte).bindPopup(`<b>${echap(s.libelle)}</b><br>${echap(s.description)}`));
+  d.lieux.forEach(l => L.circleMarker([l.lat, l.lon], {radius: 7, color: "#15803D", weight: 3, fillColor: "#fff", fillOpacity: 1})
+    .addTo(carte).bindPopup(`<b>Lieu sûr</b> : ${echap(l.nom)}`));
+});
+fetch("/operateur/api/points").then(r => r.json()).then(pts => pts.forEach(p => {
+  const c = p.perime || !p.classe ? "#94A3B8" : COUL[p.classe];
+  const date = p.recu_le ? new Date(p.recu_le).toLocaleString("fr-FR") : "jamais";
+  L.circleMarker([p.lat, p.lon], {radius: 8, color: "#fff", weight: 2, fillColor: c, fillOpacity: 1}).addTo(carte)
+   .bindPopup(`<b>${echap(p.point_id)}</b>${p.demo ? ' <span class="demo">DÉMO</span>' : ""}<br>${echap(p.description)}<br>` +
+     `État : <b>${p.classe ? NOM[p.classe] : "inconnu"}</b>${p.perime && p.classe ? " (périmé)" : ""}<br>Dernière observation validée : ${date}` +
+     (p.photo ? `<br><img src="${p.photo}" alt="Photo du point" style="width:220px;margin-top:6px;border-radius:6px">` : "") +
+     `<br><a href="/r/${encodeURIComponent(p.point_id)}" target="_blank" rel="noopener">Formulaire du relais</a>`);
+}));
+</script>
+{% elif page == "carte_publique" %}
+<section class="tete tete-carte" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Carte des risques</h1>
+    <p class="tete-chapeau">Le niveau de chaque ville, les inondations signalées par les habitants puis vérifiées, et les lieux sûrs
+      où se mettre à l'abri.</p>
+    <div class="tete-actions">
+      <a class="bouton" href="/signaler">{{ icone('upload') }}Signaler un problème</a>
+      <a class="bouton rouge" href="/aide">{{ icone('siren') }}Je suis en danger</a>
+    </div>
+  </div>
+  <ul class="legende-grande verre-champ" aria-label="Légende de la carte">
+    <li><span class="symbole s-zones"><i class="v"></i><i class="o"></i><i class="r"></i></span>Ville au vert, en orange ou en rouge</li>
+    <li><span class="symbole s-signal"></span>Inondation ou danger signalé, vérifié (48 h ; 7 jours pour un danger)</li>
+    <li><span class="symbole s-lieu"></span>Lieu sûr, saisi par les autorités locales</li>
+    <li><span class="symbole s-riviere"></span>Station de rivière (débit prévu)</li>
+    <li><span class="symbole s-capteur"></span>Capteur de niveau d'eau</li>
+  </ul>
+</section>
+<div class="carte-cadre">
+<div id="carte" class="carte-pleine" role="application" aria-label="Carte des risques d'inondation"></div>
+  <fieldset class="couches verre">
+  <legend>Afficher</legend>
+  <div class="choix" id="couches">
+    <label><input type="checkbox" value="zones" checked>Niveaux d'alerte</label>
+    <label><input type="checkbox" value="signalements" checked>Inondations et dangers</label>
+    <label><input type="checkbox" value="lieux" checked>Lieux sûrs</label>
+    <label><input type="checkbox" value="rivieres">Stations de rivière</label>
+    <label><input type="checkbox" value="capteurs">Capteurs</label>
+  </div>
+</fieldset>
+</div>
+<p class="petit">Touchez une ville pour voir les inondations passées documentées. Les données de démonstration sont marquées « DÉMO ».</p>
+
+<script>
+const COUL = {vert: "#15803D", orange: "#C2410C", rouge: "#B91C1C"};
+const NOM = {vert: "Vert", orange: "Orange", rouge: "Rouge"};
+const echap = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const carte = L.map("carte", {scrollWheelZoom: false, zoomControl: false}).setView([7.6, -5.5], 7);
+L.control.zoom({position: "bottomright"}).addTo(carte);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© contributeurs OpenStreetMap"}).addTo(carte);
+carte.on("focus click", () => carte.scrollWheelZoom.enable());
+const couches = {zones: L.layerGroup().addTo(carte), signalements: L.layerGroup().addTo(carte), lieux: L.layerGroup().addTo(carte),
+                 rivieres: L.layerGroup(), capteurs: L.layerGroup()};
+document.querySelectorAll("#couches input").forEach(c => c.addEventListener("change", () =>
+  c.checked ? couches[c.value].addTo(carte) : carte.removeLayer(couches[c.value])));
+const pastille = (couleur, forme) => L.divIcon({className: "", iconSize: [22, 22],
+  html: `<div style="width:18px;height:18px;background:${couleur};border:2px solid #fff;box-shadow:0 0 0 1px ${couleur};border-radius:${forme}"></div>`});
+
+Promise.all([fetch("/api/zones").then(r => r.json()), fetch("/api/carte").then(r => r.json())]).then(([zones, d]) => {
+  zones.forEach(z => {
+    const n = z.niveau_annonce || z.niveau_calcule, h = d.historique[z.id];
+    const passe = h ? `<br><b>${h.nombre} inondation(s) documentée(s)</b>, la dernière le ${echap(h.derniere)}<ul style="padding-left:18px;margin:4px 0">` +
+      h.liste.map(e => `<li>${echap(e.date)} : ${echap(e.note)}</li>`).join("") + "</ul>" : "<br>Aucune inondation documentée dans notre base.";
+    L.circle([z.lat, z.lon], {radius: z.region === "District d'Abidjan" ? 1800 : 7000, color: COUL[n] || "#94A3B8", weight: 3, fillOpacity: .22})
+     .addTo(couches.zones).bindPopup(`<b>${echap(z.nom)}</b> · niveau <b>${NOM[n] || "non calculé"}</b>${passe}`);
+  });
+  carte.fitBounds(zones.map(z => [z.lat, z.lon]), {padding: [30, 30]});
+  d.signalements.forEach(s => L.marker([s.lat, s.lon], {icon: pastille("#B91C1C", "3px")}).addTo(couches.signalements)
+    .bindPopup(`<b>${echap(s.libelle)}</b><br>${echap(s.description)}<br><span style="color:#475569">Signalé le ${new Date(s.recu_le).toLocaleString("fr-FR")}</span>`));
+  d.lieux.forEach(l => L.marker([l.lat, l.lon], {icon: pastille("#15803D", "50%")}).addTo(couches.lieux)
+    .bindPopup(`<b>${echap(l.nom)}</b>${l.demo ? ' <span class="demo">DÉMO</span>' : ""}<br>Lieu sûr${l.capacite ? " · environ " + l.capacite + " personnes" : ""}<br>${echap(l.description)}`));
+  d.capteurs.forEach(c => L.marker([c.lat, c.lon], {icon: pastille("#0B1120", "50%")}).addTo(couches.capteurs)
+    .bindPopup(`<b>Capteur ${echap(c.id)}</b>${c.simule ? ' <span class="demo">SIMULÉ</span>' : ""}<br>${echap(c.nom)}<br>` +
+      (c.niveau_cm != null ? `Niveau : <b>${c.niveau_cm.toFixed(0)} cm</b> (orange ${c.seuil_orange_cm}, rouge ${c.seuil_rouge_cm})` : "Pas encore de mesure")));
+});
+fetch("/api/rivieres").then(r => r.json()).then(rs => rs.forEach(r => {
+  L.marker([r.lat, r.lon], {icon: L.divIcon({className: "", iconSize: [18, 18],
+    html: '<div style="width:14px;height:14px;transform:rotate(45deg);background:#0369A1;border:2px solid #fff"></div>'})})
+   .addTo(couches.rivieres).bindPopup(`<b>${echap(r.nom)}</b> (${echap(r.ville)})<br>` +
+     (r.pic_prevu != null ? `Débit maximal prévu sur 7 jours : <b>${r.pic_prevu.toFixed(0)} m³/s</b>` : ""));
+}));
+</script>
+{% elif page == "comptes" %}
+<h1>Comptes des opérateurs</h1>
+<div class="tableau-defile"><table style="max-width:820px">
+<tr><th>Identifiant</th><th>Nom</th><th>Rôle</th><th>Telegram (escalade)</th><th>Actif</th></tr>
+{% for c in comptes %}<tr><td>{{ c.identifiant }}</td><td>{{ c.nom }}</td><td>{{ c.role }}</td><td>{{ c.telegram_chat or '—' }}</td><td>{{ 'oui' if c.actif else 'non' }}</td></tr>{% endfor %}
+</table></div>
+<h2>Créer ou modifier un compte</h2>
+<form method="post" class="carte" style="max-width:640px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Identifiant</label><input type="text" name="identifiant" required pattern="[a-z0-9._-]{3,40}">
+  <label>Nom affiché</label><input type="text" name="nom" required maxlength="80">
+  <label>Mot de passe (10 caractères minimum)</label><input type="password" name="mot_de_passe" required minlength="10" autocomplete="new-password">
+  <label>Rôle</label><select name="role"><option value="operateur">Opérateur</option><option value="admin">Administrateur</option></select>
+  <label>Identifiant de chat Telegram (reçoit les demandes de validation et les escalades)</label><input type="text" name="telegram_chat">
+  <p style="margin-top:14px"><button>Enregistrer</button></p>
+</form>
+{% elif page == "connexion" %}
+<section class="tete tete-connexion" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Espace opérateur</h1>
+    <p class="tete-chapeau">Pour la protection civile, les mairies et les services techniques : valider les alertes rouges,
+      traiter les demandes d'aide, vérifier les signalements.</p>
+    <p class="tete-note">{{ icone('lock', 'petite') }} Après 5 échecs, la connexion est bloquée 10 minutes.</p>
+  </div>
+  <div class="tete-visuel">
+    {% if erreur %}<div class="alerte-boite" role="alert">{{ icone('triangle-alert') }}<div>{{ erreur }}</div></div>{% endif %}
+    <form method="post" action="/connexion" class="verre-champ formulaire-connexion">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="suite" value="{{ suite }}">
+      <label for="i">Identifiant</label><input id="i" type="text" name="identifiant" required autocomplete="username" autofocus>
+      <label for="m">Mot de passe</label><input id="m" type="password" name="mot_de_passe" required autocomplete="current-password">
+      <p class="envoi-form"><button>{{ icone('log-in') }}Se connecter</button></p>
+    </form>
+  </div>
+</section>
+{% elif page == "envois" %}
+<h1>Envois de l'alerte {{ a.id }} · {{ a.nom }}</h1>
+<pre>{{ a.texte }}</pre>
+<div class="tableau-defile"><table>
+<tr><th>Heure</th><th>Abonné</th><th>Canal</th><th>Statut</th><th>Détail</th></tr>
+{% for e in envois %}<tr><td>{{ e.le.strftime('%d/%m %H:%M:%S') }}</td><td>{{ ('n° ' ~ e.abonne_id) if e.abonne_id else 'canal de zone' }}</td>
+<td>{{ e.canal }}</td><td>{{ STATUTS.get(e.statut, e.statut) }}</td><td class="petit">{{ e.detail or '' }}</td></tr>
+{% else %}<tr><td colspan="5">Aucun abonné dans cette zone au moment de l'envoi.</td></tr>{% endfor %}
+</table></div>
+<p><a href="/operateur/alertes">← Retour aux alertes</a></p>
+{% elif page == "erreur" %}
+<section class="tete" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">{% if code == 404 %}Page introuvable{% elif code == 400 %}À compléter{% else %}Ça n'a pas marché{% endif %}</h1>
+    <p class="tete-chapeau" role="alert">{{ message }}</p>
+    <div class="tete-actions">
+      <a class="bouton" href="javascript:history.back()">{{ icone('chevron-left') }}Revenir en arrière</a>
+      <a class="bouton leger" href="/">{{ icone('house') }}Accueil</a>
+    </div>
+    <p class="tete-note">Code {{ code }}.</p>
+  </div>
+  {% if urgence %}
+  <div class="tete-visuel">
+    <a class="appel" href="tel:180">{{ icone('phone') }}<span><b>180</b>En danger, n'attendez pas</span></a>
+  </div>
+  {% else %}
+  <div class="tete-visuel tete-gouti">{{ gouti('montre', 200) }}</div>
+  {% endif %}
+</section>
+{% elif page == "etiquetage" %}
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <h1 style="flex:1;margin:0">Étiquetage des photos</h1>
+  <a class="bouton" href="/operateur/etiquetage/accord">Accord entre étiqueteurs</a>
+</div>
+<p class="petit">Chaque photo est étiquetée par deux personnes, sans voir l'avis de l'autre. Seules les photos où les deux sont d'accord entrent dans le jeu d'entraînement. Il vous reste {{ restantes }} photo(s).</p>
+{% if obs %}
+<div class="carte" style="max-width:760px">
+  <img class="photo" src="/operateur/photos/{{ obs.photo_chemin }}" alt="Photo à étiqueter">
+  <p class="petit">Observation {{ obs.id }} · point {{ obs.point_id }}</p>
+  <form method="post" action="/operateur/etiquetage/{{ obs.id }}" class="ligne">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="vert" name="classe" value="propre">Propre</button>
+    <button class="orange" name="classe" value="partiel">Partiellement bouché</button>
+    <button class="rouge" name="classe" value="bouche">Bouché</button>
+    <button class="leger" name="classe" value="inutilisable">Inutilisable (floue, hors cadre)</button>
+  </form>
+</div>
+{% else %}
+<div class="ok-boite">Plus aucune photo à étiqueter pour vous.</div>
+{% endif %}
+{% elif page == "guide_video" %}
+{#- Vidéo animée en HTML : légère sur un réseau mobile (aucun fichier vidéo à télécharger), sous-titrée,
+    commentée par la synthèse vocale du téléphone (Web Speech, sans internet une fois la page chargée).
+    Chaque scène : data-duree (secondes), data-texte (sous-titre et voix). Comportement : app/static/video.js. -#}
+<section class="tete" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">AquaSentinelle en 2 minutes</h1>
+    <p class="tete-chapeau">Gouti vous montre comment lire les niveaux d'alerte, recevoir les SMS, signaler un problème et demander de l'aide.</p>
+    <div class="tete-actions"><a class="bouton" href="#video">{{ icone('play') }}Voir la vidéo</a>
+      <a class="bouton leger" href="/?guide=1">Le guide en 5 étapes</a></div>
+  </div>
+  <div class="tete-visuel tete-gouti">{{ gouti('salut', 240) }}</div>
+</section>
+
+<div class="video" id="video" aria-roledescription="vidéo animée" aria-label="Guide d'utilisation en 7 chapitres">
+  <div class="video-ecran">
+
+    <div class="scene scene-intro" data-titre="Bonjour" data-duree="11"
+         data-texte="Bonjour ! Je suis Gouti, la sentinelle de l'eau. En deux minutes, je vous montre comment AquaSentinelle vous protège des inondations.">
+      <div class="sc-gouti">{{ gouti('salut', 200) }}</div>
+      <div class="sc-texte"><p class="sc-sur">AquaSentinelle CI</p><p class="sc-grand">Anticiper · Alerter · Protéger</p></div>
+    </div>
+
+    <div class="scene" data-titre="Les couleurs" data-duree="20"
+         data-texte="Sur la page d'accueil, chaque ville a une couleur. Vert : rien à signaler. Orange : soyez prêts et évitez les bas-fonds. Rouge : danger, éloignez-vous des caniveaux et des pentes.">
+      <div class="sc-gouti">{{ gouti('montre', 150) }}</div>
+      <div class="sc-pile">
+        <div class="sc-carte a1"><span class="niveau vert">Vert</span><b>Rien à signaler</b></div>
+        <div class="sc-carte a2"><span class="niveau orange">Orange</span><b>Soyez prêts</b></div>
+        <div class="sc-carte a3"><span class="niveau rouge">Rouge</span><b>Éloignez-vous</b></div>
+      </div>
+    </div>
+
+    <div class="scene" data-titre="Les alertes SMS" data-duree="20"
+         data-texte="Pour être prévenu même la nuit, touchez « Alertes SMS », choisissez votre commune et entrez votre numéro. Le SMS arrive même sans internet. Pour arrêter, envoyez STOP.">
+      <div class="sc-gouti">{{ gouti('alerte', 150) }}</div>
+      <div class="tel">
+        <div class="tel-ecran">
+          <p class="tel-heure">02:14</p>
+          <div class="tel-sms a1"><b>ALERTE ROUGE - Attécoubé.</b> Quittez les bas-fonds et les pentes instables et rejoignez un point sûr.</div>
+          <p class="tel-note a2">{{ icone('bell', 'petite') }} Même sans internet</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="scene" data-titre="Signaler" data-duree="22"
+         data-texte="Vous voyez une route inondée ou un caniveau bouché ? Touchez « Signaler », choisissez le problème, prenez une photo et indiquez l'endroit. Quand un voisin confirme, votre signalement apparaît sur la carte.">
+      <div class="sc-gouti">{{ gouti('montre', 150) }}</div>
+      <div class="tel">
+        <div class="tel-ecran">
+          <p class="tel-titre">Signaler un problème</p>
+          <p class="tel-choix a1">Route inondée</p>
+          <p class="tel-choix actif a2">Caniveau bouché</p>
+          <p class="tel-bouton a3">{{ icone('camera', 'petite') }} Photo</p>
+          <p class="tel-bouton a4">{{ icone('map-pin', 'petite') }} Ma position</p>
+          <p class="tel-bouton envoi a5">{{ icone('send', 'petite') }} Envoyer</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="scene" data-titre="Les relais" data-duree="20"
+         data-texte="Vous êtes relais de quartier ? Scannez le QR code peint près du caniveau, photographiez le repère orange et répondez à trois questions. Une minute suffit.">
+      <div class="sc-gouti">{{ gouti('salut', 150) }}</div>
+      <div class="sc-caniveau">
+        <div class="caniveau"><span class="repere"></span><span class="qr">{{ icone('qr-code') }}</span></div>
+        <p class="sc-etiquette a1">{{ icone('qr-code', 'petite') }} Scanner</p>
+        <p class="sc-etiquette a2">{{ icone('camera', 'petite') }} Photographier</p>
+        <p class="sc-etiquette a3">{{ icone('clipboard-check', 'petite') }} 3 questions</p>
+      </div>
+    </div>
+
+    <div class="scene" data-titre="Urgence" data-duree="16"
+         data-texte="En danger ? Appelez d'abord le 180. Le bouton rouge « Urgence » envoie en plus votre position aux opérateurs.">
+      <div class="sc-gouti">{{ gouti('alerte', 150) }}</div>
+      <div class="sc-pile">
+        <div class="sc-urgence a1">{{ icone('phone') }} Appelez le <b>180</b></div>
+        <div class="sc-carte a2"><span class="bouton rouge" style="pointer-events:none">{{ icone('siren') }}Urgence</span><b>Envoie votre position</b></div>
+      </div>
+    </div>
+
+    <div class="scene scene-intro" data-titre="Merci" data-duree="10"
+         data-texte="Anticiper, alerter, protéger. Inscrivez-vous aux alertes SMS, et parlez-en à vos voisins. À bientôt !">
+      <div class="sc-gouti">{{ gouti('salut', 200) }}</div>
+      <div class="sc-texte"><p class="sc-grand">Merci, et prenez soin de vous !</p>
+        <p class="sc-actions"><a class="bouton" href="/abonnement">{{ icone('bell') }}Recevoir les alertes</a></p></div>
+    </div>
+
+    <button type="button" class="video-lancer" id="video-lancer">{{ icone('play') }}<span>Lancer la vidéo</span></button>
+  </div>
+
+  <p class="video-sous-titres" id="video-sous-titres" aria-live="polite"></p>
+
+  <div class="video-commandes">
+    <button type="button" id="video-lecture" class="leger" aria-label="Lecture">{{ icone('play') }}</button>
+    <div class="video-barre" id="video-barre" aria-hidden="true"><span></span></div>
+    <span class="video-temps chiffres" id="video-temps">0:00 / 2:00</span>
+    <button type="button" id="video-son" class="leger" aria-pressed="true" aria-label="Couper la voix">{{ icone("volume-2") }}<span class="masque-mobile">Voix</span></button>
+  </div>
+  <ol class="video-chapitres" id="video-chapitres" aria-label="Chapitres"></ol>
+</div>
+
+<p class="petit">La voix utilise celle de votre téléphone ; sans voix française installée, seuls les sous-titres s'affichent.
+  Vous préférez lire ? Le <a href="/?guide=1">guide en 5 étapes</a> dit la même chose.</p>
+<script src="{{ statique('video.js') }}" defer></script>
+{% elif page == "journal" %}
+<h1>Journal</h1>
+<form class="ligne" method="get"><select name="type" onchange="this.form.submit()"><option value="">Tous les types</option>
+{% for t in types %}<option value="{{ t }}" {{ 'selected' if t == type }}>{{ t }}</option>{% endfor %}</select></form>
+<div class="tableau-defile" style="margin-top:12px"><table>
+<tr><th>Date</th><th>Type</th><th>Message</th></tr>
+{% for l in lignes %}<tr><td style="white-space:nowrap">{{ l.le.strftime('%d/%m %H:%M:%S') }}</td><td>{{ l.type }}</td><td class="petit">{{ l.message }}</td></tr>{% endfor %}
+</table></div>
+{% elif page == "op_aide" %}
+<div class="entete-page"><div><p class="sur-titre">Supervision</p><h1>Demandes d'aide</h1>
+  <p class="petit">Relayez chaque demande aux secours (180, 185) puis mettez à jour son statut : le demandeur le voit sur sa page de suivi. Page actualisée chaque minute.</p></div></div>
+
+<div class="deux-colonnes">
+<div>
+{% for d in demandes %}
+  {% set ouverte = d.statut in ('recue', 'transmise') %}
+  <article class="carte {{ 'niveau-rouge' if d.statut == 'recue' else 'niveau-orange' if d.statut == 'transmise' else '' }}">
+    <div style="display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap">
+      <h3>N° {{ d.id }} · {{ situations[d.situation] }}</h3>
+      <span class="statut">{{ statuts[d.statut] }}</span>
+    </div>
+    <p class="petit">Reçue le {{ d.recu_le.strftime('%d/%m à %H:%M') }}{% if d.zone %} · zone {{ d.zone }}{% endif %}
+      {% if d.nb_personnes %} · <b>{{ d.nb_personnes }} personne(s)</b>{% endif %}{% if d.contact_chiffre %} · téléphone fourni{% endif %}</p>
+    <p>{% if d.lat %}{{ icone('map-pin', 'petite') }} <a href="https://www.openstreetmap.org/?mlat={{ d.lat }}&mlon={{ d.lon }}#map=18/{{ d.lat }}/{{ d.lon }}" target="_blank" rel="noopener">{{ '%.5f'|format(d.lat) }}, {{ '%.5f'|format(d.lon) }}</a>
+      {% if d.precision_m %}<span class="petit">(± {{ d.precision_m | int }} m)</span>{% endif %}{% endif %}
+      {% if d.lieu_texte %}<br>{{ icone('house', 'petite') }} {{ d.lieu_texte }}{% endif %}</p>
+    {% if d.description %}<p>« {{ d.description }} »</p>{% endif %}
+    {% if d.note %}<p class="petit">Note : {{ d.note }} ({{ d.traite_par }})</p>{% endif %}
+    {% if ouverte %}
+    <form method="post" action="/operateur/aide/{{ d.id }}" class="ligne">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="text" name="note" placeholder="Message au demandeur (facultatif)" aria-label="Message au demandeur" style="flex:1;min-width:200px">
+      {% if d.statut == 'recue' %}<button name="statut" value="transmise">{{ icone('phone') }}Transmise aux secours</button>{% endif %}
+      <button class="vert" name="statut" value="traitee">{{ icone('check') }}Prise en charge</button>
+      <button class="leger" name="statut" value="close">Clore</button>
+    </form>
+    {% endif %}
+  </article>
+{% else %}
+  <div class="ok-boite">{{ icone('circle-check') }}<div>Aucune demande d'aide.</div></div>
+{% endfor %}
+</div>
+<section class="carte" style="padding:12px"><h2 style="margin:2px 4px 8px">Carte des demandes ouvertes</h2><div id="carte" style="height:460px"></div></section>
+</div>
+<script>
+const carte = L.map("carte").setView([5.36, -4.02], 11);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© OpenStreetMap"}).addTo(carte);
+const pts = [{% for d in demandes if d.lat and d.statut in ('recue', 'transmise') %}[{{ d.lat }}, {{ d.lon }}, {{ d.id }}],{% endfor %}];
+pts.forEach(p => L.circleMarker([p[0], p[1]], {radius: 10, color: "#fff", weight: 2, fillColor: "#B91C1C", fillOpacity: 1}).addTo(carte).bindPopup("Demande n° " + p[2]));
+if (pts.length) carte.fitBounds(pts.map(p => [p[0], p[1]]), {padding: [40, 40], maxZoom: 15});
+</script>
+{% elif page == "op_capteurs" %}
+<div class="entete-page"><div><p class="sur-titre">Terrain · option IoT</p><h1>Capteurs de niveau d'eau</h1>
+  <p class="petit">Chaque capteur envoie sa hauteur d'eau à l'API avec sa clé. Une mesure de moins d'une heure entre dans le score de sa zone ;
+    un capteur muet depuis plus d'une heure est signalé (panne, batterie ou arrachement).</p></div></div>
+
+{% if cle %}
+<div class="alerte-boite" role="alert">{{ icone('lock') }}<div><b>Clé d'API du capteur {{ cle.id }} : notez-la maintenant, elle ne sera plus affichée.</b>
+  <pre style="margin:8px 0">{{ cle.valeur }}</pre>
+  Exemple d'envoi : <code>curl -X POST {{ base_url }}/api/capteurs/{{ cle.id }}/mesures -H "X-Cle-API: {{ cle.valeur }}" -H "Content-Type: application/json" -d "{\"niveau_cm\": 42}"</code>
+  <br>Simulateur : <code>python scripts/simuler_capteur.py {{ cle.id }} {{ cle.valeur }}</code></div></div>
+{% endif %}
+
+<div class="tableau-defile"><table>
+  <tr><th>Capteur</th><th>Zone</th><th>Dernière mesure</th><th>Seuils (cm)</th><th>Batterie</th><th>État</th><th></th></tr>
+  {% for c in capteurs %}
+  {% set n = 'rouge' if c.niveau_cm is not none and c.niveau_cm >= c.seuil_rouge_cm else 'orange' if c.niveau_cm is not none and c.niveau_cm >= c.seuil_orange_cm else 'vert' %}
+  <tr><td><b>{{ c.id }}</b> {% if c.simule %}<span class="demo">SIMULÉ</span>{% endif %}<br><span class="petit">{{ c.nom }}</span></td>
+    <td>{{ c.zone }}</td>
+    <td>{% if c.niveau_cm is not none %}<span class="niveau {{ n }}">{{ '%.0f'|format(c.niveau_cm) }} cm</span><br><span class="petit">{{ c.le.strftime('%d/%m %H:%M') }}</span>{% else %}—{% endif %}</td>
+    <td>{{ c.seuil_orange_cm | int }} / {{ c.seuil_rouge_cm | int }}</td><td>{{ ('%.2f V'|format(c.batterie_v)) if c.batterie_v else '—' }}</td>
+    <td>{% if not c.actif %}Désactivé{% elif c.muet %}<b style="color:#B91C1C">{{ icone('triangle-alert', 'petite') }} Muet</b>{% elif c.dernier_signal %}En ligne{% else %}Jamais connecté{% endif %}</td>
+    <td>{% if op.role == 'admin' %}<form method="post" action="/operateur/capteurs/{{ c.id }}/basculer"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="leger">{{ 'Désactiver' if c.actif else 'Réactiver' }}</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7">Aucun capteur. Le projet n'en prévoit que 0 à 3, cachés, aux points les plus critiques.</td></tr>{% endfor %}
+</table></div>
+
+{% if op.role == 'admin' %}
+<h2>Enregistrer un capteur</h2>
+<form method="post" class="carte" style="max-width:760px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px"><label for="cid">Identifiant</label><input id="cid" type="text" name="capteur_id" required placeholder="" value="CAP-ATT-01"></div>
+    <div style="flex:2;min-width:240px"><label for="cnom">Emplacement</label><input id="cnom" type="text" name="nom" required maxlength="80" placeholder=""></div></div>
+  <label for="czone">Zone</label><select id="czone" name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select>
+  <div style="display:flex;gap:10px"><div style="flex:1"><label for="clat">Latitude</label><input id="clat" type="number" step="any" name="lat" required></div>
+    <div style="flex:1"><label for="clon">Longitude</label><input id="clon" type="number" step="any" name="lon" required></div></div>
+  <div style="display:flex;gap:10px"><div style="flex:1"><label for="so">Seuil orange (cm d'eau)</label><input id="so" type="number" name="seuil_orange_cm" value="30" required></div>
+    <div style="flex:1"><label for="sr">Seuil rouge (cm d'eau)</label><input id="sr" type="number" name="seuil_rouge_cm" value="60" required></div></div>
+  <div class="choix" style="margin-top:12px"><label><input type="checkbox" name="simule" value="oui" checked>Capteur simulé (démonstration, sans matériel)</label></div>
+  <p style="margin-top:16px"><button>{{ icone('plus') }}Enregistrer et obtenir la clé</button></p>
+</form>
+{% endif %}
+{% elif page == "op_lieux" %}
+<div class="entete-page"><div><p class="sur-titre">Terrain</p><h1>Lieux sûrs</h1>
+  <p class="petit">Sites de regroupement, écoles, mairies… affichés sur la carte publique. À valider avec la mairie et l'ONPC.</p></div></div>
+
+<div class="tableau-defile"><table>
+  <tr><th>Nom</th><th>Type</th><th>Zone</th><th>Capacité</th><th>Position</th><th>État</th><th></th></tr>
+  {% for l in lieux %}
+  <tr><td><b>{{ l.nom }}</b> {% if l.demo %}<span class="demo">DÉMO</span>{% endif %}<br><span class="petit">{{ l.description or '' }}</span></td>
+    <td>{{ types[l.type] }}</td><td>{{ l.zone or '—' }}</td><td>{{ l.capacite or '—' }}</td>
+    <td class="petit">{{ '%.5f'|format(l.lat) }}, {{ '%.5f'|format(l.lon) }}</td><td>{{ 'Affiché' if l.actif else 'Masqué' }}</td>
+    <td><form method="post" action="/operateur/lieux/{{ l.id }}/basculer"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="leger">{{ 'Masquer' if l.actif else 'Afficher' }}</button></form></td></tr>
+  {% else %}<tr><td colspan="7">Aucun lieu sûr pour l'instant.</td></tr>{% endfor %}
+</table></div>
+
+<h2>Ajouter un lieu sûr</h2>
+<form method="post" class="carte" style="max-width:760px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="nom">Nom</label><input id="nom" type="text" name="nom" required maxlength="120">
+  <label for="type">Type</label><select id="type" name="type">{% for k, v in types.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+  <label>Position : touchez la carte</label>
+  <div id="choix-position" style="height:280px;border-radius:10px;border:1px solid var(--bord)"></div>
+  <p id="etat-position" class="info-boite" aria-live="polite">Touchez la carte à l'emplacement du lieu.</p>
+  <div style="display:flex;gap:10px"><div style="flex:1"><label for="lat">Latitude</label><input id="lat" type="number" step="any" name="lat" required></div>
+    <div style="flex:1"><label for="lon">Longitude</label><input id="lon" type="number" step="any" name="lon" required></div></div>
+  <input type="hidden" id="precision" name="precision">
+  <label for="cap">Capacité approximative (personnes)</label><input id="cap" type="number" name="capacite" min="1" inputmode="numeric">
+  <label for="desc">Description (accès, étage, contact)</label><input id="desc" type="text" name="description" maxlength="300">
+  <p style="margin-top:16px"><button>{{ icone('plus') }}Ajouter</button></p>
+</form>
+<script src="{{ statique('position.js') }}" defer></script>
+{% elif page == "planche_qr" %}
+<div class="pas-imprimer">
+  <h1>Planche de QR codes</h1>
+  <p class="petit">Imprimer (Ctrl+P) puis découper : chaque carré sert de modèle pour le pochoir. Le QR ouvre le formulaire du relais pour ce point.
+  Adresse codée : <b>{{ base_url }}</b> (réglage BASE_URL) — elle doit être joignable depuis les téléphones des relais.</p>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px">
+{% for p in points %}
+  <div style="border:2px dashed #3E4C59;border-radius:8px;padding:14px;text-align:center;background:#fff;break-inside:avoid">
+    <div style="font:800 34px/1.1 'Arial Black',Arial,sans-serif;letter-spacing:3px;color:#14202B">{{ p.id }}</div>
+    <img src="/operateur/points/{{ p.id }}/qr.png" alt="QR {{ p.id }}" style="width:190px;height:190px;margin-top:8px">
+    <div class="petit" style="word-break:break-all">{{ url_point(p.id) }}</div>
+  </div>
+{% endfor %}
+</div>
+{% elif page == "pluviometre" %}
+<section class="tete tete-large" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Relevé du pluviomètre</h1>
+    <p class="tete-chapeau">Chaque matin à la même heure : lisez la hauteur d'eau en millimètres, saisissez-la, puis videz le pluviomètre.</p>
+    {% if resultat %}
+    <div class="ok-boite" role="status">{{ icone('circle-check') }}<div>Relevé de <b>{{ '%.0f'|format(pluie_mm) }} mm</b> enregistré :
+      {{ 'pris en compte' if resultat.statut == 'valide' else 'en attente de vérification' }}.<br><span class="petit">{{ resultat.motif }}</span></div></div>
+    {% endif %}
+    <form method="post" class="form-champ verre-champ">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="champs-deux">
+        <div><label for="zone">Commune</label>
+          <select id="zone" name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select></div>
+        <div><label for="mm">Pluie depuis hier matin (mm)</label>
+          <input id="mm" class="champ-mm" type="number" name="pluie_mm" min="0" max="400" step="0.5" required inputmode="decimal" data-jauge></div>
+        <div><label for="pseudo">Votre pseudo</label>
+          <input id="pseudo" type="text" name="pseudo" maxlength="60" value="{{ relais.pseudo if relais else '' }}"></div>
+        <div><label for="tel">Téléphone (facultatif, chiffré)</label>
+          <input id="tel" type="tel" name="telephone" inputmode="tel"></div>
+      </div>
+      <div class="choix"><label><input type="checkbox" name="consentement" value="oui" required>
+        J'accepte que ce relevé serve au suivi des pluies et des alertes de ma commune.</label></div>
+      <p class="actions-form"><button>{{ icone('send') }}Envoyer le relevé</button></p>
+    </form>
+  </div>
+  <figure class="jauge" aria-hidden="true">
+    <svg viewBox="0 0 160 460" class="jauge-dessin">
+      <path class="jauge-entonnoir" d="M14 8 H146 L104 64 H56 Z"/>
+      <rect class="jauge-tube" x="40" y="64" width="80" height="368" rx="6"/>
+      <g class="jauge-eau-boite"><rect class="jauge-eau" x="40" y="72" width="80" height="360" rx="6"/></g>
+      {% for g in range(0, 101, 5) %}<line class="jauge-trait{{ ' fort' if g % 10 == 0 }}" x1="40" x2="{{ 64 if g % 10 == 0 else 54 }}" y1="{{ 432 - g * 3.6 }}" y2="{{ 432 - g * 3.6 }}"/>{% if g % 20 == 0 %}<text class="jauge-chiffre" x="72" y="{{ 437 - g * 3.6 }}">{{ g }}</text>{% endif %}{% endfor %}
+    </svg>
+    <figcaption><b data-jauge-valeur>{{ '%.0f'|format(pluie_mm) if resultat else '0' }}</b> mm<span data-jauge-note></span></figcaption>
+  </figure>
+</section>
+
+<section class="lecture" aria-labelledby="titre-lecture">
+  <figure class="lecture-photo revele">
+    <img src="/static/img/pluviometre.webp" width="1000" height="1333" loading="lazy" alt="Un pluviomètre en plastique transparent, gradué, fixé à un poteau.">
+    <figcaption>Un pluviomètre à cylindre gradué (photo Famartin, CC BY-SA 3.0).</figcaption>
+  </figure>
+  <div class="lecture-texte" data-revele>
+    <h2 id="titre-lecture">Bien lire son pluviomètre</h2>
+    <ul class="consignes">
+      <li><b>Toujours à la même heure</b>, le matin : le relevé couvre les 24 heures écoulées.</li>
+      <li><b>Les yeux à hauteur de l'eau</b>, et lisez le bas de la courbe que forme l'eau contre la paroi.</li>
+      <li><b>Videz-le ensuite</b>, sinon le relevé du lendemain s'ajoute à celui-ci.</li>
+      <li>Placez-le <b>à découvert</b>, loin des toits et des arbres qui arrêtent ou détournent la pluie.</li>
+    </ul>
+    <p class="petit">Un relevé de forte pluie est vérifié (2e relevé ou opérateur) avant d'entrer dans le calcul des alertes.</p>
+  </div>
+</section>
+{% elif page == "points" %}
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <h1 style="flex:1;margin:0">Points de contrôle</h1>
+  <a class="bouton orange" href="/operateur/planche-qr">Planche de QR à imprimer</a>
+</div>
+<div class="tableau-defile" style="margin-top:16px"><table>
+<tr><th>Point</th><th>Zone</th><th>Position</th><th>Description</th><th>État validé</th><th>Dernière observation</th><th>QR</th></tr>
+{% for p in points %}
+<tr><td><b>{{ p.point_id }}</b> {% if p.demo %}<span class="demo">DÉMO</span>{% endif %}</td><td>{{ p.zone_id }}</td>
+<td class="petit">{{ '%.5f'|format(p.lat) }}, {{ '%.5f'|format(p.lon) }}</td><td class="petit">{{ p.description or '' }}</td>
+<td>{% if p.classe and not p.perime %}{{ CLASSES[p.classe] }}{% elif p.classe %}<span class="petit">{{ CLASSES[p.classe] }} (périmé)</span>{% else %}—{% endif %}</td>
+<td>{{ p.recu_le.strftime('%d/%m/%Y') if p.recu_le else 'jamais' }}</td>
+<td><a href="/operateur/points/{{ p.point_id }}/qr.png" target="_blank">QR</a> · <a href="/r/{{ p.point_id }}" target="_blank">formulaire</a></td></tr>
+{% endfor %}
+</table></div>
+
+<h2>Ajouter un point</h2>
+<form method="post" class="carte" style="max-width:640px">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Zone</label><select name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select>
+  <div style="display:flex;gap:10px"><div style="flex:1"><label>Latitude</label><input type="number" step="any" name="lat" required placeholder="5.3365"></div>
+  <div style="flex:1"><label>Longitude</label><input type="number" step="any" name="lon" required placeholder="-4.0390"></div></div>
+  <label>Description (repère, accès, tronçon)</label><input type="text" name="description" maxlength="300">
+  <p class="petit">L'identifiant est attribué automatiquement (ex. ATT-004) : c'est lui que l'on peint au pochoir.</p>
+  <button>Créer le point</button>
+</form>
+{% elif page == "prevention" %}
+<section class="tete" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Prévention et consignes</h1>
+    <p class="tete-chapeau">Que faire avant, pendant et après une inondation. Lisez-les avant la saison des pluies : en alerte rouge,
+      il sera trop tard pour les découvrir.</p>
+    <p class="tete-note">Consignes générales, à compléter par celles de l'ONPC et de votre mairie. En alerte rouge, les consignes
+      officielles de l'ONPC et de la SODEXAM priment sur celles de cette page.</p>
+  </div>
+  <ul class="numeros verre-champ" aria-label="Numéros d'urgence">
+    <li><a href="tel:180"><b>180</b><span>Sapeurs-pompiers</span></a></li>
+    <li><a href="tel:185"><b>185</b><span>SAMU</span></a></li>
+    <li><a href="tel:170"><b>170</b><span>Police secours</span></a></li>
+  </ul>
+</section>
+
+<section class="moment moment-avant" aria-labelledby="avant">
+  <div class="moment-titre revele"><h2 id="avant">Avant</h2><p>En saison des pluies</p></div>
+  <ul class="consignes" data-revele>
+    <li><b>Ne jetez rien dans les caniveaux.</b> Un sac plastique suffit à boucher un passage d'eau.</li>
+    <li>Participez au <b>curage de votre rue</b> et <a href="/signaler">signalez les caniveaux bouchés</a>.</li>
+    <li>Repérez le <b>lieu sûr</b> le plus proche, en hauteur (<a href="/carte">voir la carte</a>).</li>
+    <li>Rangez papiers d'identité, ordonnances et argent dans un <b>sac plastique fermé</b>, facile à emporter.</li>
+    <li>Préparez une lampe, une batterie de téléphone chargée, de l'eau potable et vos médicaments.</li>
+    <li>Si vous habitez un <b>bas-fond ou au pied d'une pente</b> : prévoyez où dormir en cas d'alerte rouge.</li>
+    <li><a href="/abonnement">Inscrivez-vous aux alertes SMS</a> de votre ville.</li>
+  </ul>
+</section>
+<section class="moment moment-pendant" aria-labelledby="pendant">
+  <div class="moment-titre revele"><h2 id="pendant">Pendant</h2><p>L'eau monte</p></div>
+  <ul class="consignes" data-revele>
+    <li><b>Ne traversez jamais une eau en mouvement</b>, à pied ou en voiture : quelques dizaines de centimètres suffisent à emporter une personne ou un véhicule.</li>
+    <li><b>Éloignez-vous des pentes, des murs fissurés et des berges</b> : c'est là que surviennent les glissements et les effondrements.</li>
+    <li>Coupez l'électricité si l'eau entre chez vous, sans toucher les installations les pieds dans l'eau.</li>
+    <li>Montez à l'étage ou rejoignez un <b>lieu sûr en hauteur</b>. N'allez pas chercher vos biens.</li>
+    <li>Gardez les enfants près de vous et loin des caniveaux et des canaux.</li>
+    <li>En danger : appelez le <b>180</b>, puis <a href="/aide">envoyez votre position</a>.</li>
+  </ul>
+</section>
+<section class="moment moment-apres" aria-labelledby="apres">
+  <div class="moment-titre revele"><h2 id="apres">Après</h2><p>La décrue</p></div>
+  <ul class="consignes" data-revele>
+    <li>Ne rentrez chez vous qu'avec l'accord des autorités ; méfiez-vous des murs et planchers fragilisés.</li>
+    <li><b>Ne buvez pas l'eau</b> du robinet ou du puits sans l'avoir fait bouillir ou traitée.</li>
+    <li>Évitez le contact prolongé avec l'eau de crue : elle peut transmettre des maladies, dont la <b>leptospirose</b>.
+      Portez bottes et gants pour nettoyer ; en cas de fièvre dans les semaines suivantes, consultez.</li>
+    <li>Jetez les aliments qui ont trempé dans l'eau.</li>
+    <li>Photographiez les dégâts avant de nettoyer, pour les aides et assurances.</li>
+  </ul>
+</section>
+
+<section class="geste" aria-labelledby="dechets">
+  <figure class="geste-photo revele">
+    <img src="/static/img/pluie-abidjan-rue.webp" width="1600" height="1200" loading="lazy"
+         alt="Une rue d'Abidjan sous l'eau après une averse, un minibus les roues dans l'eau.">
+    <figcaption>Rue inondée à Abidjan, juin 2009 (photo WILLAV-FR, CC BY-SA 4.0).</figcaption>
+  </figure>
+  <div class="geste-texte" data-revele>
+    <h2 id="dechets">Le geste qui protège la rue</h2>
+    <p class="geste-chapeau">Un caniveau bouché ne laisse plus passer l'eau : la rue devient une rivière en quelques minutes.
+      Quand les caniveaux d'une ville sont bouchés, nos seuils d'alerte baissent.</p>
+    <div class="geste-trois">
+      <div><h3>Trier et confier ses déchets</h3><p>Utilisez la pré-collecte du quartier et les points de dépôt. Sachets d'eau,
+        plastiques et bouteilles sont les premiers responsables des bouchons.</p></div>
+      <div><h3>Agir ensemble</h3><p>Organisez un curage de rue avec vos voisins avant la saison des pluies, et devenez
+        <b>relais</b> : une photo du caniveau peint près de chez vous suffit.</p></div>
+    </div>
+  </div>
+</section>
+<p class="petit">Contenu de sensibilisation rédigé pour le prototype : à faire relire et valider par l'ONPC et la mairie avant diffusion.</p>
+{% elif page == "relais" %}
+<section class="tete" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page" class="titre-deux-lignes"><span>{{ point.id }}</span> <span>{{ point.zone }}</span></h1>
+    <p class="tete-chapeau">Merci d'être relais ! Photographiez le repère peint, répondez à trois questions, envoyez. Une minute suffit.
+      {% if point.demo %}<span class="demo">DÉMO</span>{% endif %}</p>
+    {% if point.description %}<p class="tete-note">{{ icone('map-pin', 'petite') }} {{ point.description }}</p>{% endif %}
+    {% if bot %}<div class="tete-actions"><a class="bouton leger" href="https://t.me/{{ bot }}?start={{ point.id }}">{{ icone('send') }}Signaler plutôt par Telegram</a></div>{% endif %}
+  </div>
+  <div class="tete-visuel tete-caniveau" aria-hidden="true">
+    <div class="caniveau grand"><span class="repere"></span><span class="qr">{{ icone('qr-code') }}</span></div>
+    <p>Cadrez la bande et le carré orange, tout le caniveau visible.</p>
+  </div>
+</section>
+
+<div class="formulaire-etapes">
+  <ol class="progression" aria-label="Avancement du signalement">
+    <li data-pour="1">La photo</li><li data-pour="2">Ce que vous voyez</li><li data-pour="3">Vous</li>
+  </ol>
+<form method="post" enctype="multipart/form-data" class="carte formulaire" data-progression>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <section data-etape="1" data-fait="#photo">
+    <h2>Photo du caniveau</h2>
+    <div class="zone-photo">
+      <input id="photo" class="fichier-cache" type="file" name="photo" accept="image/*" capture="environment">
+      <label for="photo" class="bouton">{{ icone('camera') }}Prendre la photo</label>
+      <p class="aide">Cadrez le repère peint (bande et carré orange) à la distance du gabarit. Évitez de photographier des personnes.</p>
+      <img id="apercu" alt="Aperçu de la photo choisie" hidden>
+    </div>
+  </section>
+
+  <section data-etape="2" data-fait="input[name=avis]:checked">
+    <h2>Ce que vous voyez</h2>
+    <fieldset>
+      <legend>De l'eau stagne-t-elle ?</legend>
+      <div class="choix"><label><input type="radio" name="eau" value="oui">Oui</label><label><input type="radio" name="eau" value="non">Non</label></div>
+    </fieldset>
+    <fieldset>
+      <legend>Des déchets sont-ils visibles dans le caniveau ?</legend>
+      <div class="choix"><label><input type="radio" name="dechets" value="oui">Oui</label><label><input type="radio" name="dechets" value="non">Non</label></div>
+    </fieldset>
+    <fieldset>
+      <legend>Selon vous, le caniveau est…</legend>
+      <div class="choix">
+        <label><input type="radio" name="avis" value="propre">Propre</label>
+        <label><input type="radio" name="avis" value="partiel">Partiellement bouché</label>
+        <label><input type="radio" name="avis" value="bouche">Bouché</label>
+      </div>
+      <p class="aide">Sans photo, cette réponse est obligatoire.</p>
+    </fieldset>
+  </section>
+
+  <section data-etape="3" data-fait="input[name=consentement]:checked">
+    <h2>Vous</h2>
+    <label for="pseudo">Votre pseudo</label>
+    <input id="pseudo" type="text" name="pseudo" maxlength="60" autocomplete="nickname" value="{{ relais.pseudo if relais else '' }}">
+    <p class="aide">Par exemple Kouadio-Mossikro. Il apparaît aux opérateurs, pas au public.</p>
+    <label for="tel">Téléphone (facultatif)</label>
+    <input id="tel" type="tel" name="telephone" autocomplete="tel" inputmode="tel">
+    <p class="aide">Chiffré, il sert seulement à reconnaître vos envois pour fiabiliser vos signalements.</p>
+    <div class="choix consentement"><label><input type="checkbox" name="consentement" value="oui" required>
+      J'accepte que cette photo serve uniquement à suivre l'état des caniveaux. Les visages sont floutés automatiquement.</label></div>
+  </section>
+  <p class="envoi-form"><button>{{ icone('send') }}Envoyer le signalement</button></p>
+  <p class="petit">{{ icone('shield-check', 'petite') }} L'heure du signalement est fixée par le serveur. Données protégées (loi n° 2013-450).</p>
+</form>
+</div>
+{% elif page == "relais_merci" %}
+<section class="tete" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Merci !</h1>
+    <p class="tete-chapeau" role="status">Signalement reçu pour le point {{ point.id }}, à {{ obs.recu_le.strftime('%H:%M') }}.
+      Votre photo aide à savoir si ce caniveau risque de déborder.</p>
+    <div class="tete-actions"><a class="bouton" href="/r/{{ point.id }}">{{ icone('plus') }}Nouveau signalement sur ce point</a></div>
+  </div>
+  <div class="tete-visuel tete-gouti">{{ gouti('salut', 220) }}</div>
+</section>
+<dl class="recu" data-revele>
+  <div><dt>État retenu</dt><dd>{{ CLASSES[obs.classe] if obs.classe else 'À déterminer par un opérateur' }}</dd></div>
+  <div><dt>Statut</dt><dd>{{ 'Validé' if obs.statut == 'valide' else 'En attente de vérification' }}</dd></div>
+  {% if obs.classe_ia %}<div><dt>Analyse de la photo</dt><dd>{{ CLASSES[obs.classe_ia] }} ({{ '%.0f'|format(obs.confiance_ia * 100) }} %)</dd></div>{% endif %}
+  {% if obs.visages_floutes %}<div><dt>Visages floutés</dt><dd>{{ obs.visages_floutes }}</dd></div>{% endif %}
+</dl>
+<p class="petit">{{ obs.motif }}</p>
+{% elif page == "scores" %}
+<h1>Scores et pluie</h1>
+<form class="ligne" method="get"><label style="margin:0">Zone</label>
+  <select name="zone" onchange="this.form.submit()">{% for z in zones %}<option value="{{ z.id }}" {{ 'selected' if z.id == zone }}>{{ z.nom }}</option>{% endfor %}</select></form>
+
+<h2>Pluie des 45 derniers jours (mm par jour)</h2>
+<div class="carte">
+  <div class="legende" id="legende"></div>
+  <div class="barres" id="barres" role="img" aria-label="Pluie journalière par source"></div>
+  <p class="petit" id="axe"></p>
+</div>
+<script>
+const serie = {{ serie | safe }};
+const COUL = {chirps_max: "#E8742A", prevision_max: "#1F6F8B", openmeteo: "#9AA5AE", simulation: "#C0392B", pluviometre: "#2E7D4F", imerg_early: "#7A4FA0"};
+const NOM = {chirps_max: "CHIRPS (observé)", prevision_max: "Prévision, max de 5 modèles", openmeteo: "Open-Meteo", simulation: "Simulation", pluviometre: "Pluviomètre", imerg_early: "IMERG Early (expérimental)"};
+const jours = [...new Set(Object.values(serie).flat().map(m => m.jour))].sort();
+const max = Math.max(10, ...Object.values(serie).flat().map(m => m.mm));
+const barres = document.getElementById("barres");
+jours.forEach(j => Object.keys(serie).forEach(s => {
+  const m = serie[s].find(x => x.jour === j);
+  const d = document.createElement("div");
+  d.style.height = (m ? Math.max(1, 170 * m.mm / max) : 0) + "px";
+  d.style.background = COUL[s] || "#3E4C59";
+  d.title = `${j} · ${NOM[s] || s} : ${m ? m.mm.toFixed(1) : "—"} mm`;
+  barres.appendChild(d);
+}));
+document.getElementById("legende").innerHTML = Object.keys(serie).map(s =>
+  `<span><span class="pastille" style="background:${COUL[s] || "#3E4C59"}"></span>${NOM[s] || s}</span>`).join("") || "Aucune mesure.";
+document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au ${jours[jours.length - 1]} · maximum ${max.toFixed(0)} mm · survoler une barre pour la valeur` : "";
+</script>
+
+{% if riviere %}
+<h2>Débit prévu : {{ riviere.nom }} (m³/s)</h2>
+<div class="carte">
+  {% set haut = [riviere.seuil_rouge or 1, (debits | map(attribute='debit_m3s') | max) if debits else 0] | max %}
+  <div class="legende"><span>Crue annuelle (orange) : <b>{{ '%.0f'|format(riviere.seuil_orange or 0) }}</b></span>
+    <span>Crue de 5 ans (rouge) : <b>{{ '%.0f'|format(riviere.seuil_rouge or 0) }}</b></span></div>
+  <div class="barres" style="position:relative" role="img" aria-label="Débit prévu par jour">
+    {% for d in debits %}<div title="{{ d.jour }} : {{ '%.0f'|format(d.debit_m3s) }} m³/s"
+      style="height:{{ (170 * d.debit_m3s / haut) | round(1) }}px;background:{{ '#C0392B' if riviere.seuil_rouge and d.debit_m3s >= riviere.seuil_rouge else '#E8742A' if riviere.seuil_orange and d.debit_m3s >= riviere.seuil_orange else '#1F6F8B' }}"></div>{% endfor %}
+    {% if riviere.seuil_orange %}<span style="position:absolute;left:0;right:0;bottom:{{ (170 * riviere.seuil_orange / haut) | round(1) }}px;border-top:2px dashed #E8742A"></span>{% endif %}
+  </div>
+  <p class="petit">{{ debits | length }} jour(s) de prévision GloFAS enregistrés · barre orange ou rouge = seuil de crue dépassé · survoler pour la valeur</p>
+</div>
+{% endif %}
+
+<h2>Historique des scores (explicabilité)</h2>
+<div class="tableau-defile"><table>
+<tr><th>Calculé</th><th>Niveau</th><th>Pluie</th><th>Source</th><th>Caniveaux bouchés</th><th>Facteurs</th><th>Règles</th></tr>
+{% for s in historique %}
+<tr><td>{{ s.calcule_le.strftime('%d/%m %H:%M') }}</td><td><span class="niveau {{ s.niveau }}">{{ NIVEAUX[s.niveau] }}</span></td>
+<td>{{ '%.1f'|format(s.pluie_24h_mm) }} {{ 'm³/s' if s.source == 'glofas' else 'mm' }}</td><td>{{ s.source }}</td>
+<td>{{ ('%.0f %%'|format(s.entrees.part_caniveaux_bouches * 100)) if s.entrees.part_caniveaux_bouches is not none else '—' }}
+    <span class="petit">({{ s.entrees.points_a_statut_frais }} pt)</span></td>
+<td class="petit">{{ s.entrees.facteurs | join(' · ') }}</td><td>{{ s.version_regles }}</td></tr>
+{% else %}<tr><td colspan="7">Aucun score pour cette zone.</td></tr>{% endfor %}
+</table></div>
+{% elif page == "signalements" %}
+<h1>Signalements à vérifier</h1>
+<p class="petit">« Bouché » n'est validé automatiquement que par un relais fiable (≥ 0,8) ou une deuxième source indépendante sous 72 h. Votre décision met à jour la fiabilité du relais.</p>
+<h2>Signalements géolocalisés des habitants</h2>
+<p class="petit">Routes inondées, dangers, caniveaux hors points peints. Validés automatiquement si un 2e habitant signale la même chose à moins de 300 m.</p>
+{% for s in libres %}
+<div class="carte niveau-orange" style="display:flex;gap:18px;flex-wrap:wrap">
+  <div style="flex:0 0 260px;max-width:100%">
+    {% if s.photo_chemin %}<img class="photo" src="/operateur/photos-signalements/{{ s.photo_chemin }}" alt="Photo du signalement">{% else %}<p class="petit">Pas de photo.</p>{% endif %}
+  </div>
+  <div style="flex:1;min-width:260px">
+    <h3>{{ types_signalement[s.type] }}{% if s.zone %} · {{ s.zone }}{% endif %}</h3>
+    <p class="petit">Reçu le {{ s.recu_le.strftime('%d/%m à %H:%M') }} · relais {{ s.pseudo or 'anonyme' }}{% if s.fiabilite is not none %} (fiabilité {{ '%.2f'|format(s.fiabilite) }}){% endif %}</p>
+    {% if s.description %}<p>« {{ s.description }} »</p>{% endif %}
+    <p>{{ icone('map-pin', 'petite') }} <a href="https://www.openstreetmap.org/?mlat={{ s.lat }}&mlon={{ s.lon }}#map=18/{{ s.lat }}/{{ s.lon }}" target="_blank" rel="noopener">{{ '%.5f'|format(s.lat) }}, {{ '%.5f'|format(s.lon) }}</a>
+      {% if s.precision_m %}<span class="petit">(± {{ s.precision_m | int }} m)</span>{% endif %}</p>
+    <form method="post" action="/operateur/signalements-libres/{{ s.id }}" class="ligne">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="vert" name="decision" value="valide">{{ icone('check') }}Valider et afficher</button>
+      <button class="rouge" name="decision" value="rejete">{{ icone('x') }}Rejeter</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="ok-boite">{{ icone('circle-check') }}<div>Aucun signalement géolocalisé en attente.</div></div>
+{% endfor %}
+
+<h2>Photos des points de contrôle</h2>
+{% for o in obs %}
+<div class="carte" style="display:flex;gap:18px;flex-wrap:wrap">
+  <div style="flex:0 0 320px;max-width:100%">
+    {% if o.photo_chemin %}<img class="photo" src="/operateur/photos/{{ o.photo_chemin }}" alt="Photo du point {{ o.point_id }}">{% else %}<p class="petit">Pas de photo.</p>{% endif %}
+  </div>
+  <div style="flex:1;min-width:260px">
+    <p><b>{{ o.point_id }}</b> ({{ o.zone_id }}) {% if o.demo %}<span class="demo">DÉMO</span>{% endif %} · reçu le {{ o.recu_le.strftime('%d/%m/%Y %H:%M') }}</p>
+    <p>Relais : <b>{{ o.pseudo or '—' }}</b>{% if o.fiabilite is not none %} · fiabilité {{ '%.2f'|format(o.fiabilite) }}{% endif %}</p>
+    <p>Avis du relais : <b>{{ CLASSES[o.avis_relais] if o.avis_relais else '—' }}</b><br>
+       Eau stagnante : {{ {True:'oui', False:'non'}.get(o.eau_stagnante, '—') }} · Déchets : {{ {True:'oui', False:'non'}.get(o.dechets_visibles, '—') }}</p>
+    <div class="info-boite" style="margin:8px 0">{{ icone('gauge') }}<div>
+      {% if o.ia_analyse_le %}
+        <b>Avis de l'IA ({{ o.modele_ia }})</b> :
+        {% if o.est_caniveau_ia == false %}<b style="color:#B91C1C">la photo ne semble pas montrer un caniveau</b>
+        {% else %}<b>{{ CLASSES[o.classe_ia] if o.classe_ia else 'indéterminé' }}</b>{% if o.obstruction_pct_ia is not none %}, environ {{ o.obstruction_pct_ia }} % d'obstruction{% endif %}{% endif %}
+        <br><span class="petit">« {{ o.justification_ia }} »</span>
+        {% if o.personne_visible_ia %}<br><span class="petit">{{ icone('users', 'petite') }} Personne visible : vérifier le floutage avant toute diffusion.</span>{% endif %}
+        <br><span class="petit">Avis indicatif : l'IA ne valide jamais seule.</span>
+      {% elif o.photo_chemin %}Analyse de la photo par l'IA en cours…{% else %}Pas de photo à analyser.{% endif %}
+    </div></div>
+    <p class="petit">{{ o.motif }}</p>
+    <form method="post" action="/operateur/signalements/{{ o.id }}" class="ligne">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <select name="classe"><option value="">Garder : {{ CLASSES[o.classe] if o.classe else '?' }}</option>
+        {% for k, v in CLASSES.items() %}<option value="{{ k }}">Corriger : {{ v }}</option>{% endfor %}</select>
+      <button class="vert" name="decision" value="valide">Valider</button>
+      <button class="rouge" name="decision" value="rejete">Rejeter</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="ok-boite">Aucun signalement en attente.</div>
+{% endfor %}
+
+<h2>Relevés de pluviomètre à vérifier</h2>
+<p class="petit">Au-dessus de 35 mm, un relevé n'entre dans le score que s'il vient d'un relais fiable, s'il concorde avec un 2e relevé du jour ou si vous le validez.</p>
+{% for v in releves %}
+<div class="carte" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+  <div style="flex:1;min-width:260px"><b>{{ v.nom }}</b> · {{ v.jour.strftime('%d/%m/%Y') }} · <span class="compteur" style="font-size:22px">{{ '%.0f'|format(v.pluie_mm) }} mm</span><br>
+    <span class="petit">Relais {{ v.pseudo or '—' }}{% if v.fiabilite is not none %} (fiabilité {{ '%.2f'|format(v.fiabilite) }}){% endif %} · {{ v.motif }}</span></div>
+  <form method="post" action="/operateur/releves/{{ v.id }}" class="ligne"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="vert" name="decision" value="valide">Valider</button><button class="rouge" name="decision" value="rejete">Rejeter</button></form>
+</div>
+{% else %}<div class="ok-boite">Aucun relevé en attente.</div>{% endfor %}
+
+<h2>Décisions récentes</h2>
+<div class="tableau-defile"><table>
+<tr><th>Reçu</th><th>Point</th><th>Relais</th><th>Classe</th><th>Statut</th><th>Par</th><th>Motif</th></tr>
+{% for r in recents %}<tr><td>{{ r.recu_le.strftime('%d/%m %H:%M') }}</td><td>{{ r.point_id }}</td><td>{{ r.pseudo or '—' }}</td>
+<td>{{ CLASSES[r.classe] if r.classe else '—' }}</td><td>{{ STATUTS.get(r.statut, r.statut) }}</td><td>{{ r.valide_par or '' }}</td><td class="petit">{{ r.motif or '' }}</td></tr>{% endfor %}
+</table></div>
+
+<h2>Relais</h2>
+<div class="tableau-defile"><table>
+<tr><th>Pseudo</th><th>Fiabilité</th><th>Signalements</th><th>Confirmés</th><th>Rejetés</th></tr>
+{% for r in relais %}<tr><td>{{ r.pseudo }}</td><td>{{ '%.2f'|format(r.fiabilite) }}</td><td>{{ r.nb_observations }}</td><td>{{ r.nb_confirmees }}</td><td>{{ r.nb_rejetees }}</td></tr>{% endfor %}
+</table></div>
+{% elif page == "signaler" %}
+<section class="tete" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Signaler un problème</h1>
+    <p class="tete-chapeau">Route inondée, quartier sous l'eau, mur prêt à tomber, caniveau bouché. Votre signalement est vérifié,
+      puis affiché sur la <a href="/carte">carte publique</a>.</p>
+    <p class="tete-note">{{ icone('siren', 'petite') }} Quelqu'un est en danger ? <a href="tel:180">Appelez le 180</a>, puis <a href="/aide">demandez de l'aide</a>.</p>
+  </div>
+  <div class="goutte goutte-tete">
+    <img src="/static/img/pluie-abidjan-averse.webp" width="1600" height="1200" style="object-position:8% 50%"
+         alt="Pendant une averse à Abidjan, l'eau tombe des toits en rideaux devant les portails d'une rue.">
+  </div>
+</section>
+
+<div class="formulaire-etapes">
+  <ol class="progression" aria-label="Avancement du signalement">
+    <li data-pour="1">Le problème</li><li data-pour="2">L'endroit</li><li data-pour="3">La photo</li><li data-pour="4">Vous</li>
+  </ol>
+<form method="post" enctype="multipart/form-data" class="carte formulaire" data-progression>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <fieldset data-etape="1" data-fait="input[name=type]:checked">
+    <legend><h2>Quel problème ?</h2></legend>
+    <div class="choix">
+      {% for cle, lib in types.items() %}<label><input type="radio" name="type" value="{{ cle }}" required {{ 'checked' if loop.first }}>{{ lib }}</label>{% endfor %}
+    </div>
+  </fieldset>
+
+  <section data-etape="2" data-fait="#lat">
+    <h2>Où ?</h2>
+    <p><button type="button" id="ma-position" class="leger">{{ icone('map-pin') }}Utiliser ma position</button></p>
+    <div id="choix-position" class="carte-saisie" role="application" aria-label="Carte : touchez l'endroit concerné"></div>
+    <p id="etat-position" class="info-boite" aria-live="polite">Touchez la carte à l'endroit du problème, ou utilisez votre position.</p>
+    <input type="hidden" id="lat" name="lat"><input type="hidden" id="lon" name="lon"><input type="hidden" id="precision" name="precision">
+  </section>
+
+  <section data-etape="3" data-fait="#photo, #description">
+    <h2>Photo et précisions</h2>
+    <div class="zone-photo">
+      <input id="photo" class="fichier-cache" type="file" name="photo" accept="image/*" capture="environment">
+      <label for="photo" class="bouton">{{ icone('camera') }}Ajouter une photo</label>
+      <p class="aide">Facultative mais très utile. Évitez de photographier des personnes : les visages sont floutés.</p>
+      <img id="apercu" alt="Aperçu de la photo choisie" hidden>
+    </div>
+    <label for="description">Description (facultatif)</label>
+    <textarea id="description" name="description" maxlength="500" rows="3"></textarea>
+    <p class="aide">Par exemple : « boulevard coupé devant le marché, environ 40 cm d'eau ».</p>
+  </section>
+
+  <section data-etape="4" data-fait="input[name=consentement]:checked">
+    <h2>Vous</h2>
+    <label for="pseudo">Votre pseudo (facultatif)</label>
+    <input id="pseudo" type="text" name="pseudo" maxlength="60" autocomplete="nickname" value="{{ relais.pseudo if relais else '' }}">
+    <label for="tel">Téléphone (facultatif)</label>
+    <input id="tel" type="tel" name="telephone" autocomplete="tel" inputmode="tel">
+    <p class="aide">Chiffré. Il permet de reconnaître vos signalements : plus ils sont confirmés, plus ils sont pris en compte vite.</p>
+    <div class="choix consentement"><label><input type="checkbox" name="consentement" value="oui" required>
+      J'accepte que ce signalement et sa position soient utilisés pour la gestion des inondations.</label></div>
+  </section>
+  <p class="envoi-form"><button>{{ icone('send') }}Envoyer le signalement</button></p>
+</form>
+</div>
+<script src="{{ statique('position.js') }}" defer></script>
+{% elif page == "signaler_merci" %}
+<section class="tete" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Merci !</h1>
+    <p class="tete-chapeau" role="status">Signalement reçu : {{ libelle }}. Vous aidez tout le quartier.</p>
+    <div class="tete-actions">
+      <a class="bouton" href="/carte">{{ icone('map') }}Voir la carte</a>
+      <a class="bouton leger" href="/signaler">{{ icone('plus') }}Nouveau signalement</a>
+    </div>
+  </div>
+  <div class="tete-visuel tete-gouti">{{ gouti('salut', 220) }}</div>
+</section>
+<dl class="recu" data-revele>
+  {% if res.statut == 'valide' %}
+  <div><dt>Statut</dt><dd>Déjà affiché sur la carte publique</dd></div>
+  <div><dt>Pourquoi</dt><dd>{{ res.motif }}</dd></div>
+  {% else %}
+  <div><dt>Statut</dt><dd>Affiché après vérification</dd></div>
+  <div><dt>Comment</dt><dd>Un opérateur le vérifie, ou un autre habitant signale la même chose à proximité.</dd></div>
+  {% endif %}
+</dl>
+{% elif page == "simulation" %}
+<div class="entete-page"><div><p class="sur-titre">Terrain · démonstration</p><h1>Simulation et cycle manuel</h1></div></div>
+<div class="info-boite">{{ icone('info') }}<div>Une pluie simulée est enregistrée comme une pluie <b>observée</b> aujourd'hui (source « simulation ») :
+  le score et la décision d'alerte s'exécutent alors comme en réel. Pensez à effacer les simulations après la démonstration.</div></div>
+
+{% set ACTIONS = {"envoyee": "Alerte envoyée", "en_attente": "Rouge en attente de validation", "deja_en_attente": "Rouge déjà en attente",
+                  "rien": "Pas de nouveau message"} %}
+{% if resultat %}
+<section class="carte" aria-labelledby="titre-resultat">
+  <h2 id="titre-resultat" style="margin-top:0">{{ icone('clipboard-check') }} Résultat</h2>
+  <div class="tableau-defile" style="box-shadow:none"><table>
+    <tr><th>Zone</th><th>Niveau calculé</th><th>Valeur retenue</th><th>Décision</th><th>Raison</th></tr>
+    {% for r in resultat %}
+    <tr><td><b>{{ noms.get(r.zone, r.zone) }}</b></td>
+      <td>{% if r.niveau %}<span class="niveau {{ r.niveau }}">{{ NIVEAUX[r.niveau] }}</span>{% else %}—{% endif %}</td>
+      <td>{% if r.valeur is not none %}{{ '%.0f'|format(r.valeur) }} {{ 'm³/s' if r.source == 'glofas' else 'mm' }} <span class="petit">({{ r.source }})</span>{% endif %}</td>
+      <td>{{ ACTIONS.get(r.action, r.action) }}{% if r.action == 'en_attente' %} · <a href="/operateur/alertes">valider</a>{% endif %}</td>
+      <td class="petit">{{ r.raison }}</td></tr>
+    {% endfor %}
+  </table></div>
+</section>
+{% endif %}
+
+<div class="grille">
+  <form method="post" class="carte">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="pluie">
+    <h2 style="margin-top:0">{{ icone('cloud-rain') }} Simuler une pluie</h2>
+    <label for="sim-zone">Zone</label><select id="sim-zone" name="zone_id">{% for z in zones %}<option value="{{ z.id }}">{{ z.nom }}</option>{% endfor %}</select>
+    <label for="sim-mm">Pluie sur 24 h (mm)</label><input id="sim-mm" type="number" name="pluie_mm" min="0" max="500" step="1" value="120" inputmode="numeric">
+    <p class="aide">À Abidjan : orange 70 mm, rouge 100 mm, abaissés si des caniveaux sont bouchés. Ailleurs : seuils propres à la ville.</p>
+    <button>{{ icone('play') }}Simuler</button>
+  </form>
+  <form method="post" class="carte">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="cycle">
+    <h2 style="margin-top:0">{{ icone('refresh-cw') }} Lancer un cycle</h2>
+    <p>Collecte les prévisions et les débits, recalcule le score de chaque zone, décide des alertes et des escalades.</p>
+    <p class="aide">Le planificateur le fait seul toutes les heures.</p>
+    <button>{{ icone('play') }}Lancer le cycle</button>
+  </form>
+  <form method="post" class="carte">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="action" value="effacer">
+    <h2 style="margin-top:0">{{ icone('eraser') }} Effacer les simulations</h2>
+    <p><b>{{ sims | length }}</b> pluie(s) simulée(s) en base{% if sims %} : {{ sims | map(attribute='zone_id') | join(', ') }}{% endif %}.</p>
+    <p class="aide">Les scores sont recalculés juste après.</p>
+    <button class="leger">{{ icone('eraser') }}Effacer</button>
+  </form>
+</div>
+{% else %}{% endif %}{% endset %}
+
+{% if op %}
+<div class="coque">
+  <aside class="laterale" id="laterale" aria-label="Navigation de l'espace opérateur">
+    <a class="marque" href="/operateur"><img src="/static/logo-picto.png" alt=""><span>AquaSentinelle <b>CI</b></span></a>
+    <nav>
+      <div class="groupe">Supervision</div>
+      {{ lien('/operateur', 'Tableau de bord', 'layout-dashboard') }}
+      {{ lien('/operateur/alertes', 'Alertes', 'siren', nav.alertes) }}
+      {{ lien('/operateur/aide', "Demandes d'aide", 'radio-tower', nav.aide) }}
+      {{ lien('/operateur/signalements', 'Signalements', 'inbox', nav.signalements) }}
+      <div class="groupe">Analyse</div>
+      {{ lien('/operateur/scores', 'Scores et pluie', 'chart-column') }}
+      {{ lien('/operateur/journal', 'Journal', 'scroll-text') }}
+      <div class="groupe">Terrain</div>
+      {{ lien('/operateur/points', 'Points et QR codes', 'qr-code') }}
+      {{ lien('/operateur/etiquetage', 'Étiquetage photos', 'tags') }}
+      {{ lien('/operateur/lieux', 'Lieux sûrs', 'shield-check') }}
+      {{ lien('/operateur/capteurs', 'Capteurs', 'activity') }}
+      {{ lien('/operateur/simulation', 'Simulation', 'flask-conical') }}
+      <div class="groupe">Administration</div>
+      {{ lien('/operateur/abonnes', 'Abonnés', 'users') }}
+      {% if op.role == 'admin' %}{{ lien('/operateur/comptes', 'Comptes', 'user-cog') }}{% endif %}
+      {{ lien('/', 'Portail public', 'house') }}
+    </nav>
+    <div class="utilisateur">
+      <b>{{ op.nom }}</b>{{ 'Administrateur' if op.role == 'admin' else 'Opérateur' }}
+      <button type="button" class="theme-ligne" data-theme-bascule aria-pressed="false">{{ icone('moon', 'ic-lune') }}{{ icone('sun', 'ic-soleil') }}<span data-theme-libelle>Mode sombre</span></button>
+      <form method="post" action="/deconnexion"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <button>{{ icone('log-out') }}Se déconnecter</button></form>
+    </div>
+  </aside>
+  <div class="principal">
+    <header class="barre-haut">
+      <button id="ouvrir-menu" class="leger" aria-controls="laterale" aria-expanded="false" style="min-width:44px;padding:8px">{{ icone('menu', titre='Ouvrir le menu') }}</button>
+      <a class="marque" href="/operateur"><img src="/static/logo-picto.png" alt="" style="height:30px"><span>AquaSentinelle <b>CI</b></span></a>
+    </header>
+    <main id="contenu">{{ contenu_page }}</main>
+  </div>
+</div>
+{% else %}
+<header class="entete-public sur-champ" id="entete">
+  <div class="interieur">
+    <a class="marque" href="/"><img src="/static/logo-picto.png" alt=""><span>AquaSentinelle <b>CI</b></span></a>
+    <nav class="nav-public" id="nav-public" aria-label="Navigation principale">
+      <a href="/" {% if chemin == '/' %}aria-current="page"{% endif %}>Niveaux d'alerte</a>
+      <a href="/carte" {% if chemin == '/carte' %}aria-current="page"{% endif %}>Carte</a>
+      <a href="/signaler" {% if chemin == '/signaler' %}aria-current="page"{% endif %}>Signaler</a>
+      <a href="/prevention" {% if chemin == '/prevention' %}aria-current="page"{% endif %}>Consignes</a>
+      <a href="/abonnement" {% if chemin == '/abonnement' %}aria-current="page"{% endif %}>Alertes SMS</a>
+    </nav>
+    <div class="entete-actions">
+      <button type="button" class="theme-bouton" data-theme-bascule aria-pressed="false" aria-label="Passer en mode sombre">{{ icone('moon', 'ic-lune') }}{{ icone('sun', 'ic-soleil') }}</button>
+      <a class="bouton rouge urgence" href="/aide">{{ icone('siren') }}Urgence</a>
+      <button type="button" class="menu-bouton" id="menu-public" aria-controls="menu-mobile" aria-expanded="false" aria-label="Ouvrir le menu"><span class="burger" aria-hidden="true"><i></i><i></i></span></button>
+    </div>
+  </div>
+</header>
+<div class="menu-mobile" id="menu-mobile">
+  <nav aria-label="Menu principal">
+    <a href="/" {% if chemin == '/' %}aria-current="page"{% endif %}>Niveaux d'alerte</a>
+    <a href="/carte" {% if chemin == '/carte' %}aria-current="page"{% endif %}>Carte</a>
+    <a href="/signaler" {% if chemin == '/signaler' %}aria-current="page"{% endif %}>Signaler</a>
+    <a href="/prevention" {% if chemin == '/prevention' %}aria-current="page"{% endif %}>Consignes</a>
+    <a href="/abonnement" {% if chemin == '/abonnement' %}aria-current="page"{% endif %}>Alertes SMS</a>
+    <a href="/pluviometre" {% if chemin == '/pluviometre' %}aria-current="page"{% endif %}>Pluviomètre</a>
+    <a href="/guide" {% if chemin == '/guide' %}aria-current="page"{% endif %}>Mode d'emploi</a>
+  </nav>
+  <div class="menu-mobile-pied">
+    <button type="button" class="leger" data-theme-bascule aria-pressed="false">{{ icone('moon', 'ic-lune') }}{{ icone('sun', 'ic-soleil') }}<span data-theme-libelle>Mode sombre</span></button>
+    <a class="bouton rouge" href="tel:180">{{ icone('phone') }}Appeler le 180</a>
+  </div>
+</div>
+<main id="contenu" class="public{% if page == 'accueil' %} accueil{% endif %}">{{ contenu_page }}</main>
+<footer class="pied">
+  {#- Le nom construit en blocs : leurs hauteurs dessinent une crue (montée rapide, décrue lente), « CI » aux couleurs du drapeau -#}
+  {% set lettres = [('A', 0.55, 4), ('Q', 0.6, 4), ('U', 0.67, 3), ('A', 0.76, 3), ('S', 0.86, 2), ('E', 0.95, 1), ('N', 1, 1), ('T', 0.97, 1),
+                    ('I', 0.9, 1), ('N', 0.83, 2), ('E', 0.77, 2), ('L', 0.71, 3), ('L', 0.66, 3), ('E', 0.62, 4)] %}
+  <p class="visuellement-cache">AquaSentinelle CI</p>
+  <div class="mot-blocs" aria-hidden="true">
+    <span class="rangee">{% for l, h, p in lettres[:4] %}<span class="bloc p{{ p }}" style="--h:{{ h }}">{{ l }}</span>{% endfor %}</span>
+    <span class="rangee">{% for l, h, p in lettres[4:] %}<span class="bloc p{{ p }}" style="--h:{{ h }}">{{ l }}</span>{% endfor %}<span class="bloc ci-c" style="--h:0.58">C</span><span class="bloc ci-i" style="--h:0.56">I</span></span>
+  </div>
+  <div class="pied-colonnes">
+    <div class="demi"><b>Le portail</b><ul>
+      <li><a href="/">Niveaux d'alerte</a></li><li><a href="/carte">Carte des risques</a></li>
+      <li><a href="/signaler">Signaler un problème</a></li><li><a href="/prevention">Consignes</a></li></ul></div>
+    <div class="demi"><b>Participer</b><ul>
+      <li><a href="/abonnement">Alertes SMS</a></li><li><a href="/pluviometre">Pluviomètre des relais</a></li>
+      <li><a href="/guide">Mode d'emploi en vidéo</a></li><li><a href="?guide=1">Revoir le guide</a></li></ul></div>
+    <div class="demi"><b>Urgences</b><ul>
+      <li>Sapeurs-pompiers : <a href="tel:180">180</a></li><li>SAMU : <a href="tel:185">185</a></li><li>Police secours : <a href="tel:170">170</a></li></ul></div>
+    <div class="demi"><b>Opérateurs</b><ul>
+      <li><a href="/connexion">Espace opérateurs</a></li><li><a href="/api/docs">API ouverte</a></li></ul></div>
+    <div class="pied-donnees"><b>Données</b>
+      <p>Pluie : CHIRPS, Open-Meteo, pluviomètres des relais. Débits : GloFAS (Copernicus). Fond de carte : © OpenStreetMap.</p>
+      <p>En alerte rouge, les consignes de l'ONPC et de la SODEXAM priment.</p></div>
+  </div>
+  {% if page == 'accueil' %}
+  <p class="pied-credits">Photos : averse et rue inondée à Abidjan, <a href="https://commons.wikimedia.org/wiki/File:WL-CI-Abidjan-Il_pleut_des_cordes_2.jpg">WILLAV-FR</a>
+    (<a href="https://commons.wikimedia.org/wiki/File:WL-CI-Abidjan-Il_pleut_des_cordes.jpg">2</a>), CC BY-SA 4.0 ·
+    pluie sur Cocody, <a href="https://commons.wikimedia.org/wiki/File:Abidjan_Cocody_view_14226838979.jpg">Maxence</a>, CC BY 2.0 ·
+    le Bandama à Tiassalé, <a href="https://commons.wikimedia.org/wiki/File:Tiassal%C3%A9_-_Fleuve_Bandama_-_biodiversit%C3%A9_24.jpg">Durand ndri</a>, CC BY-SA 4.0 ·
+    le Sassandra à Soubré, <a href="https://commons.wikimedia.org/wiki/File:Fleuve_Sassandra_%C3%A0_Soubr%C3%A9_1.JPG">Cyriac Gbogou</a>, CC BY-SA 4.0 ·
+    la côte vue de l'ISS, <a href="https://commons.wikimedia.org/wiki/File:ISS020-E-11150_-_View_of_C%C3%B4te_d%27Ivoire.jpg">NASA</a>, domaine public ·
+    pluviomètre, <a href="https://commons.wikimedia.org/w/index.php?curid=26883912">Famartin</a>, CC BY-SA 3.0.
+    Photos redimensionnées, via Wikimedia Commons.</p>
+  {% endif %}
+  <div class="pied-fin">
+    <span>AquaSentinelle CI · projet APP3, ESATIC, 2026-2027</span>
+    <a class="bouton" href="tel:180">{{ icone('phone') }}Appeler le 180</a>
+  </div>
+</footer>
+{#- Accompagnement des visiteurs du portail public : guide de première visite (Gouti) et bouton d'aide par page.
+    Le guide s'ouvre seul à la première visite, jamais sur /aide (urgence) ; il se rouvre depuis le bouton d'aide.
+    Comportement : app/static/guide.js ; vidéo : /guide. -#}
+{% set page_relais = chemin.startswith('/r/') %}
+{% set conseils = {
+  '/': "Cherchez votre ville : sa couleur donne le niveau. Vert, rien à faire ; orange, soyez prêts ; rouge, éloignez-vous des caniveaux et des pentes.",
+  '/carte': "Déplacez la carte avec le doigt et touchez un symbole pour voir le détail : signalements vérifiés, lieux sûrs, niveaux des villes.",
+  '/signaler': "Quatre étapes : choisissez le problème, indiquez l'endroit (bouton GPS ou toucher la carte), ajoutez une photo si possible, puis envoyez.",
+  '/prevention': "Lisez ces consignes avant la saison des pluies : en alerte rouge, il sera trop tard pour les découvrir.",
+  '/abonnement': "Choisissez votre commune et entrez votre numéro : vous recevrez un SMS en cas d'alerte, même sans internet. Envoyez STOP pour arrêter.",
+  '/pluviometre': "Relevez votre pluviomètre chaque matin à la même heure, notez les millimètres, puis videz-le.",
+  '/aide': "Danger immédiat : appelez d'abord le 180. Ce formulaire envoie en plus votre position aux opérateurs.",
+  '/guide': "Touchez « Lancer la vidéo ». Le son se coupe avec le bouton haut-parleur ; les sous-titres restent affichés.",
+} %}
+{% set conseil = "Photographiez le repère peint orange, répondez aux trois questions, puis envoyez. Une minute suffit." if page_relais
+                 else conseils.get(chemin, "Le menu du haut mène à tout : niveaux d'alerte, carte, signalement, consignes et alertes SMS.") %}
+
+<dialog class="guide" id="guide" data-jeu="{{ 'relais' if page_relais else 'general' }}" data-auto="{{ 'non' if chemin in ('/aide', '/guide') else 'oui' }}" aria-labelledby="guide-titre-1">
+  <form method="dialog" class="guide-fermer-form"><button class="guide-fermer leger" aria-label="Fermer le guide">{{ icone('x') }}</button></form>
+  {% if page_relais %}
+  <div class="guide-etape" data-etape="1">
+    {{ gouti('salut', 120) }}
+    <h2 id="guide-titre-1">Merci d'être relais !</h2>
+    <p>Je suis <b>Gouti</b>. Vous venez de scanner un point de contrôle : votre photo aide à savoir si ce caniveau risque de déborder.</p>
+  </div>
+  <div class="guide-etape" data-etape="2" hidden>
+    {{ gouti('montre', 120) }}
+    <h2 id="guide-titre-2">1. La photo</h2>
+    <p>Touchez <b>Prendre la photo</b> et cadrez le <b>repère peint orange</b>, tout le caniveau visible. Évitez de photographier des personnes.</p>
+  </div>
+  <div class="guide-etape" data-etape="3" hidden>
+    {{ gouti('montre', 120) }}
+    <h2 id="guide-titre-3">2. Trois questions</h2>
+    <p>De l'eau stagne ? Des déchets ? Le caniveau est propre, partiellement bouché ou bouché ? Répondez simplement, selon ce que vous voyez.</p>
+  </div>
+  <div class="guide-etape" data-etape="4" hidden>
+    {{ gouti('salut', 120) }}
+    <h2 id="guide-titre-4">3. Envoyez</h2>
+    <p>Un pseudo suffit ; le téléphone est facultatif et chiffré. Si un autre relais confirme, le caniveau est signalé aux équipes de curage.</p>
+  </div>
+  {% else %}
+  <div class="guide-etape" data-etape="1">
+    {{ gouti('salut', 120) }}
+    <h2 id="guide-titre-1">Bonjour, je suis Gouti !</h2>
+    <p>Je vous aide à vous protéger des inondations. Voici les <b>4 choses à savoir</b>, en 30 secondes.</p>
+  </div>
+  <div class="guide-etape" data-etape="2" hidden>
+    {{ gouti('montre', 120) }}
+    <h2 id="guide-titre-2">1. Les trois couleurs</h2>
+    <ul class="guide-niveaux">
+      <li><span class="niveau vert">Vert</span> Rien à signaler.</li>
+      <li><span class="niveau orange">Orange</span> Soyez prêts, évitez les bas-fonds.</li>
+      <li><span class="niveau rouge">Rouge</span> Danger : éloignez-vous des caniveaux et des pentes.</li>
+    </ul>
+  </div>
+  <div class="guide-etape" data-etape="3" hidden>
+    {{ gouti('alerte', 120) }}
+    <h2 id="guide-titre-3">2. Être prévenu, même la nuit</h2>
+    <p>Touchez <b>{{ icone('bell', 'petite') }} Alertes SMS</b>, choisissez votre commune, entrez votre numéro. Le SMS arrive <b>même sans internet</b>. STOP pour arrêter.</p>
+  </div>
+  <div class="guide-etape" data-etape="4" hidden>
+    {{ gouti('montre', 120) }}
+    <h2 id="guide-titre-4">3. Signaler un problème</h2>
+    <p>Route inondée, caniveau bouché ? Touchez <b>{{ icone('upload', 'petite') }} Signaler</b>, prenez une photo, indiquez l'endroit. Quand un voisin confirme, c'est sur la carte.</p>
+  </div>
+  <div class="guide-etape" data-etape="5" hidden>
+    {{ gouti('alerte', 120) }}
+    <h2 id="guide-titre-5">4. En danger ?</h2>
+    <p><b>Appelez d'abord le 180.</b> Le bouton rouge <b>Urgence</b> envoie en plus votre position aux opérateurs.</p>
+  </div>
+  {% endif %}
+  <div class="guide-pied">
+    <div class="guide-points" aria-hidden="true"></div>
+    <p class="guide-compte petit" aria-live="polite"></p>
+    <div class="guide-actions">
+      <button type="button" class="leger" data-guide="precedent">Précédent</button>
+      <button type="button" data-guide="suivant">Suivant</button>
+      <button type="button" data-guide="fin" hidden>C'est parti !</button>
+    </div>
+    {% if not page_relais %}<p class="guide-video"><a href="/guide">{{ icone('play', 'petite') }} Voir la vidéo (2 min)</a></p>{% endif %}
+  </div>
+</dialog>
+
+<div class="gouti-aide pas-imprimer">
+  <div class="gouti-bulle" id="gouti-bulle" role="region" aria-label="Aide de Gouti" hidden>
+    <p>{{ conseil }}</p>
+    <p class="gouti-bulle-actions">
+      <button type="button" class="leger" data-guide="ouvrir">{{ icone('circle-help', 'petite') }}Revoir le guide</button>
+      {% if chemin != '/guide' %}<a class="bouton leger" href="/guide">{{ icone('play', 'petite') }}La vidéo</a>{% endif %}
+    </p>
+  </div>
+  <button type="button" class="gouti-bouton" id="gouti-bouton" aria-controls="gouti-bulle" aria-expanded="false" aria-label="Besoin d'aide ? Gouti vous explique cette page">
+    {{ gouti('salut', 52) }}
+  </button>
+</div>
+
+<script src="{{ statique('guide.js') }}" defer></script>
+{% endif %}
+<script src="{{ statique('app.js') }}" defer></script>
+</body>
+</html>
