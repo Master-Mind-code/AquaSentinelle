@@ -107,7 +107,11 @@
       document.body.setAttribute("data-champ", e.champ);
       l1.textContent = e.l1; l2.textContent = e.l2; phrase.textContent = e.phrase;
       titre.classList.toggle("long", !!e.long);
-      if (id && zoneSms) zoneSms.value = id;
+      // sur la carte de la goutte : anneau autour de la ville choisie (le repère d'Abidjan regroupe ses communes)
+      document.querySelectorAll(".repere").forEach(function (r) {
+        r.classList.toggle("choisie", !!id && (r.dataset.ville === id || (r.dataset.communes || "").split(" ").indexOf(id) >= 0));
+      });
+      if (id && zoneSms) { zoneSms.value = id; zoneSms.dispatchEvent(new Event("change")); }
       if (memoriser) {
         try { if (id) localStorage.setItem(cle, id); else localStorage.removeItem(cle); } catch (err) {}
         history.replaceState(null, "", id ? "/?ville=" + encodeURIComponent(id) : "/");
@@ -132,21 +136,6 @@
       if (memoire && etats[memoire]) { choix.value = memoire; appliquer(memoire, false); }
     }
   }
-
-  // Accordéon « D'où vient la couleur » : un seul panneau ouvert ; sans script, tous restent ouverts
-  document.querySelectorAll("[data-accordeon]").forEach(function (acc) {
-    var etapes = acc.querySelectorAll(".etape");
-    acc.classList.add("actif");
-    etapes.forEach(function (etape) {
-      etape.querySelector(".etape-bouton").addEventListener("click", function () {
-        etapes.forEach(function (autre) {
-          var ouverte = autre === etape;
-          autre.classList.toggle("ouverte", ouverte);
-          autre.querySelector(".etape-bouton").setAttribute("aria-expanded", ouverte ? "true" : "false");
-        });
-      });
-    });
-  });
 
   // Formulaires en étapes : chaque étape est cochée dès que ce qu'elle demande est rempli (data-fait).
   // La position GPS arrive après coup (position.js remplit #lat sans événement) : on revérifie régulièrement.
@@ -176,8 +165,8 @@
     mettreAJour();
   });
 
-  // Alertes SMS : l'aperçu du téléphone reprend le vrai modèle de message, pour la commune choisie
-  var sms = document.querySelector("[data-sms]"), communeSms = document.querySelector("#form-abonnement #zone");
+  // Alertes SMS (page dédiée et accueil) : l'aperçu du téléphone reprend le vrai modèle de message, pour la commune choisie
+  var sms = document.querySelector("[data-sms]"), communeSms = document.querySelector("#form-abonnement #zone, #sms-zone");
   if (sms && communeSms) {
     var majSms = function (animer) {
       var option = communeSms.options[communeSms.selectedIndex];

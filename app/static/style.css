@@ -74,7 +74,7 @@
   --largeur: 1280px;
   --marge: clamp(16px, 3.4vw, 56px);
   --gouttiere: max(var(--marge), calc((100vw - var(--largeur)) / 2));
-  --chapitre: clamp(88px, 11vw, 176px);
+  --chapitre: clamp(72px, 8vw, 128px);
   --rayon: 4px;
   --rayon-verre: 28px;
   --goutte: 4px 999px 999px 999px;   /* boutons : pointe de goutte en haut à gauche */
@@ -178,7 +178,7 @@ b, strong { font-weight: 700; }
 .chiffres, table td, .compteur, .ville-fait { font-variant-numeric: tabular-nums; }
 
 /* Verre : un seul jeu de règles, réutilisé partout où quelque chose flotte au-dessus d'une image, d'une carte ou du contenu */
-.verre, .entete-public.defile .interieur, .menu-mobile, .bandeau-photo figcaption, .geste-photo figcaption, .lecture-photo figcaption {
+.verre, .entete-public.defile .interieur, .menu-mobile, .lecture-photo figcaption {
   background: var(--verre-fort);
   border: 1px solid var(--verre-bord);
   box-shadow: var(--verre-reflet), var(--verre-ombre);
@@ -193,8 +193,7 @@ b, strong { font-weight: 700; }
   border-radius: var(--rayon-verre);
 }
 @media (prefers-reduced-transparency: reduce) {
-  .verre, .entete-public.defile .interieur, .menu-mobile, .verre-champ,
-  .bandeau-photo figcaption, .geste-photo figcaption, .lecture-photo figcaption {
+  .verre, .entete-public.defile .interieur, .menu-mobile, .verre-champ, .lecture-photo figcaption {
     background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   .verre-champ { background: color-mix(in srgb, var(--champ) 85%, #FFFFFF); }
@@ -399,17 +398,39 @@ main.public.accueil { max-width: none; padding: 0; }
   padding-top: clamp(40px, 6vh, 80px); padding-bottom: clamp(56px, 9vh, 112px);
   transition: background-color .6s var(--sortie), color .6s var(--sortie);
 }
+/* La goutte : une fenêtre sur la carte du pays (forme dessinée dans le SVG). Sa pointe dépasse en haut, son fond en bas. */
 .goutte {
   position: absolute; z-index: 0;
   height: 128%; aspect-ratio: 84 / 127;
   left: 55%; top: -14%;
-  clip-path: url(#forme-goutte);
-  background: var(--encre);
 }
-.goutte img {
-  width: 100%; height: 100%; object-fit: cover; object-position: 50% 55%;
-  animation: volet 1.2s var(--sortie) .15s both, derive 26s 1.4s ease-in-out infinite alternate;
+.goutte-cadre { position: absolute; inset: 0; }
+.carte-goutte { position: absolute; inset: 0; width: 100%; height: 100%; animation: volet 1.2s var(--sortie) .15s both; }
+.goutte-fond { fill: var(--encre); }
+.pays { fill: #17233A; stroke: rgba(255, 255, 255, .24); stroke-width: 2; stroke-linejoin: round; }
+/* Repères des villes : la forme du niveau, le nom détouré pour rester lisible sur les frontières */
+.repere { cursor: pointer; }
+.repere text {
+  fill: #CBD5E1; font: 600 19px var(--police); letter-spacing: -0.01em;
+  paint-order: stroke; stroke: var(--encre); stroke-width: 6px; stroke-linejoin: round;
+  transition: fill .25s var(--sortie);
 }
+.repere .forme { transform-box: fill-box; transform-origin: center; stroke: var(--encre); stroke-width: 3; transition: transform .4s var(--ressort); }
+.repere.vert .forme { fill: var(--champ-vert); }
+.repere.orange .forme { fill: var(--champ-orange); }
+.repere.rouge .forme { fill: #F05252; }
+.repere.gris .forme { fill: var(--encre); stroke: #94A3B8; }
+.repere .anneau { fill: none; stroke: #FFFFFF; stroke-width: 3; opacity: 0; transition: opacity .3s var(--sortie); }
+.repere.choisie .anneau, .repere:focus-visible .anneau { opacity: 1; }
+.repere.choisie text, .repere:hover text, .repere:focus-visible text { fill: #FFFFFF; }
+.repere.choisie text { font-weight: 800; }
+.repere:hover .forme, .repere:focus-visible .forme { transform: scale(1.3); }
+.repere:focus-visible { outline: none; }
+/* Une ville en alerte émet une onde : le seul mouvement continu de la carte, et il veut dire quelque chose */
+.repere .onde { fill: none; stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: onde 2.4s var(--sortie) infinite; }
+.repere.orange .onde { stroke: var(--champ-orange); }
+.repere.rouge .onde { stroke: #F05252; }
+@keyframes onde { from { transform: scale(1); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
 .situation-texte { position: relative; z-index: 1; width: min(50vw, 720px); }
 .situation-texte h1 {
   font-size: clamp(48px, 6.4vw, 108px); font-weight: 800; line-height: .92; letter-spacing: -0.045em;
@@ -435,9 +456,14 @@ main.public.accueil { max-width: none; padding: 0; }
 .situation-texte > :nth-child(4) { animation-delay: .26s; }
 
 @media (max-width: 900px) {
-  .champ-situation { flex-direction: column; align-items: stretch; min-height: 0; padding-top: 7svh; padding-bottom: 0; }
-  .goutte { position: relative; order: 2; left: auto; top: auto; height: auto; width: 120vw; align-self: center; margin: 40px 0 -84vw; }
-  .goutte img { position: relative; top: -32%; height: 132%; }
+  .champ-situation { flex-direction: column; align-items: stretch; min-height: 0; padding-top: 7svh; padding-bottom: 48px; }
+  /* Sur téléphone, la carte vient sous le texte : on n'en garde que le corps de la goutte, la pointe est rognée */
+  .goutte { position: relative; order: 2; left: auto; top: auto; height: auto; aspect-ratio: auto; width: min(100%, 460px); align-self: center; margin: 36px 0 0; }
+  .goutte-cadre { position: relative; inset: auto; aspect-ratio: 840 / 1000; }
+  .repere .forme { transform: scale(1.7); }
+  .repere:hover .forme, .repere:focus-visible .forme { transform: scale(2); }
+  .repere text { font-size: 38px; stroke-width: 10px; }
+  .repere.vert:not(.choisie):not([data-communes]) text { display: none; }   /* seuls Abidjan, les villes en alerte et la ville choisie sont nommées */
   .situation-texte { width: 100%; }
   .situation-texte h1 { font-size: 12vw; }
   .situation-texte h1.long { font-size: 9.6vw; }
@@ -452,97 +478,81 @@ main.public.accueil { max-width: none; padding: 0; }
 .intro-deux { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; align-items: end; margin-bottom: clamp(48px, 6vw, 88px); }
 .intro-deux h2 { grid-column: 1 / span 6; font-size: var(--t-titre); font-weight: 800; letter-spacing: -0.04em; line-height: .98; margin: 0; }
 .intro-deux p { grid-column: 8 / span 5; font-size: 18px; margin: 0; max-width: 46ch; }
-.affiche-villes { list-style: none; margin: 0; padding: 0; }
+/* Deux colonnes lues de haut en bas : les villes en alerte en tête de la première */
+.affiche-villes {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--lignes, 9), auto);
+  grid-auto-flow: column; gap: 0 clamp(40px, 6vw, 112px);
+}
 .affiche-villes li { margin: 0; }
 .affiche-villes a {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 8px 32px;
-  color: var(--texte); text-decoration: none; padding: .04em 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 4px 24px;
+  color: var(--texte); text-decoration: none; padding: 10px 0;
 }
 .ville-nom {
-  font: 800 var(--t-affiche)/1 var(--police); letter-spacing: -0.045em; justify-self: start;
+  font: 800 clamp(30px, 3.2vw, 48px)/1.05 var(--police); letter-spacing: -0.04em; justify-self: start;
   transition: color .3s var(--sortie), transform .5s var(--ressort); transform-origin: left;
 }
 .ville.orange .ville-nom { color: var(--orange); }
 .ville.rouge .ville-nom { color: var(--rouge); }
 .affiche-villes a:hover .ville-nom, .affiche-villes a:focus-visible .ville-nom { color: var(--lien); transform: translateX(12px); }
-.ville-fait { font-size: 18px; text-align: right; color: var(--texte-2); display: inline-flex; gap: 6px 14px; align-items: baseline; flex-wrap: wrap; justify-content: flex-end; }
+.ville-fait { font-size: 16px; text-align: right; color: var(--texte-2); display: inline-flex; gap: 6px 12px; align-items: baseline; flex-wrap: wrap; justify-content: flex-end; }
 .ville-fait .niveau { font-size: 15px; }
 .ville-verif { display: block; width: 100%; font-size: 15px; color: var(--orange-encre); }
 @media (max-width: 900px) {
   .intro-deux h2, .intro-deux p { grid-column: 1 / -1; }
-  .affiche-villes a { grid-template-columns: 1fr; gap: 6px; padding: 0 0 30px; }
-  .ville-nom { font-size: 11vw; line-height: .95; }
+  .affiche-villes { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-flow: row; }
+  .affiche-villes a { grid-template-columns: 1fr; gap: 4px; padding: 0 0 22px; }
+  .ville-nom { font-size: 9vw; line-height: 1; }
   .ville-fait { justify-content: flex-start; text-align: left; font-size: 15px; }
-  .ville-region { display: none; }
 }
 
-.bandeau-photo { position: relative; overflow: hidden; margin: 0 calc(-1 * var(--gouttiere)) clamp(56px, 7vw, 104px); }
-.bandeau-photo img { width: 100%; height: clamp(240px, 48svh, 520px); object-fit: cover; object-position: 50% 55%; }
-/* Légendes des photos : une pastille de verre posée sur l'image */
-.bandeau-photo figcaption, .geste-photo figcaption, .lecture-photo figcaption {
+/* Légende d'une photo : une pastille de verre posée sur l'image */
+.lecture-photo figcaption {
   position: absolute; left: 16px; bottom: 16px; max-width: calc(100% - 32px); margin: 0;
   padding: 8px 16px; border-radius: 999px; font-size: 15px; line-height: 1.35; color: var(--texte);
 }
-.bandeau-photo figcaption { left: var(--gouttiere); bottom: 22px; }
 
-/* Chapitre 3 : d'où vient la couleur, accordéon de panneaux teintés */
+/* Chapitre 3 : d'où vient la couleur. Cinq bandes d'eau, de la plus profonde à la plus claire, un chiffre clé chacune */
 .champ-calcul { background: var(--nuit); color: #FFFFFF; }
 .champ-calcul .intro-deux p { color: #CBD5E1; }
 .champ-calcul .intro-deux p b { color: #FFFFFF; }
-.accordeon { display: grid; gap: 0; }
-.etape { background: var(--teinte); color: var(--teinte-encre); }
-.etape h3 { margin: 0; }
-.etape-bouton {
-  all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; width: 100%;
-  min-height: 64px; padding: 16px 24px; cursor: pointer; font: 700 21px/1.2 var(--police); letter-spacing: -0.02em;
+.chaine { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.chaine li {
+  margin: 0; background: var(--teinte); color: var(--teinte-encre);
+  padding: clamp(24px, 2.4vw, 34px) clamp(20px, 1.8vw, 28px) clamp(32px, 3vw, 44px);
 }
-.etape-bouton:focus-visible { outline: 3px solid currentColor; outline-offset: -6px; }
-.etape-corps { padding: 0 24px 28px; }
-.etape-corps p { font-size: 18px; max-width: 40ch; margin: 0 0 12px; }
-.etape-corps figure { margin: 16px 0 0; }
-.etape-corps img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--rayon); }
-.etape-corps figcaption { font-size: 15px; margin-top: 8px; }
-.etape.e1 { --teinte: #123B5C; --teinte-encre: #FFFFFF; }
-.etape.e2 { --teinte: var(--ciel-moyen); --teinte-encre: #FFFFFF; }
-.etape.e3 { --teinte: var(--ciel-fonce); --teinte-encre: #FFFFFF; }
-.etape.e4 { --teinte: var(--ciel-clair); --teinte-encre: var(--encre); }
-.etape.e5 { --teinte: var(--ciel-pale); --teinte-encre: var(--encre); }
-/* Avec le script : un seul panneau ouvert */
-.accordeon.actif .etape:not(.ouverte) .etape-corps { display: none; }
-.accordeon.actif .etape-bouton::after { content: "+"; margin-left: auto; font-size: 28px; font-weight: 600; transition: transform .45s var(--ressort); }
-.accordeon.actif .etape.ouverte .etape-bouton::after { transform: rotate(45deg); }
-@media (min-width: 901px) {
-  .accordeon.actif { display: flex; height: clamp(480px, 62svh, 600px); }
-  .accordeon.actif .etape { flex: 1 1 0; min-width: 0; position: relative; overflow: hidden; transition: flex-grow .55s var(--ressort); }
-  .accordeon.actif .etape.ouverte { flex-grow: 7; }
-  .accordeon.actif .etape:not(.ouverte) .etape-bouton {
-    position: absolute; inset: 0; align-items: flex-end; justify-content: flex-start; padding: 24px 0 28px 22px;
-  }
-  .accordeon.actif .etape:not(.ouverte) .etape-bouton span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
-  .accordeon.actif .etape:not(.ouverte) .etape-bouton::after { position: absolute; top: 18px; left: 22px; }
-  .accordeon.actif .etape:not(.ouverte):hover { filter: brightness(1.08); }
-  .accordeon.actif .etape.ouverte .etape-bouton { font-size: var(--t-titre); font-weight: 800; letter-spacing: -0.04em; line-height: 1; padding: 32px 36px 0; min-height: 0; }
-  .accordeon.actif .etape.ouverte .etape-bouton::after { position: absolute; top: 30px; right: 32px; }
-  .accordeon.actif .etape-corps {
-    position: absolute; inset: 120px 36px 36px; padding: 0;
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); grid-template-rows: minmax(0, 1fr); gap: 32px; align-items: end;
-    animation: monte .6s var(--sortie) .12s both;
-  }
-  .accordeon.actif .etape-corps .texte { align-self: end; }
-  .accordeon.actif .etape-corps figure { margin: 0; height: 100%; display: flex; flex-direction: column; }
-  .accordeon.actif .etape-corps img { flex: 1; min-height: 0; aspect-ratio: auto; height: 100%; }
+.chaine-chiffre { font: 800 clamp(40px, 3.8vw, 60px)/1 var(--police); letter-spacing: -0.045em; margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chaine-chiffre span { display: block; font: 600 16px/1.3 var(--police); letter-spacing: 0; margin-top: 10px; white-space: normal; }
+.chaine h3 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin: clamp(40px, 5vw, 72px) 0 8px; }
+.chaine li > p:last-child { font-size: 16px; line-height: 1.5; margin: 0; }
+.chaine a { color: inherit; }
+.chaine .e1 { --teinte: #123B5C; --teinte-encre: #FFFFFF; }
+.chaine .e2 { --teinte: var(--ciel-moyen); --teinte-encre: #FFFFFF; }
+.chaine .e3 { --teinte: var(--ciel-fonce); --teinte-encre: #FFFFFF; }
+.chaine .e4 { --teinte: var(--ciel-clair); --teinte-encre: var(--encre); }
+.chaine .e5 { --teinte: var(--ciel-pale); --teinte-encre: var(--encre); }
+@media (max-width: 1023px) {
+  .chaine { grid-template-columns: minmax(0, 1fr); }
+  .chaine li { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 5fr); gap: 4px 24px; min-height: 0; align-items: start; }
+  .chaine-chiffre { grid-row: span 2; margin: 0; }
+  .chaine h3 { margin: 0 0 4px; }
+}
+@media (max-width: 560px) {
+  .chaine li { grid-template-columns: minmax(0, 1fr); }
+  .chaine-chiffre { grid-row: auto; margin-bottom: 14px; }
 }
 
-/* Chapitre 4 : l'alerte par SMS, un panneau de verre posé sur la photo du Bandama */
-.champ-sms { display: grid; align-items: center; min-height: clamp(560px, 92svh, 900px); background: var(--nuit); color: var(--texte); }
-.sms-fond { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; }
-.sms-panneau {
-  position: relative; z-index: 1; max-width: 1080px; border-radius: var(--rayon-verre);
-  padding: clamp(28px, 4vw, 56px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 56px; align-items: center;
+/* Chapitre 4 : l'alerte par SMS. Le formulaire en verre sur le champ « brume », le téléphone montre le vrai message */
+.champ-sms {
+  background: var(--champ); color: var(--champ-encre);
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px clamp(32px, 5vw, 80px); align-items: center;
 }
+.champ-sms a { color: inherit; }
+.sms-panneau { position: relative; z-index: 1; max-width: 640px; padding: clamp(28px, 3.6vw, 48px); }
 .sms-panneau h2 { font-size: var(--t-titre); font-weight: 800; letter-spacing: -0.04em; line-height: .98; margin: 0 0 16px; }
-.sms-panneau p { font-size: 18px; max-width: 38ch; }
-.sms-legende { position: absolute; z-index: 1; right: var(--gouttiere); bottom: 18px; margin: 0; padding: 6px 14px; border-radius: 999px; font-size: 15px; color: #FFFFFF; background: rgba(3, 6, 12, .55); }
+.sms-panneau > p { font-size: 18px; max-width: 40ch; margin-bottom: 24px; }
+.champ-sms .telephone { position: relative; z-index: 1; }
 .form-sms { display: grid; gap: 12px; }
 .form-sms label { margin: 0; font-weight: 700; color: inherit; font-size: 18px; }
 .form-sms select, .form-sms input[type=tel] { background: var(--saisie); color: var(--saisie-texte); border-color: var(--trait); min-height: 56px; font-size: 18px; }
@@ -555,21 +565,23 @@ main.public.accueil { max-width: none; padding: 0; }
 .form-sms .choix input { margin-top: 3px; accent-color: var(--plein); }
 .autres-canaux { font-size: 15px; margin: 4px 0 0; }
 @media (max-width: 900px) {
-  .champ-sms { min-height: 0; padding-top: 42vw; padding-bottom: 48px; }
-  .sms-panneau { grid-template-columns: minmax(0, 1fr); }
-  .sms-legende { top: 16px; bottom: auto; }
+  .champ-sms { grid-template-columns: minmax(0, 1fr); }
+  .sms-panneau { max-width: none; }
 }
 
-/* Accueil : la répartition des niveaux, en verre sur la photo de la goutte */
-.fiche-niveaux { position: absolute; z-index: 2; right: var(--gouttiere); bottom: clamp(28px, 6vh, 64px); width: min(320px, 34vw); padding: 18px 22px 16px; border-radius: var(--rayon-verre); color: var(--texte); animation: monte 1s var(--ressort) .9s both; }
-.fiche-niveaux p { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
-.fiche-niveaux ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.fiche-niveaux li { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; }
-.fiche-niveaux b { font: 800 26px/1 var(--police); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+/* Accueil : la répartition des niveaux, légende de verre posée au fond de la goutte (au ras du bas de l'écran) */
+.fiche-niveaux {
+  position: absolute; z-index: 2; left: 0; right: 0; bottom: calc(14% / 1.28 + 18px); width: max-content; margin: 0 auto;
+  list-style: none; padding: 6px; display: flex; gap: 2px; border-radius: 999px; color: var(--texte);
+  animation: monte 1s var(--ressort) .9s both;
+}
+.fiche-niveaux li { display: flex; align-items: center; gap: 10px; margin: 0; padding: 4px 14px 4px 6px; }
+.fiche-niveaux b { font: 800 24px/1 var(--police); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) {
-  .fiche-niveaux { left: var(--gouttiere); right: var(--gouttiere); width: auto; bottom: 20px; }
-  .fiche-niveaux ul { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .fiche-niveaux li { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .fiche-niveaux { position: static; width: auto; margin-top: 14px; justify-content: space-between; }
+  .fiche-niveaux li { gap: 6px; padding: 4px 8px 4px 2px; }
+  .fiche-niveaux .niveau { font-size: 14px; padding: 3px 8px; gap: 6px; }
+  .fiche-niveaux b { font-size: 18px; }
 }
 
 /* ---------- Pages intérieures : le chapitre d'ouverture ---------- */
@@ -583,9 +595,9 @@ main.public.accueil { max-width: none; padding: 0; }
 }
 .tete-large { align-items: center; }
 /* Lumière douce derrière le chapitre : le verre posé dessus a quelque chose à flouter */
-.tete::before, .tete::after { content: ""; position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; }
-.tete::before { width: 62vw; height: 62vw; right: -14vw; top: -26vw; background: radial-gradient(closest-side, color-mix(in srgb, #FFFFFF 26%, transparent), transparent); }
-.tete::after { width: 44vw; height: 44vw; left: -16vw; bottom: -30vw; background: radial-gradient(closest-side, color-mix(in srgb, var(--ciel) 30%, transparent), transparent); }
+.tete::before, .tete::after, .champ-sms::before, .champ-sms::after { content: ""; position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; }
+.tete::before, .champ-sms::before { width: 62vw; height: 62vw; right: -14vw; top: -26vw; background: radial-gradient(closest-side, color-mix(in srgb, #FFFFFF 26%, transparent), transparent); }
+.tete::after, .champ-sms::after { width: 44vw; height: 44vw; left: -16vw; bottom: -30vw; background: radial-gradient(closest-side, color-mix(in srgb, var(--ciel) 30%, transparent), transparent); }
 .titre-deux-lignes span { display: block; }
 .tete-texte { position: relative; z-index: 1; min-width: 0; }
 .tete-texte > * { animation: monte .9s var(--sortie) both; }
@@ -603,13 +615,23 @@ main.public.accueil { max-width: none; padding: 0; }
 .tete-visuel { position: relative; z-index: 1; min-width: 0; animation: monte 1s var(--sortie) .2s both; }
 .tete-gouti { justify-self: center; align-self: center; }
 .tete-gouti .gouti { width: clamp(150px, 16vw, 240px); height: auto; animation: gouti-flotte 3.2s ease-in-out infinite; }
-.tete .goutte { left: auto; right: var(--gouttiere); top: 12%; height: 138%; }
 .tete .ok-boite, .tete .alerte-boite { max-width: 640px; }
 .tete + .moment { margin-top: calc(-1 * var(--sous-tete)); }
 .tete-actions + .tete-note { margin-top: 18px; }
 /* Page faite du seul chapitre d'ouverture (connexion, erreur) : il occupe l'écran, sans bande vide avant le pied */
 main.public:has(> .tete:only-child) { padding-bottom: 0; }
 .tete:only-child { margin-bottom: 0; min-height: calc(100svh - 72px); align-items: center; }
+
+/* Signaler : ce qui se passe après l'envoi */
+.apres-envoi { max-width: 440px; justify-self: end; padding: clamp(22px, 2.6vw, 32px); }
+.apres-envoi h2 { font-size: var(--t-sous); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 18px; }
+.apres-envoi ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; counter-reset: apres; }
+.apres-envoi li { counter-increment: apres; display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 14px; margin: 0; font-size: 17px; line-height: 1.45; }
+.apres-envoi li::before {
+  content: counter(apres); grid-row: span 2; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--champ-action); color: var(--champ-action-encre); font-weight: 800;
+}
+.apres-envoi li b { display: block; font-size: 19px; }
 
 /* Carte des risques */
 .legende-grande { list-style: none; margin: 0; padding: 26px 28px; display: grid; gap: 14px; font-size: 18px; }
@@ -730,12 +752,12 @@ main.public:has(> .tete:only-child) { padding-bottom: 0; }
 .moment-apres { background: var(--champ-brume); }
 [data-theme="dark"] .moment-apres { color: #FFFFFF; }
 .moment-apres .consignes li::before { border-radius: 2px; height: 4px; top: .75em; }
-.geste { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px 24px; align-items: center; padding: var(--chapitre) 0 40px; }
-.geste-photo { grid-column: 1 / span 5; margin: 0; position: relative; overflow: hidden; border-radius: var(--rayon-verre); }
-.geste-photo img { aspect-ratio: 4 / 5; object-fit: cover; object-position: 60% 50%; }
-.geste-texte { grid-column: 7 / span 6; }
+/* Le geste qui protège la rue : même grille que les chapitres Avant / Pendant / Après */
+.geste { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px 24px; align-items: start; padding: var(--chapitre) 0 40px; }
+.geste-titre { grid-column: 1 / span 5; }
+.geste-texte { grid-column: 6 / span 7; }
 .geste-chapeau { font-size: 21px; max-width: 44ch; }
-.geste-trois { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; margin-top: 32px; }
+.geste-trois { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; padding-top: 10px; }
 .geste-trois h3 { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
 
 /* Numéros d'urgence et bouton d'appel */
@@ -781,7 +803,7 @@ main.public:has(> .tete:only-child) { padding-bottom: 0; }
 @media (max-width: 900px) {
   .tete { grid-template-columns: minmax(0, 1fr); align-items: start; }
   .tete h1 { font-size: 11vw; }
-  .tete .goutte { display: none; }
+  .apres-envoi { justify-self: start; }
   .tete-gouti .gouti { width: 140px; }
   .formulaire-etapes { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .progression {
@@ -793,7 +815,7 @@ main.public:has(> .tete:only-child) { padding-bottom: 0; }
   .progression li::before { width: 32px; height: 32px; font-size: 15px; }
   .champs-deux { grid-template-columns: minmax(0, 1fr); }
   .trois-faits, .suivi { grid-template-columns: minmax(0, 1fr); }
-  .lecture-photo, .lecture-texte, .geste-photo, .geste-texte, .moment-titre, .moment .consignes { grid-column: 1 / -1; }
+  .lecture-photo, .lecture-texte, .geste-titre, .geste-texte, .moment-titre, .moment .consignes { grid-column: 1 / -1; }
   .moment-titre { position: static; }
   .geste-trois { grid-template-columns: minmax(0, 1fr); }
   .consignes li { font-size: 18px; }
@@ -1087,7 +1109,6 @@ dialog.guide[open] { animation: monte .4s var(--sortie); }
 @keyframes monte { from { opacity: 0; transform: translateY(24px); } }
 @keyframes apparait { from { opacity: 0; transform: translateY(14px); } }
 @keyframes volet { from { clip-path: inset(100% 0 0 0); transform: scale(1.12); } to { clip-path: inset(0 0 0 0); transform: scale(1); } }
-@keyframes derive { from { transform: scale(1); } to { transform: scale(1.07) translate(-1.5%, 1%); } }
 /* Entrées au défilement : posées par app.js seulement, le contenu reste visible sans script */
 .revele-actif [data-revele] > *, .revele-actif .revele {
   opacity: 0; transform: translateY(28px);
@@ -1109,7 +1130,7 @@ dialog.guide[open] { animation: monte .4s var(--sortie); }
 /* Défilement lié aux photos (navigateurs qui le gèrent ; ailleurs, les photos restent fixes) */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .bandeau-photo img, .geste-photo img, .lecture-photo img, .sms-fond, .etape-corps img {
+    .lecture-photo img {
       animation: se-pose linear both; animation-timeline: view(); animation-range: entry 0% cover 55%;
     }
     @keyframes se-pose { from { transform: scale(1.18); } to { transform: scale(1); } }
@@ -1120,7 +1141,7 @@ dialog.guide[open] { animation: monte .4s var(--sortie); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: .01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
-  .goutte img { animation: none; }
+  .carte-goutte, .repere .onde { animation: none; }
 }
 
 /* ---------- Impression ---------- */

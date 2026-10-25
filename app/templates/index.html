@@ -33,6 +33,26 @@
   {%- endif %}
 </svg>
 {%- endmacro %}
+{#- Repère d'une ville sur la carte de la goutte : la forme du niveau (rond, triangle, octogone, comme les étiquettes),
+    le nom du côté indiqué (d, g, h, b), un anneau pour la ville choisie, une onde quand la ville est en alerte. -#}
+{% macro repere(id, nom, niveau, x, y, cote='d', texte='', titre='', choisie=false, communes='', lien='') -%}
+<a class="repere {{ niveau }}{{ ' choisie' if choisie }}" href="{{ lien or ('/?ville=' ~ id ~ '#situation') }}"
+   {%- if not lien %} data-ville="{{ id }}"{% endif %}{% if communes %} data-communes="{{ communes }}"{% endif %}
+   aria-label="{{ nom }}, niveau {{ NIVEAUX.get(niveau, 'non calculé') | lower }}">
+  <g transform="translate({{ '%.0f' | format(x) }} {{ '%.0f' | format(y) }})">
+    {%- if titre %}<title>{{ titre }}</title>{% endif %}
+    <circle class="anneau" r="24"/>
+    {%- if niveau in ('orange', 'rouge') %}<circle class="onde" r="12"/>{% endif %}
+    <g class="forme">
+    {%- if niveau == 'orange' %}<path d="M0 -15 L14 10 L-14 10 Z"/>
+    {%- elif niveau == 'rouge' %}<path d="M-5 -12 L5 -12 L12 -5 L12 5 L5 12 L-5 12 L-12 5 L-12 -5 Z"/>
+    {%- else %}<circle r="11"/>{% endif %}
+    </g>
+    {%- set pos = {'d': (20, 6, 'start'), 'g': (-20, 6, 'end'), 'h': (0, -24, 'middle'), 'b': (0, 36, 'middle')}[cote] %}
+    <text x="{{ pos[0] }}" y="{{ pos[1] }}" text-anchor="{{ pos[2] }}">{{ texte or nom }}</text>
+  </g>
+</a>
+{%- endmacro %}
 {#- Page d'accueil : état de chaque ville, préparé ici pour colorer toute la page (attribut data-champ du body)
     et pour le choix de la ville en direct (app.js lit le JSON « etats »). -#}
 {%- if page == 'accueil' %}
@@ -46,10 +66,14 @@
     {%- else %}{% set fait = 'Pas encore calculé' %}{% endif %}
     {%- set verif = NIVEAUX[z.niveau_calcule] if z.niveau_annonce and z.niveau_calcule and z.niveau_calcule != z.niveau_annonce else '' %}
     {%- if (z.region or 'Autres') not in regions %}{% set _ = regions.append(z.region or 'Autres') %}{% endif %}
-    {%- set _ = villes.append({'id': z.id, 'nom': z.nom, 'region': z.region or 'Autres', 'niveau': n,
+    {%- set _ = villes.append({'id': z.id, 'nom': z.nom, 'region': z.region or 'Autres', 'niveau': n, 'type': z.type,
+                               'lat': z.lat, 'lon': z.lon,
                                'rang': {'rouge': 0, 'orange': 1, 'vert': 2}.get(n, 3), 'fait': fait, 'verif': verif,
                                'heure': z.calcule_le.strftime('%d/%m à %H:%M') if z.calcule_le else ''}) %}
   {%- endfor %}
+  {#- Sur la carte de la goutte, les communes d'Abidjan (quelques kilomètres d'écart) forment un seul repère,
+      au niveau le plus élevé d'entre elles ; le détail est dans la liste des villes. -#}
+  {%- set abidjan = villes | selectattr('region', 'equalto', "District d'Abidjan") | list %}
   {%- set rouges = villes | selectattr('niveau', 'equalto', 'rouge') | map(attribute='nom') | list %}
   {%- set oranges = villes | selectattr('niveau', 'equalto', 'orange') | map(attribute='nom') | list %}
   {%- set n_vert = villes | selectattr('niveau', 'equalto', 'vert') | list | length %}
@@ -109,18 +133,12 @@
 <link rel="icon" href="/static/logo-picto.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
-{% if page == 'accueil' %}<link rel="preload" as="image" href="/static/img/pluie-abidjan-averse.webp" fetchpriority="high">{% endif %}
 <link rel="stylesheet" href="{{ statique('style.css') }}">
 {% if page == "aide" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "aide_suivi" %}<meta http-equiv="refresh" content="60">{% elif page == "carte" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "carte_publique" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "op_aide" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script><meta http-equiv="refresh" content="60">{% elif page == "op_lieux" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "signaler" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% else %}{% endif %}
 </head>
 <body data-champ="{{ champ_page }}">
 <a class="saut" href="#contenu">Aller au contenu</a>
 <div id="haut-de-page" aria-hidden="true"></div>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <clipPath id="forme-goutte" clipPathUnits="objectBoundingBox">
-    <path d="M0.5,0 C0.5,0 0,0.425 0,0.669 A0.5,0.331 0 0 0 1,0.669 C1,0.425 0.5,0 0.5,0 Z"/>
-  </clipPath>
-</svg>
 {% macro lien(chemin_lien, libelle, nom_icone, compte=0) -%}
   {%- set actif = chemin == chemin_lien or (chemin_lien not in ('/', '/operateur') and chemin.startswith(chemin_lien)) -%}
   <a href="{{ chemin_lien }}" {% if actif %}aria-current="page"{% endif %}>{{ icone(nom_icone) }}<span>{{ libelle }}</span>
@@ -218,13 +236,43 @@
   il faut préciser les consignes avant d'exiger mieux d'un modèle.</div></div>
 {% elif page == "accueil" %}
 {#- Quatre chapitres de couleur pleine. Le premier prend la couleur du niveau (national, ou de la ville choisie) ;
-    la goutte du logo sert de fenêtre sur une averse à Abidjan. Comportement : app.js (choix de la ville, accordéon). -#}
+    la goutte du logo sert de fenêtre sur la carte du pays, chaque ville à sa couleur. Comportement : app.js (choix de la ville). -#}
 <script type="application/json" id="etats-villes">{{ etats | tojson }}</script>
 
 <section class="champ champ-situation" id="situation" aria-labelledby="titre-situation">
+  {#- Contour du pays : Natural Earth 1:50 m (domaine public), simplifié ; repère (longitude + 8,7) × 100, (10,6 − latitude) × 100. -#}
+  {%- set cote = {'man': 'g', 'bangolo': 'g', 'tiassale': 'h', 'san-pedro': 'g', 'grand-bassam': 'b'} %}
+  {%- set communes = abidjan | map(attribute='id') | list %}
   <div class="goutte">
-    <img src="/static/img/pluie-abidjan-averse.webp" width="1600" height="1200" fetchpriority="high"
-         alt="Averse dans une rue d'Abidjan : l'eau tombe des toits en rideaux, un enfant court sous la pluie.">
+    <div class="goutte-cadre">
+      <svg class="carte-goutte" viewBox="0 0 840 1270" preserveAspectRatio="xMidYMax slice" role="group" aria-labelledby="carte-goutte-titre">
+        <title id="carte-goutte-titre">Carte des {{ villes | length }} villes surveillées, chacune à son niveau</title>
+        <clipPath id="goutte-forme"><path d="M420 0C420 0 0 540 0 850A420 420 0 0 0 840 850C840 540 420 0 420 0Z"/></clipPath>
+        <g clip-path="url(#goutte-forme)">
+          <rect class="goutte-fond" width="840" height="1270"/>
+          <g transform="translate(131 458) scale(.92)">
+            <path class="pays" d="M71 44 82 41 89 36 95 26 104 17 114 18 120 16 129 26 131 26 134 34 160 40 168 46 173 42 171 35 175 26 201 25 203 21 201 2 202 -3 205 -6 214 1 228 4 229 3 227 -7 244 -12 247 0 246 4 251 20 246 34 258 40 267 41 279 29 280 25 286 21 301 17 314 16 332 29 344 28 352 31 360 36 371 55 373 67 389 76 398 84 407 89 417 88 422 92 429 95 437 95 443 86 491 68 512 68 541 72 548 70 554 75 560 85 571 91 588 117 593 118 600 112 600 130 603 132 595 149 595 155 601 157 605 164 610 180 619 239 616 243 609 245 609 255 591 267 580 291 574 315 571 340 566 350 553 366 546 379 548 391 546 395 546 406 550 425 570 489 574 496 591 500 595 517 594 524 591 527 590 542 588 545 581 545 575 548 568 547 567 545 553 540 555 525 550 525 546 526 539 544 535 547 483 538 472 531 458 529 415 532 409 536 458 534 464 534 466 537 380 546 373 545 368 540 342 539 336 541 333 545 360 544 364 547 314 551 279 559 215 584 185 593 164 606 147 611 127 622 116 625 113 621 111 578 113 552 119 549 121 536 127 528 127 512 130 505 125 476 123 475 119 476 106 469 97 468 90 462 90 456 87 452 81 437 72 431 50 431 41 428 36 425 25 414 16 413 10 409 30 389 37 380 40 362 40 353 26 308 21 304 27 300 47 304 58 284 57 273 69 252 68 246 65 243 56 242 44 235 46 214 49 212 65 210 88 213 96 222 100 222 102 219 101 204 98 196 92 188 75 181 76 162 80 158 92 152 86 145 78 141 80 118 67 120 61 117 56 110 54 63 56 58Z"/>
+            {%- for v in villes if v.region != "District d'Abidjan" and v.lat is not none %}
+            {{ repere(v.id, v.nom, v.niveau, (v.lon + 8.7) * 100, (10.6 - v.lat) * 100, cote.get(v.id, 'd'),
+                      titre=v.nom ~ ' : ' ~ v.fait, choisie=(v.id == ville_choisie)) }}
+            {%- endfor %}
+            {%- if abidjan %}
+            {%- set pire = (abidjan | sort(attribute='rang') | first).niveau %}
+            {{ repere('', "District d'Abidjan (" ~ abidjan | length ~ " communes)", pire,
+                      ((abidjan | sum(attribute='lon')) / abidjan | length + 8.7) * 100,
+                      (10.6 - (abidjan | sum(attribute='lat')) / abidjan | length) * 100, 'g', texte='Abidjan',
+                      titre="District d'Abidjan : détail des " ~ abidjan | length ~ " communes dans la liste des villes",
+                      choisie=(ville_choisie in communes), communes=communes | join(' '), lien='#villes') }}
+            {%- endif %}
+          </g>
+        </g>
+      </svg>
+    </div>
+    <ul class="fiche-niveaux verre" aria-label="Répartition des {{ villes | length }} villes par niveau">
+      <li><span class="niveau rouge">Rouge</span><b>{{ rouges | length }}</b></li>
+      <li><span class="niveau orange">Orange</span><b>{{ oranges | length }}</b></li>
+      <li><span class="niveau vert">Vert</span><b>{{ n_vert }}</b></li>
+    </ul>
   </div>
   <div class="situation-texte">
     <h1 id="titre-situation"{% if etat.long %} class="long"{% endif %}><span data-l1>{{ etat.l1 }}</span> <span data-l2>{{ etat.l2 }}</span></h1>
@@ -245,28 +293,15 @@
       <a class="bouton" href="#sms">{{ icone('bell') }}Recevoir l'alerte par SMS</a>
     </div>
   </div>
-  <aside class="fiche-niveaux verre" aria-label="Répartition des niveaux d'alerte">
-    <p>{{ villes | length }} villes, en ce moment</p>
-    <ul>
-      <li><span class="niveau rouge">Rouge</span><b>{{ rouges | length }}</b></li>
-      <li><span class="niveau orange">Orange</span><b>{{ oranges | length }}</b></li>
-      <li><span class="niveau vert">Vert</span><b>{{ n_vert }}</b></li>
-    </ul>
-  </aside>
 </section>
 
 <section class="champ champ-villes" id="villes" aria-labelledby="titre-villes">
   <div class="intro-deux" data-revele>
     <h2 id="titre-villes">{{ villes | length }} villes surveillées</h2>
-    <p>Chaque ville a sa couleur, recalculée toutes les heures{% if dernier %} (dernier calcul le {{ dernier }}){% endif %}.
-      Les villes en alerte passent en tête. Touchez la vôtre pour la suivre en haut de page.</p>
+    <p>Recalculées toutes les heures{% if dernier %}, dernier calcul le {{ dernier }}{% endif %}. Les villes en alerte
+      passent en tête. Touchez la vôtre pour la suivre en haut de page.</p>
   </div>
-  <figure class="bandeau-photo revele">
-    <img src="/static/img/pluie-cocody.webp" width="1800" height="760" loading="lazy"
-         alt="Toits de Cocody sous un ciel de pluie, du linge étendu sur une terrasse mouillée, un pylône au loin.">
-    <figcaption>La pluie sur Cocody, Abidjan (photo Maxence, CC BY 2.0).</figcaption>
-  </figure>
-  <ul class="affiche-villes">
+  <ul class="affiche-villes" style="--lignes: {{ ((villes | length) / 2) | round(0, 'ceil') | int }}">
   {% for v in villes | sort(attribute='rang') %}
     <li class="ville {{ v.niveau }} revele">
       <a href="/?ville={{ v.id }}#situation" data-ville="{{ v.id }}">
@@ -274,7 +309,6 @@
         <span class="ville-fait">
           <span class="niveau {{ v.niveau }}">{{ NIVEAUX.get(v.niveau, 'Non calculé') }}</span>
           <span>{{ v.fait }}</span>
-          <span class="ville-region">{{ v.region }}</span>
           {% if v.verif %}<span class="ville-verif">Niveau {{ v.verif | lower }} calculé, en cours de vérification</span>{% endif %}
         </span>
       </a>
@@ -287,77 +321,40 @@
   <div class="intro-deux" data-revele>
     <h2 id="titre-calcul">D'où vient la couleur</h2>
     <p>Chaque heure, pour chaque ville, la plateforme croise la pluie, les fleuves et l'état des caniveaux.
-      <b>Le vert et l'orange sont publiés seuls ; le rouge ne part qu'après la validation d'un opérateur.</b></p>
+      <b>Le rouge ne part jamais sans la validation d'un opérateur.</b></p>
   </div>
-  <div class="accordeon revele" data-accordeon>
-    <div class="etape e1 ouverte">
-      <h3><button type="button" class="etape-bouton" id="etape-b1" aria-expanded="true" aria-controls="etape-c1"><span>La pluie</span></button></h3>
-      <div class="etape-corps" id="etape-c1" role="region" aria-labelledby="etape-b1">
-        <div class="texte"><p>La pluie tombée, mesurée par satellite (CHIRPS), et la pluie prévue par cinq modèles météo.
-          Les seuils de chaque ville sont calés sur ses inondations documentées.</p></div>
-        <figure><img src="/static/img/cote-ivoire-iss.webp" width="1062" height="1610" loading="lazy" style="object-position:50% 40%"
-                     alt="La côte ivoirienne vue de l'espace : un fleuve brun serpente dans la forêt jusqu'à l'océan.">
-          <figcaption>La côte ivoirienne vue de la Station spatiale internationale, 2009 (NASA, domaine public).</figcaption></figure>
-      </div>
-    </div>
-    <div class="etape e2">
-      <h3><button type="button" class="etape-bouton" id="etape-b2" aria-expanded="false" aria-controls="etape-c2"><span>Les fleuves</span></button></h3>
-      <div class="etape-corps" id="etape-c2" role="region" aria-labelledby="etape-b2">
-        <div class="texte"><p>Au bord du Bandama, de la Comoé, du Sassandra et de la Bia, le débit prévu sur sept jours (GloFAS)
-          est comparé à la crue annuelle, puis à la crue de cinq ans. Quelques jours d'avance, là où la pluie n'en donne que quelques heures.</p></div>
-        <figure><img src="/static/img/sassandra-soubre.webp" width="1600" height="1200" loading="lazy"
-                     alt="Le Sassandra à Soubré, large et brun, entre deux rives de forêt.">
-          <figcaption>Le Sassandra à Soubré (photo Cyriac Gbogou, CC BY-SA 4.0).</figcaption></figure>
-      </div>
-    </div>
-    <div class="etape e3">
-      <h3><button type="button" class="etape-bouton" id="etape-b3" aria-expanded="false" aria-controls="etape-c3"><span>Les caniveaux</span></button></h3>
-      <div class="etape-corps" id="etape-c3" role="region" aria-labelledby="etape-b3">
-        <div class="texte"><p>Des relais photographient les caniveaux marqués d'un repère orange et d'un QR code. Une IA classe la photo ;
-          quand deux relais voient le même caniveau bouché, les seuils de la ville baissent jusqu'à 15 %.</p></div>
-        <figure><img src="/static/img/pluie-abidjan-rue.webp" width="1600" height="1200" loading="lazy" style="object-position:60% 60%"
-                     alt="Une rue d'Abidjan sous l'eau après une averse, un minibus les roues dans l'eau.">
-          <figcaption>Rue inondée à Abidjan, juin 2009 (photo WILLAV-FR, CC BY-SA 4.0).</figcaption></figure>
-      </div>
-    </div>
-    <div class="etape e4">
-      <h3><button type="button" class="etape-bouton" id="etape-b4" aria-expanded="false" aria-controls="etape-c4"><span>Les relevés</span></button></h3>
-      <div class="etape-corps" id="etape-c4" role="region" aria-labelledby="etape-b4">
-        <div class="texte"><p>Chaque matin, des relais lisent leur pluviomètre et <a href="/pluviometre">saisissent la hauteur d'eau</a>.
-          Ces relevés rattrapent les orages d'une ou deux heures que le satellite ne voit pas.</p></div>
-        <figure><img src="/static/img/pluviometre.webp" width="1000" height="1333" loading="lazy" style="object-position:50% 45%"
-                     alt="Un pluviomètre en plastique transparent, gradué, fixé à un poteau.">
-          <figcaption>Un pluviomètre à cylindre gradué (photo Famartin, CC BY-SA 3.0).</figcaption></figure>
-      </div>
-    </div>
-    <div class="etape e5">
-      <h3><button type="button" class="etape-bouton" id="etape-b5" aria-expanded="false" aria-controls="etape-c5"><span>La décision</span></button></h3>
-      <div class="etape-corps" id="etape-c5" role="region" aria-labelledby="etape-b5">
-        <div class="texte"><p>Le vert et l'orange sont publiés automatiquement. Le rouge attend la validation d'un opérateur,
-          relancé au bout de 15 minutes, puis part par SMS et Telegram aux abonnés de la ville.</p></div>
-        <figure><img src="/static/img/pluie-abidjan-averse.webp" width="1600" height="1200" loading="lazy" style="object-position:30% 20%"
-                     alt="Des rideaux d'eau tombent des toits d'une rue d'Abidjan pendant une averse.">
-          <figcaption>Averse à Abidjan, juin 2009 (photo WILLAV-FR, CC BY-SA 4.0).</figcaption></figure>
-      </div>
-    </div>
-  </div>
+  {#- Cinq bandes d'eau, de la plus profonde à la plus claire : tout est visible d'un coup d'œil, un chiffre clé par étape -#}
+  <ol class="chaine" data-revele>
+    <li class="e1"><p class="chaine-chiffre">5 <span>modèles météo</span></p>
+      <h3>La pluie</h3>
+      <p>La pluie tombée, mesurée par satellite (CHIRPS), et la pluie prévue. Les seuils de chaque ville sont calés sur ses inondations passées.</p></li>
+    <li class="e2"><p class="chaine-chiffre">7 j <span>de débit prévu</span></p>
+      <h3>Les fleuves</h3>
+      <p>Bandama, Comoé, Sassandra et Bia : le débit prévu (GloFAS) est comparé aux crues passées. Quelques jours d'avance.</p></li>
+    <li class="e3"><p class="chaine-chiffre">−15 % <span>sur les seuils</span></p>
+      <h3>Les caniveaux</h3>
+      <p>Quand deux relais photographient le même caniveau bouché, les seuils de la ville baissent.</p></li>
+    <li class="e4"><p class="chaine-chiffre">24 h <span>par relevé</span></p>
+      <h3>Les relevés</h3>
+      <p>Chaque matin, des relais <a href="/pluviometre">lisent leur pluviomètre</a>. Ils rattrapent les orages courts que le satellite ne voit pas.</p></li>
+    <li class="e5"><p class="chaine-chiffre">1 h <span>entre deux calculs</span></p>
+      <h3>La décision</h3>
+      <p>Vert et orange sont publiés seuls. Le rouge attend la validation d'un opérateur, puis part par SMS et Telegram.</p></li>
+  </ol>
 </section>
 
-<section class="champ champ-sms" id="sms" aria-labelledby="titre-sms">
-  <img class="sms-fond" src="/static/img/bandama-tiassale.webp" width="1600" height="1067" loading="lazy"
-       alt="Le Bandama à Tiassalé : eau calme, berges vertes, pylônes électriques au loin.">
-  <div class="sms-panneau verre" data-revele>
-    <div>
-      <h2 id="titre-sms">L'alerte arrive par SMS</h2>
-      <p>Même sans internet. Un message seulement quand le niveau de votre ville change ; les alertes rouges sont validées
-        par un opérateur. Envoyez STOP pour arrêter.</p>
-    </div>
+{#- L'alerte par SMS : le formulaire sur un panneau de verre, et le téléphone qui montre le vrai message pour la commune choisie -#}
+{%- set ville_sms = (villes | selectattr('id', 'equalto', ville_choisie) | first) if ville_choisie else (villes | first) %}
+<section class="champ champ-sms" id="sms" data-champ="brume" aria-labelledby="titre-sms">
+  <div class="sms-panneau verre-champ" data-revele>
+    <h2 id="titre-sms">L'alerte arrive par SMS</h2>
+    <p>Même sans internet. Un message seulement quand le niveau de votre ville change. Envoyez STOP pour arrêter.</p>
     <form method="post" action="/abonnement" class="form-sms">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <label for="sms-zone">Votre commune</label>
       <select id="sms-zone" name="zone_id">
         {% for region in regions %}<optgroup label="{{ region }}">{% for v in villes if v.region == region %}
-          <option value="{{ v.id }}"{% if v.id == ville_choisie %} selected{% endif %}>{{ v.nom }}</option>{% endfor %}
+          <option value="{{ v.id }}" data-type="{{ v.type }}"{% if v.id == ville_choisie %} selected{% endif %}>{{ v.nom }}</option>{% endfor %}
         </optgroup>{% endfor %}
       </select>
       <label for="sms-tel">Numéro de téléphone</label>
@@ -372,7 +369,18 @@
         <a href="/abonnement">Se désabonner</a>.</p>
     </form>
   </div>
-  <p class="sms-legende">Le Bandama à Tiassalé (photo Durand ndri, CC BY-SA 4.0)</p>
+  {%- set modele_sms = MESSAGES_SMS.fr_crue if ville_sms and ville_sms.type == 'fluviale' else MESSAGES_SMS.fr %}
+  <figure class="telephone" aria-label="Exemple de SMS d'alerte">
+    <div class="telephone-ecran">
+      <p class="telephone-heure">06:12</p>
+      <div class="telephone-sms">
+        <b>AquaSentinelle</b>
+        <span data-sms data-pluie="{{ MESSAGES_SMS.fr.orange }}" data-crue="{{ MESSAGES_SMS.fr_crue.orange }}">{{ modele_sms.orange.format(zone=(ville_sms.nom if ville_sms else 'Abobo')) }}</span>
+      </div>
+      <p class="telephone-sms telephone-sms-2"><b>AquaSentinelle</b><span>Abobo : retour a la normale.</span></p>
+    </div>
+    <figcaption>Le message reçu en vigilance orange, pour la commune choisie.</figcaption>
+  </figure>
 </section>
 {% elif page == "aide" %}
 <section class="tete tete-urgence" aria-labelledby="titre-page">
@@ -1140,15 +1148,12 @@ if (pts.length) carte.fitBounds(pts.map(p => [p[0], p[1]]), {padding: [40, 40], 
 </section>
 
 <section class="geste" aria-labelledby="dechets">
-  <figure class="geste-photo revele">
-    <img src="/static/img/pluie-abidjan-rue.webp" width="1600" height="1200" loading="lazy"
-         alt="Une rue d'Abidjan sous l'eau après une averse, un minibus les roues dans l'eau.">
-    <figcaption>Rue inondée à Abidjan, juin 2009 (photo WILLAV-FR, CC BY-SA 4.0).</figcaption>
-  </figure>
-  <div class="geste-texte" data-revele>
+  <div class="geste-titre" data-revele>
     <h2 id="dechets">Le geste qui protège la rue</h2>
     <p class="geste-chapeau">Un caniveau bouché ne laisse plus passer l'eau : la rue devient une rivière en quelques minutes.
       Quand les caniveaux d'une ville sont bouchés, nos seuils d'alerte baissent.</p>
+  </div>
+  <div class="geste-texte" data-revele>
     <div class="geste-trois">
       <div><h3>Trier et confier ses déchets</h3><p>Utilisez la pré-collecte du quartier et les points de dépôt. Sachets d'eau,
         plastiques et bouteilles sont les premiers responsables des bouchons.</p></div>
@@ -1392,9 +1397,14 @@ document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au $
       puis affiché sur la <a href="/carte">carte publique</a>.</p>
     <p class="tete-note">{{ icone('siren', 'petite') }} Quelqu'un est en danger ? <a href="tel:180">Appelez le 180</a>, puis <a href="/aide">demandez de l'aide</a>.</p>
   </div>
-  <div class="goutte goutte-tete">
-    <img src="/static/img/pluie-abidjan-averse.webp" width="1600" height="1200" style="object-position:8% 50%"
-         alt="Pendant une averse à Abidjan, l'eau tombe des toits en rideaux devant les portails d'une rue.">
+  <div class="tete-visuel">
+    <div class="apres-envoi verre-champ">
+      <h2>Après l'envoi</h2>
+      <ol>
+        <li><b>On vérifie</b>Un opérateur, ou un voisin qui signale la même chose à côté.</li>
+        <li><b>C'est sur la carte</b>Visible par tous pendant 48 h, 7 jours pour un danger.</li>
+      </ol>
+    </div>
   </div>
 </section>
 
@@ -1614,14 +1624,7 @@ document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au $
       <p>En alerte rouge, les consignes de l'ONPC et de la SODEXAM priment.</p></div>
   </div>
   {% if page == 'accueil' %}
-  <p class="pied-credits">Photos : averse et rue inondée à Abidjan, <a href="https://commons.wikimedia.org/wiki/File:WL-CI-Abidjan-Il_pleut_des_cordes_2.jpg">WILLAV-FR</a>
-    (<a href="https://commons.wikimedia.org/wiki/File:WL-CI-Abidjan-Il_pleut_des_cordes.jpg">2</a>), CC BY-SA 4.0 ·
-    pluie sur Cocody, <a href="https://commons.wikimedia.org/wiki/File:Abidjan_Cocody_view_14226838979.jpg">Maxence</a>, CC BY 2.0 ·
-    le Bandama à Tiassalé, <a href="https://commons.wikimedia.org/wiki/File:Tiassal%C3%A9_-_Fleuve_Bandama_-_biodiversit%C3%A9_24.jpg">Durand ndri</a>, CC BY-SA 4.0 ·
-    le Sassandra à Soubré, <a href="https://commons.wikimedia.org/wiki/File:Fleuve_Sassandra_%C3%A0_Soubr%C3%A9_1.JPG">Cyriac Gbogou</a>, CC BY-SA 4.0 ·
-    la côte vue de l'ISS, <a href="https://commons.wikimedia.org/wiki/File:ISS020-E-11150_-_View_of_C%C3%B4te_d%27Ivoire.jpg">NASA</a>, domaine public ·
-    pluviomètre, <a href="https://commons.wikimedia.org/w/index.php?curid=26883912">Famartin</a>, CC BY-SA 3.0.
-    Photos redimensionnées, via Wikimedia Commons.</p>
+  <p class="pied-credits">Contour du pays : <a href="https://www.naturalearthdata.com/">Natural Earth</a>, domaine public.</p>
   {% endif %}
   <div class="pied-fin">
     <span>AquaSentinelle CI · projet APP3, ESATIC, 2026-2027</span>
