@@ -63,7 +63,7 @@
     <a class="marque" href="/"><img src="/static/logo-picto.png" alt=""><span>AquaSentinelle <b>CI</b></span></a>
     <nav class="nav-public" aria-label="Navigation principale">
       <a href="/" {% if chemin == '/' %}aria-current="page"{% endif %}>{{ icone('gauge') }}Niveaux d'alerte</a>
-      <a href="/carte" {% if chemin == '/carte' %}aria-current="page"{% endif %}>{{ icone('map') }}Carte</a>
+      <a href="/carte" {% if chemin.startswith('/carte') %}aria-current="page"{% endif %}>{{ icone('map') }}Carte</a>
       <a href="/signaler" {% if chemin == '/signaler' %}aria-current="page"{% endif %}>{{ icone('upload') }}Signaler</a>
       <a href="/prevention" {% if chemin == '/prevention' %}aria-current="page"{% endif %}>{{ icone('shield-check') }}Consignes</a>
       <a href="/abonnement" {% if chemin == '/abonnement' %}aria-current="page"{% endif %}>{{ icone('bell') }}Alertes SMS</a>

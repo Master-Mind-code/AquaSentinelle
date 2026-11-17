@@ -109,7 +109,12 @@ async def formulaire_incomplet(request: Request, exc: RequestValidationError):
 async def entetes_securite(request: Request, call_next):
     r = await call_next(request)
     r.headers.setdefault("X-Content-Type-Options", "nosniff")
-    r.headers.setdefault("X-Frame-Options", "DENY")
+    if request.url.path.startswith("/static/carte/"):
+        # la carte est affichée dans un cadre de la page /carte (même origine) ; ses 360 fichiers sont gardés une heure
+        r.headers["X-Frame-Options"] = "SAMEORIGIN"
+        r.headers.setdefault("Cache-Control", "public, max-age=3600")
+    else:
+        r.headers.setdefault("X-Frame-Options", "DENY")
     # pas « same-origin » : les tuiles OpenStreetMap exigent un Referer (sinon 403 « Access blocked »)
     r.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     return r

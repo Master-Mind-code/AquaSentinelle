@@ -1,0 +1,113 @@
+<title>AquaSentinelle CI · risques et caniveaux</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+/* Deux cartes dans deux onglets : chacune garde sa page, le cadrage suit d'un onglet à l'autre */
+:root { --fond: #eef1ec; --vert: #1f4d3a; --terre: #b5532e; --sol: #e7e4dc; --encre: #1c2721;
+  --titre: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif; --texte: "Source Sans 3", "Segoe UI", Arial, sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --fond: #151b18; --vert: #7fbf9d; --terre: #e08a62; --sol: #262b28; --encre: #e6ece8; color-scheme: dark } }
+:root[data-theme="dark"] { --fond: #151b18; --vert: #7fbf9d; --terre: #e08a62; --sol: #262b28; --encre: #e6ece8; color-scheme: dark }
+html, body { height: 100%; margin: 0; }
+/* affichée dans la page « Carte » de l'application (?integre=1) : le titre est déjà donné par la page, il ne reste que les onglets */
+.integre .titre { display: none; }
+.integre header { justify-content: flex-start; padding-top: 6px; }
+body { background: var(--fond); color: var(--encre); font: 15px/1.45 var(--texte); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--vert); }
+.coque { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+header { background: var(--vert); color: #fff; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 4px 24px; }
+:root[data-theme="dark"] header { color: #10170f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) header { color: #10170f; } }
+.titre { padding-bottom: 8px; min-width: 0; }
+header h1 { margin: 0; font: 700 1.35rem/1.1 var(--titre); letter-spacing: .01em; text-wrap: balance; }
+header p { margin: 2px 0 0; font-size: .92rem; opacity: .9; }
+nav { display: flex; gap: 4px; align-self: flex-end; }
+nav button { font: 600 .98rem/1 var(--titre); letter-spacing: .02em; color: inherit; background: rgba(255,255,255,.12); border: 0;
+  border-radius: 8px 8px 0 0; padding: 10px 16px 11px; cursor: pointer; opacity: .85; display: inline-flex; align-items: center; gap: 8px; }
+nav button:hover { opacity: 1; background: rgba(255,255,255,.2); }
+nav button[aria-selected="true"] { background: var(--fond); color: var(--encre); opacity: 1; }
+nav button:focus-visible { outline: 2px solid var(--terre); outline-offset: -2px; }
+nav i { width: 18px; height: 4px; border-radius: 2px; display: inline-block; }
+main { position: relative; min-height: 0; }
+iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--sol); }
+iframe[hidden] { display: block; visibility: hidden; pointer-events: none; }
+@media (max-width: 760px) {
+  header { padding-top: 8px; }
+  .titre { flex: 1 1 100%; padding-bottom: 4px; }
+  header p { display: none; }
+  nav { flex: 1 1 100%; }
+  nav button { flex: 1; justify-content: center; padding: 9px 8px 10px; font-size: .92rem; }
+  nav .long { display: none; }
+}
+</style>
+
+<div class="coque">
+  <header>
+    <div class="titre">
+      <h1>AquaSentinelle CI · Abidjan</h1>
+      <p id="sous-titre">Inondations, débordements de cours d'eau et glissements de terrain · 13 communes du District · démonstration</p>
+    </div>
+    <nav role="tablist" aria-label="Cartes">
+      <button role="tab" id="o-risque" aria-controls="v-risque" aria-selected="true"><i style="background:linear-gradient(90deg,#e9c48e,#c4612f,#8c2a1c)"></i>Zones à risque</button>
+      <button role="tab" id="o-caniveaux" aria-controls="v-caniveaux" aria-selected="false" tabindex="-1"><i style="background:linear-gradient(90deg,#f2d48f,#d0602b,#5c1210)"></i>Caniveaux<span class="long">&nbsp;et drainage</span></button>
+    </nav>
+  </header>
+  <main>
+    <iframe id="v-risque" role="tabpanel" aria-labelledby="o-risque" title="Carte des zones à risque" data-src="risque.html"></iframe>
+    <iframe id="v-caniveaux" role="tabpanel" aria-labelledby="o-caniveaux" title="Carte des caniveaux et du drainage" data-src="caniveaux.html" hidden></iframe>
+  </main>
+</div>
+
+<script>
+if (/[?&]integre=1/.test(location.search)) document.documentElement.classList.add('integre');
+(function () {
+  const SOUS = {
+    risque: "Inondations, débordements de cours d'eau et glissements de terrain · 13 communes du District · démonstration",
+    caniveaux: "L'eau que chaque quartier envoie aux caniveaux cartographiés · base du relevé de terrain · démonstration"
+  };
+  const ong = { risque: document.getElementById('o-risque'), caniveaux: document.getElementById('o-caniveaux') };
+  const cad = { risque: document.getElementById('v-risque'), caniveaux: document.getElementById('v-caniveaux') };
+  let actif = null;
+  const carteDe = f => { try { return f.contentWindow && f.contentWindow._carte; } catch (e) { return null; } };
+  // même cadrage d'une carte à l'autre : on attend que la carte cible soit prête
+  function appliquer(f, vue, essai) {
+    const m = carteDe(f);
+    if (m && m._loaded) { m.invalidateSize(); m.setView(vue.c, Math.max(m.getMinZoom(), vue.z), { animate: false }); }
+    else if ((essai || 0) < 150) setTimeout(() => appliquer(f, vue, (essai || 0) + 1), 100);
+  }
+  function montrer(nom, id, focus) {
+    const ancienne = actif && carteDe(cad[actif]);
+    const vue = ancienne && ancienne._loaded ? { c: ancienne.getCenter(), z: ancienne.getZoom() } : null;
+    const f = cad[nom];
+    if (!f.getAttribute('src')) f.src = f.dataset.src + (id ? '#' + encodeURIComponent(id) : '');
+    else if (id) { try { f.contentWindow.location.hash = encodeURIComponent(id); } catch (e) {} }
+    for (const k in cad) {
+      const oui = k === nom;
+      cad[k].hidden = !oui;
+      ong[k].setAttribute('aria-selected', String(oui)); ong[k].tabIndex = oui ? 0 : -1;
+    }
+    document.getElementById('sous-titre').textContent = SOUS[nom];
+    if (vue && !id && actif !== nom) appliquer(f, vue);
+    actif = nom;
+    if (focus) ong[nom].focus();
+    try { history.replaceState(null, '', '#' + nom + (id ? '/' + id : '')); } catch (e) {}
+  }
+  for (const k in ong) {
+    ong[k].addEventListener('click', () => montrer(k));
+    ong[k].addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); montrer(k === 'risque' ? 'caniveaux' : 'risque', null, true); }
+    });
+  }
+  // onglet caniveaux préchargé au repos, quelques secondes après l'ouverture (sa page et ses deux fichiers propres ;
+  // le fond, les routes et les images sont déjà dans le cache, partagés avec la carte des risques)
+  window.addEventListener('load', () => setTimeout(() => {
+    const go = () => ['caniveaux.html', 'couches/caniveaux.geojson', 'couches/bassins.txt'].forEach(u => {
+      const l = document.createElement('link'); l.rel = 'prefetch'; l.href = u; document.head.appendChild(l); });
+    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 4000 }); else go();
+  }, 6000));
+  // lien direct : #caniveaux, ou #caniveaux/KOU-003 pour un tronçon
+  const [nom, id] = decodeURIComponent(location.hash.slice(1)).split('/');
+  montrer(nom === 'caniveaux' ? 'caniveaux' : 'risque', nom === 'caniveaux' ? id : null);
+})();
+</script>

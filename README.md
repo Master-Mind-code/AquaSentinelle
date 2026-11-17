@@ -89,7 +89,8 @@ en attente (seuils abaissés de 15 %) → validation par l'opérateur → envoi 
 | Besoin | Réponse | Où |
 |---|---|---|
 | Signaler route inondée, danger, caniveau, avec photo et position | Formulaire `/signaler` (GPS ou toucher la carte) ; validé si un 2e habitant confirme à moins de 300 m | `app/services/signalements.py` |
-| Carte des zones à risque, inondées, lieux sûrs | Carte publique `/carte` : niveaux, signalements vérifiés (48 h), lieux sûrs, historique par ville | `app/routes_citoyen.py` |
+| Carte des zones à risque et des caniveaux | Carte publique `/carte` : chaque bâtiment d'Abidjan classé par risque, et onglet Caniveaux (eau envoyée par chaque quartier) ; fichiers dans `app/static/carte/` | `app/routes_citoyen.py` |
+| Inondations signalées, lieux sûrs | `/carte/signalements` : niveaux d'alerte, signalements vérifiés (48 h), lieux sûrs, stations de rivière, capteurs, historique par ville | `app/routes_citoyen.py` |
 | Sensibiliser, conseils avant et pendant | Page `/prevention` ; chaque alerte orange ou rouge y renvoie par un lien | `app/templates/prevention.html` |
 | Aide d'urgence avec position | `/aide` : « Appeler le 180 » d'abord, puis envoi de la position aux opérateurs et page de suivi | `app/services/aide.py` |
 | Capteurs de niveau d'eau | API `POST /api/capteurs/<id>/mesures` (clé par appareil), score, alerte de silence ; simulateur et programme ESP32 | `app/services/capteurs.py`, `firmware/` |

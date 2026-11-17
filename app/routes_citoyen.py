@@ -43,7 +43,14 @@ def guide_video(request: Request):
 
 @router.get("/carte")
 def carte_publique(request: Request):
-    return rendu(request, "carte_publique.html", types=signalements.TYPES)
+    """Carte des zones à risque et des caniveaux d'Abidjan (app/static/carte, affichée dans un cadre)."""
+    return rendu(request, "carte_publique.html")
+
+
+@router.get("/carte/signalements")
+def carte_signalements(request: Request):
+    """Ancienne carte : inondations signalées, lieux sûrs, niveaux d'alerte des villes, stations de rivière, capteurs."""
+    return rendu(request, "carte_signalements.html", types=signalements.TYPES)
 
 
 @router.get("/api/carte")
