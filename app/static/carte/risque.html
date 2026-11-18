@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{var t=localStorage.getItem("aqua-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<script>
+// dans un onglet : le bandeau de titre est affiché par la page qui contient les deux cartes
+if (window.parent !== window) document.documentElement.classList.add('dans-onglet');
+// référence à la carte Leaflet (window._carte), pour garder le même cadrage d'un onglet à l'autre
+(function () { var v; Object.defineProperty(window, 'L', { configurable: true, get: function () { return v; },
+  set: function (x) { v = x; try { x.Map.addInitHook(function () { if (!window._carte) window._carte = this; }); } catch (e) {} } }); })();
+</script>
+<style>.dans-onglet .app > header { display: none; }</style>
+<title>AquaSentinelle CI · Abidjan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style> .leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; left: 0; top: 0; } .leaflet-container { overflow: hidden; } .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-user-drag: none; } .leaflet-tile::selection { background: transparent; } .leaflet-safari .leaflet-tile { image-rendering: -webkit-optimize-contrast; } .leaflet-safari .leaflet-tile-container { width: 1600px; height: 1600px; -webkit-transform-origin: 0 0; } .leaflet-marker-icon, .leaflet-marker-shadow { display: block; } .leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; } .leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-shadow-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-image-layer, .leaflet-container .leaflet-tile { max-width: none !important; max-height: none !important; width: auto; padding: 0; } .leaflet-container img.leaflet-tile { mix-blend-mode: plus-lighter; } .leaflet-container.leaflet-touch-zoom { -ms-touch-action: pan-x pan-y; touch-action: pan-x pan-y; } .leaflet-container.leaflet-touch-drag { -ms-touch-action: pinch-zoom; touch-action: none; touch-action: pinch-zoom; } .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { -ms-touch-action: none; touch-action: none; } .leaflet-container { -webkit-tap-highlight-color: transparent; } .leaflet-container a { -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4); } .leaflet-tile { filter: inherit; visibility: hidden; } .leaflet-tile-loaded { visibility: inherit; } .leaflet-zoom-box { width: 0; height: 0; -moz-box-sizing: border-box; box-sizing: border-box; z-index: 800; } .leaflet-overlay-pane svg { -moz-user-select: none; } .leaflet-pane { z-index: 400; } .leaflet-tile-pane { z-index: 200; } .leaflet-overlay-pane { z-index: 400; } .leaflet-shadow-pane { z-index: 500; } .leaflet-marker-pane { z-index: 600; } .leaflet-tooltip-pane { z-index: 650; } .leaflet-popup-pane { z-index: 700; } .leaflet-map-pane canvas { z-index: 100; } .leaflet-map-pane svg { z-index: 200; } .leaflet-vml-shape { width: 1px; height: 1px; } .lvml { behavior: none; display: inline-block; position: absolute; } .leaflet-control { position: relative; z-index: 800; pointer-events: visiblePainted; pointer-events: auto; } .leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; } .leaflet-top { top: 0; } .leaflet-right { right: 0; } .leaflet-bottom { bottom: 0; } .leaflet-left { left: 0; } .leaflet-control { float: left; clear: both; } .leaflet-right .leaflet-control { float: right; } .leaflet-top .leaflet-control { margin-top: 10px; } .leaflet-bottom .leaflet-control { margin-bottom: 10px; } .leaflet-left .leaflet-control { margin-left: 10px; } .leaflet-right .leaflet-control { margin-right: 10px; } .leaflet-fade-anim .leaflet-popup { opacity: 0; -webkit-transition: opacity 0.2s linear; -moz-transition: opacity 0.2s linear; transition: opacity 0.2s linear; } .leaflet-fade-anim .leaflet-map-pane .leaflet-popup { opacity: 1; } .leaflet-zoom-animated { -webkit-transform-origin: 0 0; -ms-transform-origin: 0 0; transform-origin: 0 0; } svg.leaflet-zoom-animated { will-change: transform; } .leaflet-zoom-anim .leaflet-zoom-animated { -webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1); -moz-transition: -moz-transform 0.25s cubic-bezier(0,0,0.25,1); transition: transform 0.25s cubic-bezier(0,0,0.25,1); } .leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { -webkit-transition: none; -moz-transition: none; transition: none; } .leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; } .leaflet-interactive { cursor: pointer; } .leaflet-grab { cursor: -webkit-grab; cursor: -moz-grab; cursor: grab; } .leaflet-crosshair, .leaflet-crosshair .leaflet-interactive { cursor: crosshair; } .leaflet-popup-pane, .leaflet-control { cursor: auto; } .leaflet-dragging .leaflet-grab, .leaflet-dragging .leaflet-grab .leaflet-interactive, .leaflet-dragging .leaflet-marker-draggable { cursor: move; cursor: -webkit-grabbing; cursor: -moz-grabbing; cursor: grabbing; } .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-image-layer, .leaflet-pane > svg path, .leaflet-tile-container { pointer-events: none; } .leaflet-marker-icon.leaflet-interactive, .leaflet-image-layer.leaflet-interactive, .leaflet-pane > svg path.leaflet-interactive, svg.leaflet-image-layer.leaflet-interactive path { pointer-events: visiblePainted; pointer-events: auto; } .leaflet-container { background: #ddd; outline-offset: 1px; } .leaflet-container a { color: #0078A8; } .leaflet-zoom-box { border: 2px dotted #38f; background: rgba(255,255,255,0.5); } .leaflet-container { font-family: "Helvetica Neue", Arial, Helvetica, sans-serif; font-size: 12px; font-size: 0.75rem; line-height: 1.5; } .leaflet-bar { box-shadow: 0 1px 5px rgba(0,0,0,0.65); border-radius: 4px; } .leaflet-bar a { background-color: #fff; border-bottom: 1px solid #ccc; width: 26px; height: 26px; line-height: 26px; display: block; text-align: center; text-decoration: none; color: black; } .leaflet-bar a, .leaflet-control-layers-toggle { background-position: 50% 50%; background-repeat: no-repeat; display: block; } .leaflet-bar a:hover, .leaflet-bar a:focus { background-color: #f4f4f4; } .leaflet-bar a:first-child { border-top-left-radius: 4px; border-top-right-radius: 4px; } .leaflet-bar a:last-child { border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; border-bottom: none; } .leaflet-bar a.leaflet-disabled { cursor: default; background-color: #f4f4f4; color: #bbb; } .leaflet-touch .leaflet-bar a { width: 30px; height: 30px; line-height: 30px; } .leaflet-touch .leaflet-bar a:first-child { border-top-left-radius: 2px; border-top-right-radius: 2px; } .leaflet-touch .leaflet-bar a:last-child { border-bottom-left-radius: 2px; border-bottom-right-radius: 2px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { font: bold 18px 'Lucida Console', Monaco, monospace; text-indent: 1px; } .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out { font-size: 22px; } .leaflet-control-layers { box-shadow: 0 1px 5px rgba(0,0,0,0.4); background: #fff; border-radius: 5px; } .leaflet-control-layers-toggle { background-image: none; width: 36px; height: 36px; } .leaflet-retina .leaflet-control-layers-toggle { background-image: none; background-size: 26px 26px; } .leaflet-touch .leaflet-control-layers-toggle { width: 44px; height: 44px; } .leaflet-control-layers .leaflet-control-layers-list, .leaflet-control-layers-expanded .leaflet-control-layers-toggle { display: none; } .leaflet-control-layers-expanded .leaflet-control-layers-list { display: block; position: relative; } .leaflet-control-layers-expanded { padding: 6px 10px 6px 6px; color: #333; background: #fff; } .leaflet-control-layers-scrollbar { overflow-y: scroll; overflow-x: hidden; padding-right: 5px; } .leaflet-control-layers-selector { margin-top: 2px; position: relative; top: 1px; } .leaflet-control-layers label { display: block; font-size: 13px; font-size: 1.08333em; } .leaflet-control-layers-separator { height: 0; border-top: 1px solid #ddd; margin: 5px -10px 5px -6px; } .leaflet-default-icon-path { background-image: none; } .leaflet-container .leaflet-control-attribution { background: #fff; background: rgba(255, 255, 255, 0.8); margin: 0; } .leaflet-control-attribution, .leaflet-control-scale-line { padding: 0 5px; color: #333; line-height: 1.4; } .leaflet-control-attribution a { text-decoration: none; } .leaflet-control-attribution a:hover, .leaflet-control-attribution a:focus { text-decoration: underline; } .leaflet-attribution-flag { display: inline !important; vertical-align: baseline !important; width: 1em; height: 0.6669em; } .leaflet-left .leaflet-control-scale { margin-left: 5px; } .leaflet-bottom .leaflet-control-scale { margin-bottom: 5px; } .leaflet-control-scale-line { border: 2px solid #777; border-top: none; line-height: 1.1; padding: 2px 5px 1px; white-space: nowrap; -moz-box-sizing: border-box; box-sizing: border-box; background: rgba(255, 255, 255, 0.8); text-shadow: 1px 1px #fff; } .leaflet-control-scale-line:not(:first-child) { border-top: 2px solid #777; border-bottom: none; margin-top: -2px; } .leaflet-control-scale-line:not(:first-child):not(:last-child) { border-bottom: 2px solid #777; } .leaflet-touch .leaflet-control-attribution, .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { box-shadow: none; } .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { border: 2px solid rgba(0,0,0,0.2); background-clip: padding-box; } .leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; } .leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 12px; } .leaflet-popup-content { margin: 13px 24px 13px 20px; line-height: 1.3; font-size: 13px; font-size: 1.08333em; min-height: 1px; } .leaflet-popup-content p { margin: 17px 0; margin: 1.3em 0; } .leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-top: -1px; margin-left: -20px; overflow: hidden; pointer-events: none; } .leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; pointer-events: auto; -webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -ms-transform: rotate(45deg); transform: rotate(45deg); } .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: white; color: #333; box-shadow: 0 3px 14px rgba(0,0,0,0.4); } .leaflet-container a.leaflet-popup-close-button { position: absolute; top: 0; right: 0; border: none; text-align: center; width: 24px; height: 24px; font: 16px/24px Tahoma, Verdana, sans-serif; color: #757575; text-decoration: none; background: transparent; } .leaflet-container a.leaflet-popup-close-button:hover, .leaflet-container a.leaflet-popup-close-button:focus { color: #585858; } .leaflet-popup-scrolled { overflow: auto; } .leaflet-oldie .leaflet-popup-content-wrapper { -ms-zoom: 1; } .leaflet-oldie .leaflet-popup-tip { width: 24px; margin: 0 auto; -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)"; filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678); } .leaflet-oldie .leaflet-control-zoom, .leaflet-oldie .leaflet-control-layers, .leaflet-oldie .leaflet-popup-content-wrapper, .leaflet-oldie .leaflet-popup-tip { border: 1px solid #999; } .leaflet-div-icon { background: #fff; border: 1px solid #666; } .leaflet-tooltip { position: absolute; padding: 6px; background-color: #fff; border: 1px solid #fff; border-radius: 3px; color: #222; white-space: nowrap; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); } .leaflet-tooltip.leaflet-interactive { cursor: pointer; pointer-events: auto; } .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { position: absolute; pointer-events: none; border: 6px solid transparent; background: transparent; content: ""; } .leaflet-tooltip-bottom { margin-top: 6px; } .leaflet-tooltip-top { margin-top: -6px; } .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before { left: 50%; margin-left: -6px; } .leaflet-tooltip-top:before { bottom: 0; margin-bottom: -12px; border-top-color: #fff; } .leaflet-tooltip-bottom:before { top: 0; margin-top: -12px; margin-left: -6px; border-bottom-color: #fff; } .leaflet-tooltip-left { margin-left: -6px; } .leaflet-tooltip-right { margin-left: 6px; } .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { top: 50%; margin-top: -6px; } .leaflet-tooltip-left:before { right: 0; margin-right: -12px; border-left-color: #fff; } .leaflet-tooltip-right:before { left: 0; margin-left: -12px; border-right-color: #fff; } @media print { .leaflet-control { -webkit-print-color-adjust: exact; print-color-adjust: exact; } } </style>
+<style>
+/* Mise en page : barre de titre, panneau de couches à gauche, carte plein cadre à droite ; empilé sur téléphone */
+:root {
+  --fond: #eef1ec; --panneau: #fbfcfa; --encre: #1c2721; --doux: #5a6a61; --trait: #d5ddd6;
+  --vert: #1f4d3a; --terre: #b5532e; --terre-clair: #f3dccf; --sol: #e7e4dc;
+  --tres: #9e1b1b; --eleve: #e39a3b; --faible: #cfcabf;
+  --c0: #f1e7d2; --c1: #e9c48e; --c2: #df9a55; --c3: #c4612f; --c4: #8c2a1c;
+  --lib-fort: #1c2721; --lib: #3f4a43; --lib-doux: #5b645e; --halo: #ffffff;
+  --f-eau: #b0c4bf; --f-foret: #cbdbb9; --f-parc: #d4e4c1; --f-indus: #e3ddd6; --f-route: #ffffff; --f-bord: #c9c1b2;
+  --titre: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  --texte: "Source Sans 3", "Segoe UI", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --fond: #151b18; --panneau: #1b221e; --encre: #e6ece8; --doux: #9fb0a6; --trait: #2f3a34;
+  --vert: #7fbf9d; --terre: #e08a62; --terre-clair: #3a2a22; --sol: #262b28; --faible: #6f6a61;
+  --lib-fort: #f3f6f4; --lib: #d6ddd8; --lib-doux: #b3bdb6; --halo: #141a17;
+  --f-eau: #1e3634; --f-foret: #26352a; --f-parc: #2a3a2b; --f-indus: #2f2d2b; --f-route: #4c534e; --f-bord: #1a1f1c; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --fond: #151b18; --panneau: #1b221e; --encre: #e6ece8; --doux: #9fb0a6; --trait: #2f3a34;
+  --vert: #7fbf9d; --terre: #e08a62; --terre-clair: #3a2a22; --sol: #262b28; --faible: #6f6a61;
+  --lib-fort: #f3f6f4; --lib: #d6ddd8; --lib-doux: #b3bdb6; --halo: #141a17;
+  --f-eau: #1e3634; --f-foret: #26352a; --f-parc: #2a3a2b; --f-indus: #2f2d2b; --f-route: #4c534e; --f-bord: #1a1f1c; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--fond); color: var(--encre); font: 15px/1.45 var(--texte); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--vert); }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+header { background: var(--vert); color: #fff; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; }
+:root[data-theme="dark"] header { color: #10170f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) header { color: #10170f; } }
+header h1 { margin: 0; font: 700 1.35rem/1.1 var(--titre); letter-spacing: .01em; text-wrap: balance; }
+header p { margin: 0; font-size: .92rem; opacity: .9; }
+.corps { display: grid; grid-template-columns: minmax(280px, 340px) 1fr; min-height: 0; }
+aside { background: var(--panneau); border-right: 1px solid var(--trait); overflow-y: auto; padding-block: 14px 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+#carte { background: var(--sol); min-height: 0; }
+.chiffres { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.chiffre b { display: block; font: 700 1.5rem/1 var(--titre); color: var(--terre); font-variant-numeric: tabular-nums; }
+.chiffre span { font-size: .82rem; color: var(--doux); }
+h2 { margin: 0 0 8px; font: 600 .78rem/1.2 var(--titre); letter-spacing: .08em; text-transform: uppercase; color: var(--doux); }
+.echelle { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.echelle i { height: 12px; display: block; }
+.echelle-lib { display: flex; justify-content: space-between; font-size: .75rem; color: var(--doux); font-variant-numeric: tabular-nums; margin-top: 3px; }
+.niveaux { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: .86rem; }
+.niveaux span { display: inline-flex; align-items: center; gap: 6px; }
+.pastille { width: 12px; height: 12px; border-radius: 2px; display: inline-block; flex: none; }
+.zoomnote { font-size: .8rem; color: var(--doux); margin: 8px 0 0; }
+.groupe { display: flex; flex-direction: column; gap: 6px; }
+.groupe label { display: flex; align-items: center; gap: 8px; font-size: .92rem; cursor: pointer; }
+.groupe input { accent-color: var(--vert); width: 16px; height: 16px; }
+.groupe input:focus-visible { outline: 2px solid var(--terre); outline-offset: 2px; }
+.groupe small { color: var(--doux); font-size: .78rem; margin-left: 24px; margin-top: -4px; }
+/* clés de légende : la couleur de chaque couche, à côté de sa case */
+.cle { display: flex; flex-wrap: wrap; gap: 3px 12px; margin: -3px 0 3px 24px; font-size: .78rem; color: var(--doux); font-variant-numeric: tabular-nums; }
+.cle span { display: inline-flex; align-items: center; gap: 5px; }
+.cle i { width: 15px; height: 10px; border-radius: 2px; flex: none; display: inline-block; }
+.cle i.ligne { height: 0; width: 20px; border-radius: 0; border-top: 2px solid #2f6f6a; }
+.cle i.tirets { height: 0; width: 20px; border-radius: 0; border-top: 1.5px dashed var(--encre); }
+.cle i.point { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.cle i.relief { background: linear-gradient(90deg, rgba(40,40,40,.05), rgba(40,40,40,.55)); }
+.cle .nom-q { font: 600 .7rem var(--titre); letter-spacing: .06em; text-transform: uppercase; color: var(--lib); }
+.cle .nom-r { font: 500 .76rem var(--titre); color: var(--lib-doux); }
+table { width: 100%; border-collapse: collapse; font-size: .86rem; font-variant-numeric: tabular-nums; }
+th { text-align: left; font: 600 .74rem var(--titre); letter-spacing: .05em; text-transform: uppercase; color: var(--doux); padding: 4px 4px; border-bottom: 1px solid var(--trait); }
+td { padding: 5px 4px; border-bottom: 1px solid var(--trait); }
+td.n, th.n { text-align: right; }
+tbody tr { cursor: pointer; }
+tbody tr:hover, tbody tr:focus-visible { background: var(--terre-clair); outline: none; }
+.plate { font-size: .72rem; color: var(--terre); font-weight: 600; margin-left: 4px; }
+.sources { font-size: .76rem; color: var(--doux); line-height: 1.4; }
+.leaflet-container { font-family: var(--texte); background: var(--sol); }
+.leaflet-popup-content { margin: 12px 14px; font-size: .9rem; line-height: 1.4; min-width: 220px; }
+.fiche h3 { margin: 0 0 2px; font: 700 1.05rem var(--titre); }
+.fiche .niv { display: inline-block; padding: 1px 8px; border-radius: 10px; color: #fff; font-size: .78rem; font-weight: 600; margin-bottom: 6px; }
+.fiche dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0; }
+.fiche dt { color: #5a6a61; } .fiche dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+/* Noms sur la carte : communes, puis quartiers de plus en plus fins en zoomant (comme un plan de ville) */
+.etiquette, .quartier { pointer-events: none; }
+.etiquette span, .quartier span { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; line-height: 1;
+  font-family: var(--titre); color: var(--lib); text-shadow: 0 0 3px var(--halo), 0 0 3px var(--halo), 0 0 2px var(--halo), 0 0 1px var(--halo); }
+.etiquette span { font-weight: 700; font-size: 13px; color: var(--lib-fort); letter-spacing: .01em; }
+.q1 span { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.q2 span { font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.q3 span { font-weight: 600; font-size: 12px; }
+.q4 span { font-weight: 500; font-size: 11px; color: var(--lib-doux); }
+.rue { pointer-events: none; }
+.rue span { position: absolute; left: 0; top: 0; white-space: nowrap; line-height: 1; font: 500 11px var(--titre); letter-spacing: .01em; color: var(--lib-doux);
+  text-shadow: 0 0 3px var(--halo), 0 0 3px var(--halo), 0 0 2px var(--halo), 0 0 1px var(--halo); }
+.chargement { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 800; background: var(--panneau); color: var(--encre);
+  border: 1px solid var(--trait); padding: 4px 10px; border-radius: 12px; font-size: .82rem; }
+@media (max-width: 760px) {
+  .corps { grid-template-columns: 1fr; grid-template-rows: 62vh auto; }
+  #carte { order: -1; height: 62vh; }
+  aside { border-right: 0; border-top: 1px solid var(--trait); padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow: visible; }
+  .app { height: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .leaflet-zoom-anim .leaflet-zoom-animated { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <h1>AquaSentinelle CI · zones à risque d'Abidjan</h1>
+    <p>Inondations, débordements de cours d'eau et glissements de terrain · 13 communes du District · démonstration</p>
+  </header>
+  <div class="corps">
+    <aside>
+      <section class="chiffres" aria-label="Chiffres clés">
+        <div class="chiffre"><b>2,06 M</b><span>habitants en risque élevé ou très élevé (30 %)</span></div>
+        <div class="chiffre"><b>298 486</b><span>bâtiments exposés sur 958 210 analysés</span></div>
+      </section>
+
+      <section>
+        <h2>Niveau de risque</h2>
+        <div class="echelle" aria-hidden="true"><i style="background:var(--c0)"></i><i style="background:var(--c1)"></i><i style="background:var(--c2)"></i><i style="background:var(--c3)"></i><i style="background:var(--c4)"></i></div>
+        <div class="echelle-lib"><span>0 %</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100 %</span></div>
+        <p class="zoomnote">Part des bâtiments en risque élevé ou très élevé dans les environs (lissée sur une centaine de mètres). Un clic donne le détail du carreau.</p>
+        <div class="niveaux">
+          <span><i class="pastille" style="background:var(--tres)"></i>Très élevé</span>
+          <span><i class="pastille" style="background:var(--eleve)"></i>Élevé</span>
+          <span><i class="pastille" style="background:var(--faible)"></i>Faible</span>
+        </div>
+        <p class="zoomnote">À partir du zoom 14 : chacun des 958 210 bâtiments du District, coloré par niveau de risque. Cliquer un bâtiment ouvre sa fiche « pourquoi ici ».</p>
+      </section>
+
+      <section class="groupe" aria-label="Pourquoi c'est risqué">
+        <h2>Pourquoi c'est risqué</h2>
+        <label><input type="checkbox" id="c-coursdeau" checked> Cours d'eau (bassin ≥ 1 km²)</label>
+        <div class="cle"><span><i class="ligne" style="border-top-width:3px"></i>rivière (≥ 10 km²)</span><span><i class="ligne" style="border-top-width:1.5px"></i>ruisseau</span></div>
+        <label><input type="checkbox" id="c-debord"> Zones de débordement</label>
+        <div class="cle"><span><i style="background:rgba(47,111,106,.55)"></i>moins de 1 m au-dessus</span><span><i style="background:rgba(140,199,184,.55)"></i>1 à 2 m</span></div>
+        <label><input type="checkbox" id="c-hand"> Hauteur au-dessus du cours d'eau</label>
+        <div class="cle"><span><i style="background:rgba(0,105,92,.62)"></i>≤ 1 m</span><span><i style="background:rgba(127,205,187,.58)"></i>1 à 2 m</span><span><i style="background:rgba(199,233,192,.45)"></i>2 à 5 m</span></div>
+        <label><input type="checkbox" id="c-pente"> Pente du terrain</label>
+        <div class="cle"><span><i style="background:rgba(232,163,61,.45)"></i>5 à 8°</span><span><i style="background:rgba(214,96,36,.6)"></i>8 à 15°</span><span><i style="background:rgba(158,27,27,.72)"></i>≥ 15°</span></div>
+      </section>
+
+      <section class="groupe" aria-label="Qui est exposé">
+        <h2>Qui est exposé</h2>
+        <label><input type="checkbox" id="c-pop"> Population 2026 (par 100 m)</label>
+        <div class="cle"><span><i style="background:rgba(253,224,197,.75)"></i>5–25</span><span><i style="background:rgba(240,160,110,.8)"></i>25–75</span><span><i style="background:rgba(204,90,50,.85)"></i>75–150</span><span><i style="background:rgba(128,30,20,.9)"></i>150 et + hab./ha</span></div>
+      </section>
+
+      <section class="groupe" aria-label="Ce qui s'est passé">
+        <h2>Ce qui s'est passé</h2>
+        <label><input type="checkbox" id="c-sites" checked> Sites constatés (ONPC, État, District, presse)</label>
+        <div class="cle"><span><i class="point" style="background:#2f6f6a"></i>inondation</span><span><i class="point" style="background:#8a4b22"></i>glissement de terrain</span></div>
+      </section>
+
+      <section class="groupe" aria-label="Repères">
+        <h2>Repères</h2>
+        <label><input type="checkbox" id="c-quartiers" checked> Noms des quartiers et des rues</label>
+        <div class="cle"><span class="nom-q">Riviéra</span><span class="nom-r">Rue Lecoeur</span><span>plus de noms en zoomant</span></div>
+        <label><input type="checkbox" id="c-communes" checked> Limites des communes</label>
+        <div class="cle"><span><i class="tirets"></i>limite de commune</span></div>
+        <label><input type="checkbox" id="c-relief" checked> Relief</label>
+        <div class="cle"><span><i class="relief"></i>ombrage du relief (s'efface en zoomant)</span></div>
+        <small>Fond de plan © contributeurs OpenStreetMap :</small>
+        <div class="cle" id="cle-fond"><span><i style="background:var(--f-eau)"></i>eau</span><span><i style="background:var(--f-foret)"></i>forêt</span><span><i style="background:var(--f-parc)"></i>parc</span><span><i style="background:var(--f-indus)"></i>zone industrielle</span><span><i style="background:var(--f-route);box-shadow:inset 0 0 0 1px var(--f-bord)"></i>rue</span></div>
+      </section>
+
+      <section>
+        <h2>Par commune</h2>
+        <table>
+          <thead><tr><th>Commune</th><th class="n">À risque</th><th class="n">Habitants</th></tr></thead>
+          <tbody id="tab-communes"></tbody>
+        </table>
+        <p class="zoomnote">« plate » : relief trop faible, méthode des zones basses, cuvettes et canaux. Cliquer une ligne pour y aller.</p>
+      </section>
+
+      <p class="sources">Bâtiments : Google Open Buildings v3, hauteurs 2.5D Temporal 2023 · Fond de plan (rues, eau, végétation, quartiers) : © contributeurs OpenStreetMap · Relief : FABDEM V1-2 (Univ. Bristol, CC BY-NC-SA) · Population : WorldPop Global2 2026 · Cours d'eau : calcul sur le relief et © contributeurs OpenStreetMap · Sites : ONPC 2025, État 2022, District 2024, presse. Une susceptibilité n'est pas une prévision.</p>
+    </aside>
+    <div id="carte" role="region" aria-label="Carte des zones à risque"></div>
+  </div>
+</div>
+
+<script src="../leaflet/leaflet.js"></script>
+<script>
+(async function () {
+  const css = getComputedStyle(document.documentElement);
+  const tok = n => css.getPropertyValue(n).trim();
+  const CL = [tok('--c0'), tok('--c1'), tok('--c2'), tok('--c3'), tok('--c4')];
+  const NIV = { 'Très élevé': tok('--tres'), 'Élevé': tok('--eleve'), 'Faible': tok('--faible') };
+  const classe = r => CL[Math.min(4, Math.floor(r / 20))];
+  const nf = n => (n == null ? '–' : Math.round(n).toLocaleString('fr-FR'));
+  const n1 = n => (n == null ? '–' : n.toLocaleString('fr-FR', { maximumFractionDigits: 1 }));
+  // zoom le plus éloigné : celui où tout le District tient dans la carte (11 sur un écran d'ordinateur, 10 sur un téléphone)
+  const DISTRICT = L.latLngBounds([5.2269, -4.3061], [5.5966, -3.7738]);
+  const carte = L.map('carte', { zoomSnap: 1, minZoom: 10, maxZoom: 19, preferCanvas: true, attributionControl: true });
+  const zoomMin = () => Math.max(10, Math.min(12, carte.getBoundsZoom(DISTRICT, false, [24, 24])));
+  // ouverture : tout le District s'il tient ; sinon (téléphone) le centre de l'agglomération au zoom 11
+  carte.setMinZoom(zoomMin());
+  if (zoomMin() >= 11) carte.setView(DISTRICT.getCenter(), zoomMin()); else carte.setView([5.37, -4.02], 11);
+  carte.on('resize', () => carte.setMinZoom(zoomMin()));
+  carte.setMaxBounds([[5.12, -4.45], [5.70, -3.62]]);
+  carte.attributionControl.setPrefix(false).addAttribution('© OpenStreetMap · Google Open Buildings · FABDEM · WorldPop');
+  ['plan', 'fond', 'analyse', 'risque', 'routes', 'batiments', 'lignes', 'reperes'].forEach((p, i) => { carte.createPane(p).style.zIndex = 300 + i * 30; });
+  carte.getPane('reperes').style.pointerEvents = 'none';
+  // voile autour du District : au-dessus des cours d'eau, sous les étiquettes
+  const pVoile = carte.createPane('voile'); pVoile.style.zIndex = 495; pVoile.style.pointerEvents = 'none';
+  const rendu2 = L.svg({ padding: 0.4, pane: 'lignes' });
+  ['plan', 'fond', 'analyse', 'risque', 'routes', 'batiments'].forEach(p => { carte.getPane(p).style.pointerEvents = 'none'; });
+  const charge = document.createElement('div'); charge.className = 'chargement'; charge.hidden = true;
+  document.getElementById('carte').appendChild(charge);
+
+  // ---------- Chargement : tout part en même temps ; chaque couche n'attend que ses propres données ----------
+  const json = u => fetch(u).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  // fichiers compacts : octets compressés (zlib) puis encodés en base64 (les artefacts ne servent pas de binaire)
+  const octets = async url => { const t = await (await fetch(url)).text(), s = atob(t.trim()), b = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+    return new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer()); };
+  // collection 'AQG2' -> { meta, ent : [{ v : [propriétés], parts }] } ; coordonnées lon, lat à la suite (Float64Array)
+  async function collection(url) {
+    const u8 = await octets(url), lm = new DataView(u8.buffer).getUint32(4, true);
+    const meta = JSON.parse(new TextDecoder().decode(u8.subarray(8, 8 + lm)));
+    let p = 8 + lm, x = 0, y = 0;
+    const U = () => { let v = 0, m = 1, b; do { b = u8[p++]; v += (b & 127) * m; m *= 128; } while (b & 128); return v; };
+    const S = () => { const v = U(); return v % 2 ? -(v + 1) / 2 : v / 2; };
+    const [ox, oy] = meta.o, r = meta.r, np = meta.props.length, poly = meta.genre === 'polygone';
+    const anneau = () => { const n = U(), a = new Float64Array(2 * n);
+      for (let i = 0; i < n; i++) { x += S(); y += S(); a[2 * i] = ox + x * r; a[2 * i + 1] = oy + y * r; } return a; };
+    const ent = new Array(meta.n);
+    for (let k = 0; k < meta.n; k++) {
+      const v = []; for (let j = 0; j < np; j++) v.push(U());
+      const nb = U(), parts = [];
+      for (let j = 0; j < nb; j++) { if (poly) { const nr = U(), rs = []; for (let q = 0; q < nr; q++) rs.push(anneau()); parts.push(rs); } else parts.push(anneau()); }
+      ent[k] = { v, parts };
+    }
+    return { meta, ent };
+  }
+  const A = {
+    bornes: json('raster/bornes.json'), communes: json('couches/communes.geojson'),
+    sites: json('couches/sites_constates.geojson'), surfaces: collection('fond/surfaces_bas.txt'), lignes: collection('fond/lignes.txt'),
+    cours: collection('couches/cours_eau.txt')
+  };
+  // demandées tout de suite, sans attendre l'index des routes : les grandes voies du petit zoom
+  const princ = octets('routes/principales.txt');
+  // chargés une seule fois, au moment où ils servent (zoom, clic) ou juste après l'ouverture
+  const plusTard = f => { let p = null; return () => p || (p = f()); };
+  const ruesJson = plusTard(() => json('routes/etiquettes.json'));
+  const nomsOsmJson = plusTard(() => json('couches/cours_eau_noms_osm.geojson'));
+  const auRepos = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 3000 }) : setTimeout(f, 800));
+
+  // Images : versions allégées pour l'ouverture, complètes ensuite (même emprise, bornes.json)
+  let bornes = null;
+  const pBornes = A.bornes.then(b => (bornes = b));
+  const img = (n, op, pane, prio) => { let src = 'raster/' + n + '.webp';
+    if (prio) { const e = new Image(); e.fetchPriority = prio; e.decoding = 'async'; e.src = src; src = e; }
+    return L.imageOverlay(src, bornes[n], { opacity: op, pane: pane || 'analyse' }); };
+  // relief : ombres brunes et éclats crème, le plat reste transparent
+  const relief = L.layerGroup().addTo(carte);
+  const opRelief = z => (z <= 11 ? 0.7 : z === 12 ? 0.75 : z === 13 ? 0.62 : z === 14 ? 0.4 : z === 15 ? 0.26 : 0.16);
+  let reliefPlein = false;
+  pBornes.then(() => { if (!reliefPlein) ['ombrage_relief_bas', 'eclairage_relief_bas'].forEach(n => relief.addLayer(img(n, opRelief(carte.getZoom()), 'fond', 'low'))); });
+  // relief à 30 m : préchargé juste après l'ouverture, puis il remplace la version allégée
+  const reliefComplet = plusTard(() => pBornes.then(() => Promise.all(['ombrage_relief', 'eclairage_relief'].map(n => new Promise(ok => {
+    const im = new Image(); im.onload = im.onerror = ok; im.src = 'raster/' + n + '.webp'; })))).then(() => {
+    reliefPlein = true;
+    const anciennes = relief.getLayers(), z = carte.getZoom();
+    const neuves = ['ombrage_relief', 'eclairage_relief'].map(n => img(n, opRelief(z), 'fond'));
+    let n = 0;
+    const retirer = () => anciennes.forEach(o => relief.removeLayer(o));
+    neuves.forEach(l => { l.once('load', () => { if (++n === 2) retirer(); }); relief.addLayer(l); });
+    if (!carte.hasLayer(relief)) retirer();
+  }));
+  let pop = null;
+  const coucheePop = () => pBornes.then(() => pop || (pop = img('population_2026', 0.85)));
+  // part des bâtiments à risque, en surface lissée jusqu'au zoom 13 (40 m jusqu'au zoom 12, 20 m au zoom 13) ;
+  // un clic donne le carreau. L'image affichée n'est retirée qu'une fois la suivante prête : pas de trou.
+  const surf = L.layerGroup().addTo(carte);
+  const surfImg = {};
+  function montrerSurf() {
+    const z = carte.getZoom();
+    if (!bornes || z >= 14) { surf.clearLayers(); return; }
+    const n = z >= 13 ? 'surface_risque' : 'surface_risque_bas', v = surfImg[n] || (surfImg[n] = img(n, 1, 'risque', 'high'));
+    const finir = () => surf.eachLayer(l => { if (l !== v) surf.removeLayer(l); });
+    if (surf.hasLayer(v)) { finir(); return; }
+    surf.addLayer(v);
+    if (v._image && v._image.complete && v._image.naturalWidth) finir(); else v.once('load', finir);
+  }
+  pBornes.then(montrerSurf);
+  const ficheCarreau = p => `<div class="fiche"><h3>Carreau</h3><span class="niv" style="background:${classe(p.r)}">${p.r} % des bâtiments à risque</span>
+    <dl><dt>Bâtiments</dt><dd>${nf(p.b)}</dd><dt>Habitants (2026)</dt><dd>${nf(p.p)}</dd><dt>Habitants à risque</dt><dd>${nf(p.pr)}</dd></dl>
+    ${p.c ? `<p style="margin:6px 0 0">Cause principale : <b>${p.c}</b></p>` : ''}</div>`;
+
+  // ---------- Rendu vectoriel net : fond OpenStreetMap, routes et bâtiments redessinés à chaque zoom ----------
+  const racine = document.documentElement;
+  const SOMBRE = racine.dataset.theme === 'dark' || (racine.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const PAL = SOMBRE ? {
+    surf: { agricole: '#2b2f27', broussaille: '#2a3127', industrie: '#2f2d2b', foret: '#26352a', parc: '#2a3a2b', sport: '#2b3a2c',
+      cimetiere: '#2a3229', zone_humide: '#24352f', sable: '#3a3629', piste: '#34332f', eau: '#1e3634' },
+    eauLigne: '#2e5551', route: '#4c534e', routeMaj: '#5d5a4b', bord: '#1a1f1c', fer: '#8c877c', trait: 'rgba(0,0,0,.55)'
+  } : {
+    surf: { agricole: '#e9e5cf', broussaille: '#e1e6cc', industrie: '#e3ddd6', foret: '#cbdbb9', parc: '#d4e4c1', sport: '#d6e5c5',
+      cimetiere: '#d3dcc8', zone_humide: '#cde0d5', sable: '#f1e7c9', piste: '#d9d5ce', eau: '#b0c4bf' },
+    eauLigne: '#8fb0a9', route: '#ffffff', routeMaj: '#fff7e2', bord: '#c9c1b2', fer: '#8a857c', trait: 'rgba(40,28,18,.5)'
+  };
+  pBornes.then(() => L.imageOverlay('raster/' + (SOMBRE ? 'voile_sombre' : 'voile_clair') + '.webp', bornes.voile_clair, { pane: 'voile', interactive: false }).addTo(carte));
+  const W0 = 256, RAD = Math.PI / 180;
+  const mx = lon => (lon + 180) / 360 * W0;
+  const my = lat => { const s = Math.sin(lat * RAD); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * W0; };
+  const ilon = X => X / W0 * 360 - 180;
+  const ilat = Y => Math.atan(Math.sinh(Math.PI * (1 - 2 * Y / W0))) / RAD;
+  const coupe = (b, t) => !(b[0] > t[2] || b[2] < t[0] || b[1] > t[3] || b[3] < t[1]);
+  const boiteM = m => { m.w = [mx(m.b[0]), my(m.b[3]), mx(m.b[2]), my(m.b[1])]; };
+  const monde = a => { const o = new Float64Array(a.length); for (let i = 0; i < a.length; i += 2) { o[i] = mx(a[i]); o[i + 1] = my(a[i + 1]); } return o; };
+  // Couche dessinée sur des tuiles canvas : nette à tous les zooms, y compris sur écran haute définition
+  const Dessin = L.GridLayer.extend({
+    createTile(c, done) {
+      const t = document.createElement('canvas'), r = Math.min(2, window.devicePixelRatio || 1), s = this.getTileSize();
+      t.width = s.x * r; t.height = s.y * r;
+      const ctx = t.getContext('2d'); ctx.scale(r, r);
+      // emprise de la tuile en unités « monde » (256 au zoom 0) ; k = pixels par unité
+      const k = Math.pow(2, c.z), b = [c.x * s.x / k, c.y * s.y / k, (c.x + 1) * s.x / k, (c.y + 1) * s.y / k];
+      Promise.resolve().then(() => this.options.dessiner(ctx, b, k, c.z)).then(() => done(null, t), e => { console.error(e); done(null, t); });
+      return t;
+    }
+  });
+  function trace(ctx, xy, d, n, b, k, ferme) {
+    ctx.moveTo((xy[d] - b[0]) * k, (xy[d + 1] - b[1]) * k);
+    for (let i = 1; i < n; i++) ctx.lineTo((xy[d + 2 * i] - b[0]) * k, (xy[d + 2 * i + 1] - b[1]) * k);
+    if (ferme === 2) ctx.closePath();   // contour à tracer ; un remplissage se ferme tout seul
+  }
+  const boiteXY = xy => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (let i = 0; i < xy.length; i += 2) { const x = xy[i], y = xy[i + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return [x0, y0, x1, y1]; };
+  // Remplissage par paquets de 64 formes : Skia remplit un chemin géant bien plus lentement que plusieurs petits
+  const PAQUET = 64;
+  function paquets(ctx, formes, dessinerForme, finir) {
+    let n = 0;
+    ctx.beginPath();
+    for (const f of formes) { dessinerForme(f); if (++n === PAQUET) { finir(); ctx.beginPath(); n = 0; } }
+    if (n) finir();
+  }
+  const surligner = pts => L.polygon(pts, { pane: 'lignes', renderer: rendu2, color: SOMBRE ? '#ffffff' : '#111111', weight: 2.2, fill: false, interactive: false });
+
+  // 1. Fond de plan : eau, forêts, parcs, zones industrielles, cours d'eau OSM, voie ferrée, pistes d'aéroport
+  // fond allégé (sommets à moins de 8 m retirés, invisible jusqu'au zoom 12) puis fond complet à partir du zoom 13
+  const prepFond = SURF => { const CLS = SURF.meta.classes, s = {};
+    CLS.forEach(c => { s[c] = []; });
+    SURF.ent.forEach(e => e.parts.forEach(rs => { const w = rs.map(monde); s[CLS[e.v[0]]].push({ rs: w, b: boiteXY(w[0]) }); }));
+    return { CLS, surfaces: s }; };
+  const fondBas = A.surfaces.then(prepFond);
+  const fondComplet = plusTard(() => collection('fond/surfaces.txt').then(prepFond));
+  const lignesP = A.lignes.then(LIG => { const l = [];
+    LIG.ent.forEach(e => e.parts.forEach(a => { const xy = monde(a); l.push({ c: LIG.meta.classes[e.v[0]], xy, b: boiteXY(xy) }); }));
+    return l; });
+  async function dessinerPlan(ctx, b, k, z) {
+    const [{ CLS, surfaces }, lignesPlan] = await Promise.all([z >= 13 ? fondComplet() : fondBas, lignesP]);
+    for (const c of CLS) {
+      ctx.fillStyle = PAL.surf[c];
+      paquets(ctx, surfaces[c].filter(s => coupe(s.b, b)), s => { for (const r of s.rs) trace(ctx, r, 0, r.length / 2, b, k, true); }, () => ctx.fill('evenodd'));
+    }
+    ctx.lineCap = ctx.lineJoin = 'round';
+    const f = Math.pow(2, (z - 16) * 0.7);
+    for (const l of lignesPlan) {
+      if (!coupe(l.b, b)) continue;
+      const c = l.c;
+      if (c === 'ruisseau' && z < 14) continue;
+      ctx.beginPath(); trace(ctx, l.xy, 0, l.xy.length / 2, b, k, false);
+      if (c === 'fer') {
+        if (z < 12) continue;
+        ctx.setLineDash([]); ctx.strokeStyle = PAL.fer; ctx.lineWidth = Math.max(1.2, 3 * f); ctx.stroke();
+        if (z >= 14) { ctx.setLineDash([6, 6]); ctx.strokeStyle = SOMBRE ? '#2a2e2b' : '#ffffff'; ctx.lineWidth = Math.max(0.8, 1.6 * f); ctx.stroke(); ctx.setLineDash([]); }
+      } else if (c === 'piste_av') {
+        ctx.strokeStyle = SOMBRE ? '#444340' : '#cfcac2'; ctx.lineWidth = Math.max(2, 22 * f); ctx.stroke();
+      } else {
+        ctx.strokeStyle = PAL.eauLigne; ctx.lineWidth = Math.max(0.8, (c === 'ruisseau' ? 2 : c === 'canal' ? 5 : 4) * f); ctx.stroke();
+      }
+    }
+  }
+  const couchePlan = new Dessin({ pane: 'plan', dessiner: dessinerPlan, updateWhenZooming: false, keepBuffer: 1 }).addTo(carte);
+  const planPret = new Promise(ok => couchePlan.once('load', ok));
+
+  // 2. Routes et rues (OpenStreetMap) : grandes voies seules jusqu'au zoom 12, puis morceaux chargés selon la vue
+  let RIDX = null;
+  const pRidx = plusTard(() => json('routes/index.json').then(r => { RIDX = r; RIDX.morceaux.forEach(boiteM); return r; }));
+  const lireRoutes = u8 => {
+    const dv = new DataView(u8.buffer), n = dv.getUint32(4, true), ox = dv.getFloat64(8, true), oy = dv.getFloat64(16, true), R = 1e-6;
+    let p = 24;
+    const cl = u8.subarray(p, p + n); p += 2 * n;           // classe, puis drapeaux (pont, tunnel)
+    p += 2 * n;                                              // n° du nom (sert aux étiquettes, pas au dessin)
+    const nv = new Uint16Array(u8.buffer, p, n); p += 2 * n;
+    const U = () => { let v = 0, m = 1, b; do { b = u8[p++]; v += (b & 127) * m; m *= 128; } while (b & 128); return v; };
+    const S = () => { const v = U(); return v % 2 ? -(v + 1) / 2 : v / 2; };
+    let x = 0, y = 0, fx = 0, fy = 0;
+    const out = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const xy = new Float64Array(2 * nv[i]);
+      for (let j = 0; j < nv[i]; j++) {
+        const dx = S(), dy = S();
+        if (j === 0) { x = fx + dx; y = fy + dy; fx = x; fy = y; } else { x += dx; y += dy; }
+        xy[2 * j] = mx(ox + x * R); xy[2 * j + 1] = my(oy + y * R);
+      }
+      out[i] = { c: cl[i], xy, b: boiteXY(xy) };
+    }
+    return out;
+  };
+  const rCache = { 'principales.txt': princ.then(lireRoutes) };
+  const morceauRoutes = f => rCache[f] || (rCache[f] = octets('routes/' + f).then(lireRoutes));
+  // [zoom d'apparition, largeur au zoom 16 en px, pointillés]
+  const STY_R = [[10, 12], [10, 11], [10, 10], [11, 9], [12, 8], [14, 6], [15, 3.6], [15, 2.4, [4, 3]], [16, 1.6, [2, 3]]];
+  // jusqu'au zoom 12 : largeurs fixes par classe (px), pour garder la hiérarchie des voies au petit zoom
+  const LARG_BAS = [2.1, 1.9, 1.6, 1.2, 0.85];
+  async function dessinerRoutes(ctx, b, k, z) {
+    if (z > 12) await pRidx();
+    const ds = z <= 12 ? [await morceauRoutes('principales.txt')] : await Promise.all(RIDX.morceaux.filter(m => coupe(m.w, b)).map(m => morceauRoutes(m.f)));
+    const par = STY_R.map(() => []);
+    for (const d of ds) for (const r of d) if (z >= STY_R[r.c][0] && coupe(r.b, b)) par[r.c].push(r);
+    ctx.lineCap = ctx.lineJoin = 'round';
+    const larg = c => (z <= 12 ? LARG_BAS[c] * (z === 12 ? 1.15 : z === 11 ? 1 : 0.85) : Math.max(1.1, STY_R[c][1] * Math.pow(2, (z - 16) * 0.75)));
+    for (let c = STY_R.length - 1; c >= 0; c--) {   // bordures
+      if (!par[c].length || STY_R[c][2]) continue;
+      ctx.strokeStyle = PAL.bord; ctx.lineWidth = larg(c) + (z <= 12 ? (c <= 2 ? 1.3 : 0.9) : c <= 4 ? 2 : 1.4);
+      paquets(ctx, par[c], r => trace(ctx, r.xy, 0, r.xy.length / 2, b, k, false), () => ctx.stroke());
+    }
+    for (let c = STY_R.length - 1; c >= 0; c--) {   // chaussées, les grandes voies par-dessus
+      if (!par[c].length) continue;
+      ctx.setLineDash(STY_R[c][2] || []);
+      ctx.strokeStyle = STY_R[c][2] ? (SOMBRE ? '#6a6f69' : '#a39886') : (c <= 4 ? PAL.routeMaj : PAL.route);
+      ctx.lineWidth = STY_R[c][2] ? Math.max(0.8, STY_R[c][1] * Math.pow(2, (z - 16) * 0.5) * 0.6) : larg(c);
+      paquets(ctx, par[c], r => trace(ctx, r.xy, 0, r.xy.length / 2, b, k, false), () => ctx.stroke());
+      ctx.setLineDash([]);
+    }
+  }
+  const coucheRoutes = new Dessin({ pane: 'routes', dessiner: dessinerRoutes, updateWhenZooming: false, keepBuffer: 1 }).addTo(carte);
+  const routesPret = new Promise(ok => coucheRoutes.once('load', ok));
+
+  // 3. Les 958 210 bâtiments, colorés par niveau de risque, à partir du zoom 14
+  // morceaux de 2,2 km ; dans chaque morceau, une grille de 16 × 16 dit quels bâtiments sont dans quelle case
+  let BIDX = null;
+  const pBidx = plusTard(() => json('bati/index.json').then(r => { BIDX = r; BIDX.morceaux.forEach(boiteM); return r; }));
+  const G = 16;
+  const lireBat = u8 => {
+    const dv = new DataView(u8.buffer), n = dv.getUint32(4, true), ox = dv.getFloat64(8, true), oy = dv.getFloat64(16, true);
+    let p = 24;
+    const nv = u8.subarray(p, p + n); p += n;
+    const code = u8.subarray(p, p + n); p += n;
+    const fl = u8.subarray(p, p + n); p += n;
+    const com = u8.subarray(p, p + n); p += n;
+    const att = new Uint16Array(u8.buffer, p, 7 * n); p += 14 * n;
+    const deb = new Uint32Array(n + 1); let tot = 0;
+    for (let i = 0; i < n; i++) { deb[i] = tot; tot += nv[i]; }
+    deb[n] = tot;
+    const xy = new Float64Array(2 * tot), boite = new Float64Array(4 * n);
+    let x = 0, y = 0, fx = 0, fy = 0, q = 0, e0 = Infinity, e1 = Infinity, e2 = -Infinity, e3 = -Infinity, marge = 0;
+    for (let i = 0; i < n; i++) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (let j = 0; j < nv[i]; j++) {
+        let v = 0, m = 1, b;
+        do { b = u8[p++]; v += (b & 127) * m; m *= 128; } while (b & 128);
+        const dx = v % 2 ? -(v + 1) / 2 : v / 2;
+        v = 0; m = 1;
+        do { b = u8[p++]; v += (b & 127) * m; m *= 128; } while (b & 128);
+        const dy = v % 2 ? -(v + 1) / 2 : v / 2;
+        if (j === 0) { x = fx + dx; y = fy + dy; fx = x; fy = y; } else { x += dx; y += dy; }
+        const X = mx(ox + x * 1e-6), Y = my(oy + y * 1e-6);
+        xy[q++] = X; xy[q++] = Y;
+        if (X < x0) x0 = X; if (X > x1) x1 = X; if (Y < y0) y0 = Y; if (Y > y1) y1 = Y;
+      }
+      boite[4 * i] = x0; boite[4 * i + 1] = y0; boite[4 * i + 2] = x1; boite[4 * i + 3] = y1;
+      if (x0 < e0) e0 = x0; if (y0 < e1) e1 = y0; if (x1 > e2) e2 = x1; if (y1 > e3) e3 = y1;
+      marge = Math.max(marge, x1 - x0, y1 - y0);
+    }
+    // index spatial : tri par case (tri par dénombrement)
+    const cw = (e2 - e0) / G || 1e-12, ch = (e3 - e1) / G || 1e-12;
+    const cas = new Uint16Array(n), debC = new Uint32Array(G * G + 1);
+    for (let i = 0; i < n; i++) {
+      const ci = Math.min(G - 1, Math.max(0, Math.floor(((boite[4 * i] + boite[4 * i + 2]) / 2 - e0) / cw)));
+      const cj = Math.min(G - 1, Math.max(0, Math.floor(((boite[4 * i + 1] + boite[4 * i + 3]) / 2 - e1) / ch)));
+      cas[i] = cj * G + ci; debC[cas[i] + 1]++;
+    }
+    for (let c = 1; c <= G * G; c++) debC[c] += debC[c - 1];
+    const pos = debC.slice(0, G * G), ordre = new Uint32Array(n);
+    for (let i = 0; i < n; i++) ordre[pos[cas[i]]++] = i;
+    return { n, nv, code, fl, com, att, deb, xy, boite, ext: [e0, e1], cw, ch, marge, debC, ordre };
+  };
+  // appelle f(i) pour chaque bâtiment dont la boîte touche l'emprise b, en ne parcourant que les cases utiles
+  function parcourir(d, b, f) {
+    const i0 = Math.max(0, Math.floor((b[0] - d.marge - d.ext[0]) / d.cw)), i1 = Math.min(G - 1, Math.floor((b[2] + d.marge - d.ext[0]) / d.cw));
+    const j0 = Math.max(0, Math.floor((b[1] - d.marge - d.ext[1]) / d.ch)), j1 = Math.min(G - 1, Math.floor((b[3] + d.marge - d.ext[1]) / d.ch));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const c = j * G + i;
+      for (let q = d.debC[c]; q < d.debC[c + 1]; q++) {
+        const k = d.ordre[q], o = 4 * k;
+        if (d.boite[o] > b[2] || d.boite[o + 2] < b[0] || d.boite[o + 1] > b[3] || d.boite[o + 3] < b[1]) continue;
+        f(k);
+      }
+    }
+  }
+  const bCache = {};
+  let enCours = 0;
+  const signaler = d => { enCours += d; charge.textContent = 'Chargement des bâtiments…'; charge.hidden = enCours <= 0; };
+  const morceauBat = m => bCache[m.f] || (bCache[m.f] = (signaler(1), octets('bati/' + m.f)).then(lireBat).finally(() => signaler(-1)));
+  const groupe = code => (code <= 3 ? 0 : code <= 7 ? 1 : 2);
+  const COUL_B = [NIV['Très élevé'], NIV['Élevé'], NIV['Faible']];
+  async function dessinerBat(ctx, b, k, z) {
+    await pBidx();
+    const ds = await Promise.all(BIDX.morceaux.filter(m => coupe(m.w, b)).map(morceauBat));
+    const grp = [[], [], []];
+    for (const d of ds) parcourir(d, b, i => { grp[groupe(d.code[i])].push([d, i]); });
+    ctx.lineWidth = z >= 18 ? 0.9 : 0.6; ctx.strokeStyle = PAL.trait;
+    for (const g of [2, 1, 0]) {
+      ctx.fillStyle = COUL_B[g];
+      paquets(ctx, grp[g], ([d, i]) => trace(ctx, d.xy, 2 * d.deb[i], d.nv[i], b, k, z >= 16 ? 2 : 1), () => { ctx.fill(); if (z >= 16) ctx.stroke(); });
+    }
+  }
+  new Dessin({ pane: 'batiments', minZoom: 14, dessiner: dessinerBat, updateWhenZooming: false, keepBuffer: 1 }).addTo(carte);
+
+  // Carreaux de 250 m et 100 m : seulement pour le clic (petits fichiers chargés après l'ouverture)
+  const carreaux = {};
+  const chargerCarreaux = n => carreaux[n] || (carreaux[n] = collection('couches/carreaux_' + n + '.txt').then(C => {
+    const pas = 0.003, seau = new Map();
+    C.ent.forEach(e => {
+      const a = e.parts[0][0]; let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (let i = 0; i < a.length; i += 2) { x0 = Math.min(x0, a[i]); x1 = Math.max(x1, a[i]); y0 = Math.min(y0, a[i + 1]); y1 = Math.max(y1, a[i + 1]); }
+      const c = { v: e.v, a, b: [x0, y0, x1, y1] }, cle = Math.floor((x0 + x1) / 2 / pas) + ':' + Math.floor((y0 + y1) / 2 / pas);
+      if (!seau.has(cle)) seau.set(cle, []);
+      seau.get(cle).push(c);
+    });
+    return { seau, pas, causes: C.meta.causes };
+  }));
+
+  // Fiche d'un bâtiment ou d'un carreau au clic
+  const CAUSE = ['pente forte (glissement)', 'fond de talweg', 'zone basse au bord de la lagune', 'débordement d\'une rivière', 'pente moyenne',
+    'bas-fond près d\'un talweg', 'zone basse, cuvette ou canal', 'zone de débordement d\'un cours d\'eau', ''];
+  const NOM_NIV = ['Très élevé', 'Élevé', 'Faible'];
+  const val = (a, div, dec) => (a === 65535 ? null : (a - (dec || 0)) / div);
+  const dedans = (d, i, X, Y) => { let c = false; const o = 2 * d.deb[i], n = d.nv[i];
+    for (let a = 0, z2 = n - 1; a < n; z2 = a++) { const xa = d.xy[o + 2 * a], ya = d.xy[o + 2 * a + 1], xz = d.xy[o + 2 * z2], yz = d.xy[o + 2 * z2 + 1];
+      if ((ya > Y) !== (yz > Y) && X < (xz - xa) * (Y - ya) / (yz - ya) + xa) c = !c; }
+    return c; };
+  let surligne = null;
+  const ouvrir = (pts, ll, html) => {
+    if (surligne) carte.removeLayer(surligne);
+    surligne = surligner(pts).addTo(carte);
+    L.popup().setLatLng(ll).setContent(html).openOn(carte).on('remove', () => { if (surligne) { carte.removeLayer(surligne); surligne = null; } });
+  };
+  carte.on('click', async e => {
+    const z = carte.getZoom();
+    const t = e.originalEvent && e.originalEvent.target;
+    if (t && t.closest && t.closest('.leaflet-interactive, .leaflet-popup')) return;
+    if (z <= 13) {
+      const C = await chargerCarreaux(z <= 12 ? '250m' : '100m'), lon = e.latlng.lng, lat = e.latlng.lat;
+      const i = Math.floor(lon / C.pas), j = Math.floor(lat / C.pas);
+      let tr = null;
+      for (let di = -1; di <= 1 && !tr; di++) for (let dj = -1; dj <= 1 && !tr; dj++)
+        for (const c of C.seau.get((i + di) + ':' + (j + dj)) || []) if (lon >= c.b[0] && lon <= c.b[2] && lat >= c.b[1] && lat <= c.b[3]) { tr = c; break; }
+      if (!tr) return;
+      const pts = []; for (let q = 0; q < tr.a.length; q += 2) pts.push([tr.a[q + 1], tr.a[q]]);
+      const [bN, r, pN, pr, ci] = tr.v;
+      ouvrir(pts, e.latlng, ficheCarreau({ b: bN, r, p: pN, pr, c: C.causes[ci] }));
+      return;
+    }
+    const X = mx(e.latlng.lng), Y = my(e.latlng.lat), tol = 5 / Math.pow(2, z), bb = [X - tol, Y - tol, X + tol, Y + tol];
+    let best = null, bd = Infinity;
+    await pBidx();
+    for (const d of await Promise.all(BIDX.morceaux.filter(m => coupe(m.w, bb)).map(morceauBat)))
+      parcourir(d, bb, i => { const o = 4 * i;
+        const dist = dedans(d, i, X, Y) ? -1 : Math.hypot((d.boite[o] + d.boite[o + 2]) / 2 - X, (d.boite[o + 1] + d.boite[o + 3]) / 2 - Y);
+        if (dist < bd) { bd = dist; best = [d, i]; } });
+    if (!best) return;
+    const [d, i] = best, a = c => d.att[c * d.n + i], code = d.code[i], fl = d.fl[i], g = groupe(code);
+    const pts = []; for (let j = 0; j < d.nv[i]; j++) pts.push([ilat(d.xy[2 * (d.deb[i] + j) + 1]), ilon(d.xy[2 * (d.deb[i] + j)])]);
+    const nouveau = fl & 4 ? (fl & 2 ? 'oui' : 'non') : 'non mesuré';
+    ouvrir(pts, e.latlng, `<div class="fiche"><h3>Pourquoi ici ?</h3><span class="niv" style="background:${COUL_B[g]}${g === 2 ? ';color:#1c2721' : ''}">Risque ${NOM_NIV[g].toLowerCase()}</span>
+      <p style="margin:0 0 4px">${CAUSE[code] ? `Raison : <b>${CAUSE[code]}</b>` : 'Aucun facteur fort repéré par le relief.'}</p>
+      <dl><dt>Commune</dt><dd>${BIDX.communes[d.com[i]] || '–'}</dd><dt>Habitants estimés</dt><dd>${n1(val(a(0), 10))}</dd>
+      <dt>Hauteur du bâtiment (2023)</dt><dd>${n1(val(a(4), 10))} m</dd><dt>Pente</dt><dd>${n1(val(a(1), 10))}°</dd>
+      <dt>Au-dessus du cours d'eau</dt><dd>${n1(val(a(2), 10))} m</dd><dt>Bassin en amont</dt><dd>${n1(val(a(3), 100))} km²</dd>
+      <dt>Altitude</dt><dd>${n1(val(a(5), 10, 1000))} m</dd><dt>Zone de débordement</dt><dd>${fl & 1 ? 'oui' : 'non'}</dd>
+      <dt>Construit après 2016</dt><dd>${nouveau}</dd></dl></div>`);
+  });
+
+  // 4. Pente, hauteur au-dessus du cours d'eau et zones de débordement : contours lissés, chargés à la demande
+  let AIDX = null;
+  const pAidx = plusTard(() => json('analyse/index.json').then(r => { AIDX = r || { morceaux: [] }; AIDX.morceaux.forEach(boiteM); return AIDX; }));
+  const aCache = {};
+  const morceauAna = m => aCache[m.f] || (aCache[m.f] = collection('analyse/' + m.f).then(C => {
+    const r = { pente: [], hand: [] };
+    C.ent.forEach(e => e.parts.forEach(rs => { const w = rs.map(monde); r[e.v[0] ? 'hand' : 'pente'].push({ c: e.v[1], rs: w, b: boiteXY(w[0]) }); }));
+    return r;
+  }));
+  const COUL_A = { pente: ['rgba(232,163,61,.45)', 'rgba(214,96,36,.6)', 'rgba(158,27,27,.72)'],
+    hand: ['rgba(0,105,92,.62)', 'rgba(127,205,187,.58)', 'rgba(199,233,192,.45)'] };
+  const coucheAna = nom => new Dessin({ pane: 'analyse', updateWhenZooming: false, keepBuffer: 1, dessiner: async (ctx, b, k) => {
+    await pAidx();
+    const ds = await Promise.all(AIDX.morceaux.filter(m => coupe(m.w, b)).map(morceauAna));
+    for (let c = 0; c < 3; c++) {
+      const formes = []; for (const d of ds) for (const s of d[nom]) if (s.c === c && coupe(s.b, b)) formes.push(s);
+      ctx.fillStyle = COUL_A[nom][c];
+      paquets(ctx, formes, s => { for (const r of s.rs) trace(ctx, r, 0, r.length / 2, b, k, true); }, () => ctx.fill('evenodd'));
+    }
+  } });
+  const pente = coucheAna('pente'), hand = coucheAna('hand');
+  let debord = null;
+  const COUL_D = { 1: 'rgba(140,199,184,.55)', 2: 'rgba(47,111,106,.55)' };
+  const coucheDebord = () => debord || (debord = (charge.textContent = 'Chargement…', charge.hidden = false,
+    collection('couches/zones_debordement.txt')).then(C => {
+    const zs = [];
+    C.ent.forEach(e => e.parts.forEach(rs => { const w = rs.map(monde); zs.push({ c: e.v[0], rs: w, b: boiteXY(w[0]) }); }));
+    return new Dessin({ pane: 'analyse', updateWhenZooming: false, keepBuffer: 1, dessiner: (ctx, b, k) => {
+      for (const niv of [1, 2]) {
+        ctx.fillStyle = COUL_D[niv];
+        paquets(ctx, zs.filter(s => s.c === niv && coupe(s.b, b)), s => { for (const r of s.rs) trace(ctx, r, 0, r.length / 2, b, k, true); }, () => ctx.fill('evenodd'));
+      }
+    } });
+  }).finally(() => { charge.hidden = true; }));
+
+  // zoom 10 à 13 : surface lissée ; zoom 14 et plus : chaque bâtiment
+  carte.on('zoomend', () => {
+    const z = carte.getZoom();
+    montrerSurf();
+    // l'ombrage du relief (30 m) s'efface au fort zoom, où il ne ferait que flouter
+    relief.eachLayer(l => l.setOpacity(opRelief(z)));
+    if (z >= 12) reliefComplet();
+  });
+
+  // Cours d'eau calculés (les ruisseaux de 1 à 10 km² apparaissent au zoom 13) et noms OSM au survol
+  const geoCours = CE => ({ type: 'FeatureCollection', features: CE.ent.map(e => {
+    const parts = e.parts.map(a => { const c = []; for (let i = 0; i < a.length; i += 2) c.push([a[i], a[i + 1]]); return c; });
+    const bk = e.v[0] / 10;
+    return { type: 'Feature', properties: { bassin_km2: bk, classe: bk >= 10 ? 'Rivière (bassin ≥ 10 km²)' : 'Ruisseau (bassin 1 à 10 km²)' },
+      geometry: parts.length > 1 ? { type: 'MultiLineString', coordinates: parts } : { type: 'LineString', coordinates: parts[0] } };
+  }) });
+  // jusqu'au zoom 12 : rivières seules, d'autant plus épaisses que leur bassin est grand ; zoom 13 et plus inchangé
+  const styleCours = z => f => { const bk = f.properties.bassin_km2;
+    if (z >= 13) return { color: '#2f6f6a', weight: bk >= 10 ? 2.2 : 1.1, opacity: 0.9 };
+    const s = Math.log10(Math.max(bk, 10) / 10);
+    return { color: '#2f6f6a', weight: (z === 12 ? 0.8 : z === 11 ? 0.6 : 0.5) + s * (z === 12 ? 0.75 : 0.6), opacity: bk >= 10 ? (z === 12 ? 0.85 : 0.75) : 0 }; };
+  const coursEau = L.geoJSON(null, { renderer: rendu2, style: f => styleCours(carte.getZoom())(f),
+    onEachFeature: (f, l) => l.bindPopup(`<div class="fiche"><h3>${f.properties.classe}</h3><dl><dt>Bassin en amont</dt><dd>${n1(f.properties.bassin_km2)} km²</dd></dl></div>`) });
+  carte.on('zoomend', () => coursEau.setStyle(styleCours(carte.getZoom())));
+  A.cours.then(CE => { if (CE) coursEau.addData(geoCours(CE)); });
+  const nomsOsm = L.layerGroup();
+  const chargerNomsOsm = () => nomsOsmJson().then(g => { if (g && !nomsOsm.getLayers().length) L.geoJSON(g, { renderer: rendu2, style: { color: '#2f6f6a', weight: 0, opacity: 0 },
+    onEachFeature: (f, l) => { if (f.properties.nom) l.bindTooltip(f.properties.nom, { sticky: true }); } }).addTo(nomsOsm); });
+  coursEau.addTo(carte); nomsOsm.addTo(carte);
+
+  // Sites constatés : inondation (vert d'eau) et glissement (terre)
+  const SITE = { inondation: '#2f6f6a', glissement: '#8a4b22' };
+  const rayonSite = z => (z <= 11 ? 4 : z === 12 ? 5 : 6.5);
+  const sites = L.geoJSON(null, { pane: 'reperes',
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: rayonSite(carte.getZoom()), color: '#ffffff', weight: carte.getZoom() <= 12 ? 1.5 : 2, fillColor: SITE[f.properties.type] || SITE.inondation, fillOpacity: 1, pane: 'lignes', renderer: rendu2 }),
+    onEachFeature: (f, l) => l.bindPopup(`<div class="fiche"><h3>${f.properties.site}</h3><p style="margin:0">${f.properties.type === 'glissement' ? 'Glissement' : 'Inondation'} constaté · ${f.properties.commune}<br>Source : ${f.properties.source}</p></div>`) });
+  sites.addTo(carte);
+  A.sites.then(g => { if (g) sites.addData(g); });
+  carte.on('zoomend', () => { const z = carte.getZoom(); sites.eachLayer(l => { l.setRadius(rayonSite(z)); l.setStyle({ weight: z <= 12 ? 1.5 : 2 }); }); });
+
+  // Communes : limites, étiquettes, tableau
+  const communes = await A.communes;
+  const lim = L.geoJSON(communes, { pane: 'lignes', renderer: rendu2, style: { color: '#1c2721', weight: 1.2, opacity: 0.8, fill: false, dashArray: '4 3' }, interactive: false }).addTo(carte);
+  const etiq = L.layerGroup().addTo(carte);
+  // Largeur des noms, pour qu'ils ne se chevauchent pas : [graisse, taille, majuscules, interlettrage]
+  await document.fonts.ready;
+  const regle = document.createElement('canvas').getContext('2d');
+  const STYLE = [[700, 13, false, 0.01], [600, 12, true, 0.06], [600, 11, true, 0.05], [600, 12, false, 0], [500, 11, false, 0], [500, 11, false, 0.01]];
+  const mesurer = (t, r) => { const [g, s, maj, ls] = STYLE[r]; regle.font = `${g} ${s}px ${tok('--titre')}`;
+    const x = maj ? t.toUpperCase() : t; return { w: regle.measureText(x).width + ls * s * x.length, h: s * 1.15 }; };
+  const echap = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const nomsCommunes = [];
+  communes.features.forEach(f => {
+    let best = null, ba = 0;
+    f.geometry.coordinates.forEach(poly => { const r = poly[0]; let a = 0, cx = 0, cy = 0;
+      for (let i = 0; i < r.length - 1; i++) { const k = r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1]; a += k; cx += (r[i][0] + r[i + 1][0]) * k; cy += (r[i][1] + r[i + 1][1]) * k; }
+      if (Math.abs(a) > ba) { ba = Math.abs(a); best = [cy / (3 * a), cx / (3 * a)]; } });
+    if (!best) return;
+    nomsCommunes.push(Object.assign({ ll: L.latLng(best), n: echap(f.properties.nom), aire: ba }, mesurer(f.properties.nom, 0)));
+  });
+  nomsCommunes.sort((a, b) => a.aire - b.aire);   // les petites communes d'abord : elles ont le moins de place
+  // Quartiers (OpenStreetMap) : rang 1 au zoom 12, puis quartiers, sous-quartiers et lieux-dits ;
+  // un nom n'est affiché que s'il ne chevauche ni une commune ni un nom plus important
+  let quartiers = [];
+  const chargerQuartiers = plusTard(() => json('couches/quartiers.geojson').then(g => {
+    quartiers = ((g || { features: [] }).features).map(f => Object.assign({ ll: L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]),
+      n: echap(f.properties.nom), r: f.properties.rang, z: f.properties.zoom_min }, mesurer(f.properties.nom, f.properties.rang)));
+    if (typeof nomsPrets === 'undefined' || nomsPrets) placerNoms();
+  }));
+  if (carte.getZoom() >= 12) chargerQuartiers();
+  carte.on('zoomend', () => { if (carte.getZoom() >= 12) chargerQuartiers(); });
+  // Noms de rues : points d'ancrage le long des portions droites, grandes voies d'abord (prêts avant le zoom 14)
+  let rues = [];
+  const qCouche = L.layerGroup().addTo(carte), cQuartiers = document.getElementById('c-quartiers');
+  function placerNoms() {
+    qCouche.clearLayers(); etiq.clearLayers();
+    const z = carte.getZoom(), vue = carte.getBounds().pad(0.05), pris = [];
+    const autour = (p, q) => [p.x - q.w / 2 - 7, p.y - q.h / 2 - 4, p.x + q.w / 2 + 7, p.y + q.h / 2 + 4];
+    const boite = q => autour(carte.latLngToContainerPoint(q.ll), q);
+    const libre = b => !pris.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
+    // noms des communes : toujours affichés ; décalés au-dessus, au-dessous ou à côté si la place est prise
+    const serre = (p, q) => [p.x - q.w / 2 - 3, p.y - q.h / 2 - 1, p.x + q.w / 2 + 3, p.y + q.h / 2 + 1];
+    if (carte.hasLayer(etiq)) for (const c of nomsCommunes) {
+      const p0 = carte.latLngToContainerPoint(c.ll), dy = c.h + 2, dx = c.w / 2 + 6;
+      let p = p0;   // le plus petit décalage qui libère la place
+      for (const [ox, oy] of [[0, 0], [0, -0.55], [0, 0.55], [0, -1], [0, 1], [0.5, 0], [-0.5, 0], [1, 0], [-1, 0], [1, -1], [-1, 1], [1, 1], [-1, -1]]) {
+        const q = L.point(p0.x + ox * dx, p0.y + oy * dy);
+        if (libre(serre(q, c))) { p = q; break; }
+      }
+      pris.push(serre(p, c));
+      L.marker(carte.containerPointToLatLng(p), { pane: 'reperes', interactive: false, keyboard: false,
+        icon: L.divIcon({ className: 'etiquette', html: `<span>${c.n}</span>`, iconSize: null }) }).addTo(etiq);
+    }
+    if (!cQuartiers.checked) return;
+    for (const q of quartiers) {
+      if (q.z > z || !vue.contains(q.ll)) continue;
+      const b = boite(q);
+      if (!libre(b)) continue;
+      pris.push(b);
+      L.marker(q.ll, { pane: 'reperes', interactive: false, keyboard: false,
+        icon: L.divIcon({ className: 'quartier q' + q.r, html: `<span>${q.n}</span>`, iconSize: null }) }).addTo(qCouche);
+    }
+    // noms de rues le long des voies : grandes voies dès le zoom 14, toutes les rues nommées à partir du zoom 15
+    if (z < 14) return;
+    const mpp = 156543.03 * Math.cos(5.35 * RAD) / Math.pow(2, z), deja = {};
+    for (const r of rues) {
+      if (z < (r.c <= 3 ? 14 : r.c <= 5 ? 15 : 16) || r.w + 18 > r.len / mpp || !vue.contains(r.ll)) continue;
+      const p = carte.latLngToContainerPoint(r.ll);
+      if ((deja[r.n] || []).some(o => Math.hypot(o.x - p.x, o.y - p.y) < 280)) continue;
+      const a = r.ang * RAD, ca = Math.abs(Math.cos(a)), sa = Math.abs(Math.sin(a));
+      const hw = ca * r.w / 2 + sa * r.h / 2, hh = sa * r.w / 2 + ca * r.h / 2, b = [p.x - hw - 3, p.y - hh - 2, p.x + hw + 3, p.y + hh + 2];
+      if (!libre(b)) continue;
+      pris.push(b); (deja[r.n] = deja[r.n] || []).push(p);
+      L.marker(r.ll, { pane: 'reperes', interactive: false, keyboard: false,
+        icon: L.divIcon({ className: 'rue', html: `<span style="transform:translate(-50%,-50%) rotate(${r.ang}deg)">${r.t}</span>`, iconSize: null }) }).addTo(qCouche);
+    }
+  }
+  carte.on('moveend', placerNoms);
+  cQuartiers.addEventListener('change', placerNoms);
+  document.getElementById('c-communes').addEventListener('change', () => setTimeout(placerNoms));
+  placerNoms();
+  const chargerRues = plusTard(() => Promise.all([ruesJson(), pRidx()]).then(([t]) => {
+    rues = (t || []).map(([i, lon, lat, ang, len, c]) => Object.assign({ n: i, t: echap(RIDX.noms[i]), ll: L.latLng(lat, lon), ang, len, c }, mesurer(RIDX.noms[i], 5)))
+      .sort((a, b) => a.c - b.c || b.len - a.len);
+    if (carte.getZoom() >= 14) placerNoms();
+  }));
+  carte.on('zoomend', () => { if (carte.getZoom() >= 13) chargerRues(); });
+  const tb = document.getElementById('tab-communes');
+  communes.features.slice().sort((a, b) => b.properties.pop_risque - a.properties.pop_risque).forEach(f => {
+    const p = f.properties, tr = document.createElement('tr'); tr.tabIndex = 0;
+    tr.innerHTML = `<td>${p.nom}${p.methode === 'plate' ? '<span class="plate">plate</span>' : ''}</td><td class="n">${Math.round(p.part_risque)} %</td><td class="n">${nf(p.pop_risque)}</td>`;
+    const aller = () => carte.fitBounds(L.geoJSON(f).getBounds(), { padding: [20, 20] });
+    tr.addEventListener('click', aller); tr.addEventListener('keydown', e => { if (e.key === 'Enter') aller(); });
+    tb.appendChild(tr);
+  });
+  // Cases à cocher
+  const bascule = (id, couche) => document.getElementById(id).addEventListener('change', async e => {
+    const c = typeof couche === 'function' ? await couche() : couche;
+    // un groupe dont les couches ont été ajoutées une à une n'est pas « sur la carte » : on retire aussi chaque couche
+    if (e.target.checked) c.addTo(carte); else { carte.removeLayer(c); if (c.eachLayer) c.eachLayer(l => carte.removeLayer(l)); }
+  });
+  bascule('c-coursdeau', L.layerGroup([coursEau, nomsOsm]));
+  bascule('c-debord', coucheDebord);
+  bascule('c-hand', hand); bascule('c-pente', pente); bascule('c-sites', sites);
+  bascule('c-communes', L.layerGroup([lim, etiq])); bascule('c-relief', relief);
+  document.getElementById('c-coursdeau').checked = true;
+  // après l'ouverture, au repos : relief complet, puis ce qui servira en zoomant ou au clic, un fichier après l'autre
+  bascule('c-pop', coucheePop);
+  Promise.all([planPret, routesPret, pBornes.then(() => new Promise(ok => { const v = surfImg.surface_risque_bas;
+    if (!v || (v._image && v._image.complete)) ok(); else v.once('load', ok); }))]).then(() => setTimeout(() => auRepos(() =>
+    chargerQuartiers().then(() => reliefComplet()).then(() => chargerCarreaux('250m')).then(() => fondComplet()).then(() => chargerNomsOsm())
+      .then(() => chargerCarreaux('100m')).then(() => pRidx()).then(() => chargerRues()).then(() => pBidx())), 200));
+})();
+</script>

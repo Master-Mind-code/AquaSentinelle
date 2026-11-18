@@ -129,12 +129,12 @@
 <script>(function () { var t; try { t = localStorage.getItem("aqua-theme"); } catch (e) {}
   if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", t); })();</script>
-<title>{% if page == "accord" %}Accord et qualité de l'IA · AquaSentinelle{% elif page == "accueil" %}Niveaux d'alerte inondation · AquaSentinelle CI{% elif page == "aide" %}Demande d'aide d'urgence · AquaSentinelle{% elif page == "aide_suivi" %}Suivi de votre demande · AquaSentinelle{% elif page == "carte" %}Tableau de bord · AquaSentinelle{% elif page == "carte_publique" %}Carte des risques · AquaSentinelle CI{% elif page == "connexion" %}Connexion · AquaSentinelle{% elif page == "erreur" %}Erreur · AquaSentinelle{% elif page == "guide_video" %}Comment utiliser AquaSentinelle · vidéo{% elif page == "op_aide" %}Demandes d'aide · AquaSentinelle{% elif page == "op_capteurs" %}Capteurs · AquaSentinelle{% elif page == "op_lieux" %}Lieux sûrs · AquaSentinelle{% elif page == "pluviometre" %}Pluviomètre · AquaSentinelle{% elif page == "prevention" %}Prévention et consignes · AquaSentinelle CI{% elif page == "relais" %}Point {{ point.id }} · AquaSentinelle{% elif page == "relais_merci" %}Merci · AquaSentinelle{% elif page == "signaler" %}Signaler un problème · AquaSentinelle{% elif page == "signaler_merci" %}Merci · AquaSentinelle{% elif page == "simulation" %}Simulation · AquaSentinelle{% else %}AquaSentinelle CI{% endif %}</title>
+<title>{% if page == "accord" %}Accord et qualité de l'IA · AquaSentinelle{% elif page == "accueil" %}Niveaux d'alerte inondation · AquaSentinelle CI{% elif page == "aide" %}Demande d'aide d'urgence · AquaSentinelle{% elif page == "aide_suivi" %}Suivi de votre demande · AquaSentinelle{% elif page == "carte" %}Tableau de bord · AquaSentinelle{% elif page == "carte_publique" %}Zones à risque et caniveaux · AquaSentinelle CI{% elif page == "carte_signalements" %}Signalements et lieux sûrs · AquaSentinelle CI{% elif page == "connexion" %}Connexion · AquaSentinelle{% elif page == "erreur" %}Erreur · AquaSentinelle{% elif page == "guide_video" %}Comment utiliser AquaSentinelle · vidéo{% elif page == "op_aide" %}Demandes d'aide · AquaSentinelle{% elif page == "op_capteurs" %}Capteurs · AquaSentinelle{% elif page == "op_lieux" %}Lieux sûrs · AquaSentinelle{% elif page == "pluviometre" %}Pluviomètre · AquaSentinelle{% elif page == "prevention" %}Prévention et consignes · AquaSentinelle CI{% elif page == "relais" %}Point {{ point.id }} · AquaSentinelle{% elif page == "relais_merci" %}Merci · AquaSentinelle{% elif page == "signaler" %}Signaler un problème · AquaSentinelle{% elif page == "signaler_merci" %}Merci · AquaSentinelle{% elif page == "simulation" %}Simulation · AquaSentinelle{% else %}AquaSentinelle CI{% endif %}</title>
 <link rel="icon" href="/static/logo-picto.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
 <link rel="stylesheet" href="{{ statique('style.css') }}">
-{% if page == "aide" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "aide_suivi" %}<meta http-equiv="refresh" content="60">{% elif page == "carte" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "carte_publique" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "op_aide" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script><meta http-equiv="refresh" content="60">{% elif page == "op_lieux" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "signaler" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% else %}{% endif %}
+{% if page == "aide" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "aide_suivi" %}<meta http-equiv="refresh" content="60">{% elif page == "carte" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "carte_signalements" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "op_aide" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script><meta http-equiv="refresh" content="60">{% elif page == "op_lieux" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% elif page == "signaler" %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% else %}{% endif %}
 </head>
 <body data-champ="{{ champ_page }}">
 <a class="saut" href="#contenu">Aller au contenu</a>
@@ -618,13 +618,46 @@ fetch("/operateur/api/points").then(r => r.json()).then(pts => pts.forEach(p => 
 }));
 </script>
 {% elif page == "carte_publique" %}
+{#- Carte des zones à risque et des caniveaux d'Abidjan : page autonome (app/static/carte, voir son LISEZMOI), affichée dans un cadre.
+    L'ancienne carte (villes, signalements, lieux sûrs, rivières, capteurs) est sur /carte/signalements. -#}
 <section class="tete tete-carte" aria-labelledby="titre-page">
   <div class="tete-texte">
-    <h1 id="titre-page">Carte des risques</h1>
+    <h1 id="titre-page">Zones à risque d'Abidjan</h1>
+    <p class="tete-chapeau">Chaque bâtiment des 13 communes, classé selon le risque d'inondation. Zoomez puis touchez-en un pour savoir pourquoi ; l'onglet Caniveaux montre l'eau que chaque quartier leur envoie.</p>
+    <div class="tete-actions">
+      <a class="bouton" href="/signaler">{{ icone('upload') }}Signaler un problème</a>
+      <a class="bouton rouge" href="/aide">{{ icone('siren') }}Je suis en danger</a>
+    </div>
+  </div>
+  <ul class="legende-grande verre-champ" aria-label="Légende de la carte">
+    <li><span class="symbole"><i class="s-bat tres"></i><i class="s-bat eleve"></i><i class="s-bat faible"></i></span>Bâtiment à risque très élevé, élevé ou faible</li>
+    <li><span class="symbole s-trait"></span>Caniveau : plus il est foncé, plus le quartier lui envoie d'eau</li>
+  </ul>
+</section>
+<div class="carte-cadre">
+  <iframe id="carte-risques" class="carte-risques" src="/static/carte/index.html?integre=1" title="Carte des zones à risque et des caniveaux d'Abidjan"></iframe>
+</div>
+<p class="petit">Zone pilote : Abidjan seulement. Classement établi d'après le relief (FABDEM), les bâtiments (Google Open Buildings), la population
+  (WorldPop) et OpenStreetMap ; il indique où l'eau menace, pas où elle est déjà. Démonstration : en cas d'alerte, les consignes de l'ONPC priment.
+  <a href="/carte/signalements">Signalements et lieux sûrs</a> · <a href="/static/carte/index.html" target="_blank" rel="noopener">Carte en plein écran</a></p>
+<script>
+(function () {
+  const f = document.getElementById("carte-risques");
+  if (location.hash.length > 1) f.src += location.hash;   // lien direct vers un caniveau (QR codes) : /carte#caniveaux/KOU-001
+  // le thème clair/sombre du site s'applique aussi à la carte : on la recharge quand il change
+  new MutationObserver(() => { try { f.contentWindow.location.reload(); } catch (e) { f.src = f.src; } })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
+{% elif page == "carte_signalements" %}
+<section class="tete tete-carte" aria-labelledby="titre-page">
+  <div class="tete-texte">
+    <h1 id="titre-page">Signalements et lieux sûrs</h1>
     <p class="tete-chapeau">Le niveau de chaque ville, les inondations signalées par les habitants puis vérifiées, et les lieux sûrs
       où se mettre à l'abri.</p>
     <div class="tete-actions">
       <a class="bouton" href="/signaler">{{ icone('upload') }}Signaler un problème</a>
+      <a class="bouton leger" href="/carte">{{ icone('map') }}Zones à risque</a>
       <a class="bouton rouge" href="/aide">{{ icone('siren') }}Je suis en danger</a>
     </div>
   </div>
@@ -1117,7 +1150,7 @@ if (pts.length) carte.fitBounds(pts.map(p => [p[0], p[1]]), {padding: [40, 40], 
   <ul class="consignes" data-revele>
     <li><b>Ne jetez rien dans les caniveaux.</b> Un sac plastique suffit à boucher un passage d'eau.</li>
     <li>Participez au <b>curage de votre rue</b> et <a href="/signaler">signalez les caniveaux bouchés</a>.</li>
-    <li>Repérez le <b>lieu sûr</b> le plus proche, en hauteur (<a href="/carte">voir la carte</a>).</li>
+    <li>Repérez le <b>lieu sûr</b> le plus proche, en hauteur (<a href="/carte/signalements">voir la carte des lieux sûrs</a>).</li>
     <li>Rangez papiers d'identité, ordonnances et argent dans un <b>sac plastique fermé</b>, facile à emporter.</li>
     <li>Préparez une lampe, une batterie de téléphone chargée, de l'eau potable et vos médicaments.</li>
     <li>Si vous habitez un <b>bas-fond ou au pied d'une pente</b> : prévoyez où dormir en cas d'alerte rouge.</li>
@@ -1394,7 +1427,7 @@ document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au $
   <div class="tete-texte">
     <h1 id="titre-page">Signaler un problème</h1>
     <p class="tete-chapeau">Route inondée, quartier sous l'eau, mur prêt à tomber, caniveau bouché. Votre signalement est vérifié,
-      puis affiché sur la <a href="/carte">carte publique</a>.</p>
+      puis affiché sur la <a href="/carte/signalements">carte des signalements</a>.</p>
     <p class="tete-note">{{ icone('siren', 'petite') }} Quelqu'un est en danger ? <a href="tel:180">Appelez le 180</a>, puis <a href="/aide">demandez de l'aide</a>.</p>
   </div>
   <div class="tete-visuel">
@@ -1462,7 +1495,7 @@ document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au $
     <h1 id="titre-page">Merci !</h1>
     <p class="tete-chapeau" role="status">Signalement reçu : {{ libelle }}. Vous aidez tout le quartier.</p>
     <div class="tete-actions">
-      <a class="bouton" href="/carte">{{ icone('map') }}Voir la carte</a>
+      <a class="bouton" href="/carte/signalements">{{ icone('map') }}Voir la carte</a>
       <a class="bouton leger" href="/signaler">{{ icone('plus') }}Nouveau signalement</a>
     </div>
   </div>
@@ -1571,7 +1604,7 @@ document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au $
     <a class="marque" href="/"><img src="/static/logo-picto.png" alt=""><span>AquaSentinelle <b>CI</b></span></a>
     <nav class="nav-public" id="nav-public" aria-label="Navigation principale">
       <a href="/" {% if chemin == '/' %}aria-current="page"{% endif %}>Niveaux d'alerte</a>
-      <a href="/carte" {% if chemin == '/carte' %}aria-current="page"{% endif %}>Carte</a>
+      <a href="/carte" {% if chemin.startswith('/carte') %}aria-current="page"{% endif %}>Carte</a>
       <a href="/signaler" {% if chemin == '/signaler' %}aria-current="page"{% endif %}>Signaler</a>
       <a href="/prevention" {% if chemin == '/prevention' %}aria-current="page"{% endif %}>Consignes</a>
       <a href="/abonnement" {% if chemin == '/abonnement' %}aria-current="page"{% endif %}>Alertes SMS</a>
@@ -1586,7 +1619,7 @@ document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au $
 <div class="menu-mobile" id="menu-mobile">
   <nav aria-label="Menu principal">
     <a href="/" {% if chemin == '/' %}aria-current="page"{% endif %}>Niveaux d'alerte</a>
-    <a href="/carte" {% if chemin == '/carte' %}aria-current="page"{% endif %}>Carte</a>
+    <a href="/carte" {% if chemin.startswith('/carte') %}aria-current="page"{% endif %}>Carte</a>
     <a href="/signaler" {% if chemin == '/signaler' %}aria-current="page"{% endif %}>Signaler</a>
     <a href="/prevention" {% if chemin == '/prevention' %}aria-current="page"{% endif %}>Consignes</a>
     <a href="/abonnement" {% if chemin == '/abonnement' %}aria-current="page"{% endif %}>Alertes SMS</a>
@@ -1637,7 +1670,8 @@ document.getElementById("axe").textContent = jours.length ? `du ${jours[0]} au $
 {% set page_relais = chemin.startswith('/r/') %}
 {% set conseils = {
   '/': "Cherchez votre ville : sa couleur donne le niveau. Vert, rien à faire ; orange, soyez prêts ; rouge, éloignez-vous des caniveaux et des pentes.",
-  '/carte': "Déplacez la carte avec le doigt et touchez un symbole pour voir le détail : signalements vérifiés, lieux sûrs, niveaux des villes.",
+  '/carte': "Déplacez la carte avec le doigt et zoomez jusqu'à voir les bâtiments : touchez-en un pour savoir pourquoi il est à risque. L'onglet Caniveaux montre l'eau que chaque quartier leur envoie.",
+  '/carte/signalements': "Déplacez la carte avec le doigt et touchez un symbole pour voir le détail : signalements vérifiés, lieux sûrs, niveaux des villes.",
   '/signaler': "Quatre étapes : choisissez le problème, indiquez l'endroit (bouton GPS ou toucher la carte), ajoutez une photo si possible, puis envoyez.",
   '/prevention': "Lisez ces consignes avant la saison des pluies : en alerte rouge, il sera trop tard pour les découvrir.",
   '/abonnement': "Choisissez votre commune et entrez votre numéro : vous recevrez un SMS en cas d'alerte, même sans internet. Envoyez STOP pour arrêter.",

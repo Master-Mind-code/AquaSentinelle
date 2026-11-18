@@ -645,6 +645,9 @@ main.public:has(> .tete:only-child) { padding-bottom: 0; }
 .s-signal { background: #B91C1C; border-radius: 3px; }
 .s-lieu { background: #15803D; border-radius: 50%; }
 .s-capteur { background: #0B1120; border-radius: 50%; }
+.s-bat { width: 16px; height: 16px; border-radius: 4px; display: inline-block; }
+.s-bat.tres { background: #9E1B1B; } .s-bat.eleve { background: #E39A3B; } .s-bat.faible { background: #CFCABF; }
+.s-trait { width: 44px; height: 6px; border-radius: 3px; flex: none; background: linear-gradient(90deg, #F2D48F, #D0602B, #5C1210); }
 .s-riviere { width: 16px; height: 16px; background: #0369A1; border: 2px solid #FFFFFF; transform: rotate(45deg); flex: none; }
 /* Couches de la carte : panneau de verre posé sur la carte elle-même */
 .carte-cadre { position: relative; margin: calc(-1 * var(--sous-tete)) calc(-1 * var(--gouttiere)) 18px; }
@@ -657,6 +660,7 @@ main.public:has(> .tete:only-child) { padding-bottom: 0; }
 .tete .choix label:hover { background: color-mix(in srgb, currentColor 22%, transparent); }
 .tete .choix label:has(input:checked) { background: var(--champ-action); color: var(--champ-action-encre); }
 #carte.carte-pleine { margin: 0; height: min(78svh, 780px); border-radius: 0; }
+.carte-cadre iframe.carte-risques { display: block; width: 100%; height: min(78svh, 780px); border: 0; background: var(--surface-2); }
 
 /* Formulaires en étapes : la progression suit ce qui est rempli */
 .formulaire-etapes { display: grid; grid-template-columns: minmax(190px, 3fr) minmax(0, 8fr); gap: 32px clamp(32px, 5vw, 88px); align-items: start; }

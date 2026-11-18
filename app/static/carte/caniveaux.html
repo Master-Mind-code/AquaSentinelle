@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{var t=localStorage.getItem("aqua-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<script>
+// dans un onglet : le bandeau de titre est affiché par la page qui contient les deux cartes
+if (window.parent !== window) document.documentElement.classList.add('dans-onglet');
+// référence à la carte Leaflet (window._carte), pour garder le même cadrage d'un onglet à l'autre
+(function () { var v; Object.defineProperty(window, 'L', { configurable: true, get: function () { return v; },
+  set: function (x) { v = x; try { x.Map.addInitHook(function () { if (!window._carte) window._carte = this; }); } catch (e) {} } }); })();
+</script>
+<style>.dans-onglet .app > header { display: none; }</style>
+<title>AquaSentinelle CI · caniveaux</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style> .leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; left: 0; top: 0; } .leaflet-container { overflow: hidden; } .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow { -webkit-user-select: none; -moz-user-select: none; user-select: none; -webkit-user-drag: none; } .leaflet-tile::selection { background: transparent; } .leaflet-safari .leaflet-tile { image-rendering: -webkit-optimize-contrast; } .leaflet-safari .leaflet-tile-container { width: 1600px; height: 1600px; -webkit-transform-origin: 0 0; } .leaflet-marker-icon, .leaflet-marker-shadow { display: block; } .leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; } .leaflet-container .leaflet-marker-pane img, .leaflet-container .leaflet-shadow-pane img, .leaflet-container .leaflet-tile-pane img, .leaflet-container img.leaflet-image-layer, .leaflet-container .leaflet-tile { max-width: none !important; max-height: none !important; width: auto; padding: 0; } .leaflet-container img.leaflet-tile { mix-blend-mode: plus-lighter; } .leaflet-container.leaflet-touch-zoom { -ms-touch-action: pan-x pan-y; touch-action: pan-x pan-y; } .leaflet-container.leaflet-touch-drag { -ms-touch-action: pinch-zoom; touch-action: none; touch-action: pinch-zoom; } .leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { -ms-touch-action: none; touch-action: none; } .leaflet-container { -webkit-tap-highlight-color: transparent; } .leaflet-container a { -webkit-tap-highlight-color: rgba(51, 181, 229, 0.4); } .leaflet-tile { filter: inherit; visibility: hidden; } .leaflet-tile-loaded { visibility: inherit; } .leaflet-zoom-box { width: 0; height: 0; -moz-box-sizing: border-box; box-sizing: border-box; z-index: 800; } .leaflet-overlay-pane svg { -moz-user-select: none; } .leaflet-pane { z-index: 400; } .leaflet-tile-pane { z-index: 200; } .leaflet-overlay-pane { z-index: 400; } .leaflet-shadow-pane { z-index: 500; } .leaflet-marker-pane { z-index: 600; } .leaflet-tooltip-pane { z-index: 650; } .leaflet-popup-pane { z-index: 700; } .leaflet-map-pane canvas { z-index: 100; } .leaflet-map-pane svg { z-index: 200; } .leaflet-vml-shape { width: 1px; height: 1px; } .lvml { behavior: none; display: inline-block; position: absolute; } .leaflet-control { position: relative; z-index: 800; pointer-events: visiblePainted; pointer-events: auto; } .leaflet-top, .leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; } .leaflet-top { top: 0; } .leaflet-right { right: 0; } .leaflet-bottom { bottom: 0; } .leaflet-left { left: 0; } .leaflet-control { float: left; clear: both; } .leaflet-right .leaflet-control { float: right; } .leaflet-top .leaflet-control { margin-top: 10px; } .leaflet-bottom .leaflet-control { margin-bottom: 10px; } .leaflet-left .leaflet-control { margin-left: 10px; } .leaflet-right .leaflet-control { margin-right: 10px; } .leaflet-fade-anim .leaflet-popup { opacity: 0; -webkit-transition: opacity 0.2s linear; -moz-transition: opacity 0.2s linear; transition: opacity 0.2s linear; } .leaflet-fade-anim .leaflet-map-pane .leaflet-popup { opacity: 1; } .leaflet-zoom-animated { -webkit-transform-origin: 0 0; -ms-transform-origin: 0 0; transform-origin: 0 0; } svg.leaflet-zoom-animated { will-change: transform; } .leaflet-zoom-anim .leaflet-zoom-animated { -webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1); -moz-transition: -moz-transform 0.25s cubic-bezier(0,0,0.25,1); transition: transform 0.25s cubic-bezier(0,0,0.25,1); } .leaflet-zoom-anim .leaflet-tile, .leaflet-pan-anim .leaflet-tile { -webkit-transition: none; -moz-transition: none; transition: none; } .leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; } .leaflet-interactive { cursor: pointer; } .leaflet-grab { cursor: -webkit-grab; cursor: -moz-grab; cursor: grab; } .leaflet-crosshair, .leaflet-crosshair .leaflet-interactive { cursor: crosshair; } .leaflet-popup-pane, .leaflet-control { cursor: auto; } .leaflet-dragging .leaflet-grab, .leaflet-dragging .leaflet-grab .leaflet-interactive, .leaflet-dragging .leaflet-marker-draggable { cursor: move; cursor: -webkit-grabbing; cursor: -moz-grabbing; cursor: grabbing; } .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-image-layer, .leaflet-pane > svg path, .leaflet-tile-container { pointer-events: none; } .leaflet-marker-icon.leaflet-interactive, .leaflet-image-layer.leaflet-interactive, .leaflet-pane > svg path.leaflet-interactive, svg.leaflet-image-layer.leaflet-interactive path { pointer-events: visiblePainted; pointer-events: auto; } .leaflet-container { background: #ddd; outline-offset: 1px; } .leaflet-container a { color: #0078A8; } .leaflet-zoom-box { border: 2px dotted #38f; background: rgba(255,255,255,0.5); } .leaflet-container { font-family: "Helvetica Neue", Arial, Helvetica, sans-serif; font-size: 12px; font-size: 0.75rem; line-height: 1.5; } .leaflet-bar { box-shadow: 0 1px 5px rgba(0,0,0,0.65); border-radius: 4px; } .leaflet-bar a { background-color: #fff; border-bottom: 1px solid #ccc; width: 26px; height: 26px; line-height: 26px; display: block; text-align: center; text-decoration: none; color: black; } .leaflet-bar a, .leaflet-control-layers-toggle { background-position: 50% 50%; background-repeat: no-repeat; display: block; } .leaflet-bar a:hover, .leaflet-bar a:focus { background-color: #f4f4f4; } .leaflet-bar a:first-child { border-top-left-radius: 4px; border-top-right-radius: 4px; } .leaflet-bar a:last-child { border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; border-bottom: none; } .leaflet-bar a.leaflet-disabled { cursor: default; background-color: #f4f4f4; color: #bbb; } .leaflet-touch .leaflet-bar a { width: 30px; height: 30px; line-height: 30px; } .leaflet-touch .leaflet-bar a:first-child { border-top-left-radius: 2px; border-top-right-radius: 2px; } .leaflet-touch .leaflet-bar a:last-child { border-bottom-left-radius: 2px; border-bottom-right-radius: 2px; } .leaflet-control-zoom-in, .leaflet-control-zoom-out { font: bold 18px 'Lucida Console', Monaco, monospace; text-indent: 1px; } .leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out { font-size: 22px; } .leaflet-control-layers { box-shadow: 0 1px 5px rgba(0,0,0,0.4); background: #fff; border-radius: 5px; } .leaflet-control-layers-toggle { background-image: none; width: 36px; height: 36px; } .leaflet-retina .leaflet-control-layers-toggle { background-image: none; background-size: 26px 26px; } .leaflet-touch .leaflet-control-layers-toggle { width: 44px; height: 44px; } .leaflet-control-layers .leaflet-control-layers-list, .leaflet-control-layers-expanded .leaflet-control-layers-toggle { display: none; } .leaflet-control-layers-expanded .leaflet-control-layers-list { display: block; position: relative; } .leaflet-control-layers-expanded { padding: 6px 10px 6px 6px; color: #333; background: #fff; } .leaflet-control-layers-scrollbar { overflow-y: scroll; overflow-x: hidden; padding-right: 5px; } .leaflet-control-layers-selector { margin-top: 2px; position: relative; top: 1px; } .leaflet-control-layers label { display: block; font-size: 13px; font-size: 1.08333em; } .leaflet-control-layers-separator { height: 0; border-top: 1px solid #ddd; margin: 5px -10px 5px -6px; } .leaflet-default-icon-path { background-image: none; } .leaflet-container .leaflet-control-attribution { background: #fff; background: rgba(255, 255, 255, 0.8); margin: 0; } .leaflet-control-attribution, .leaflet-control-scale-line { padding: 0 5px; color: #333; line-height: 1.4; } .leaflet-control-attribution a { text-decoration: none; } .leaflet-control-attribution a:hover, .leaflet-control-attribution a:focus { text-decoration: underline; } .leaflet-attribution-flag { display: inline !important; vertical-align: baseline !important; width: 1em; height: 0.6669em; } .leaflet-left .leaflet-control-scale { margin-left: 5px; } .leaflet-bottom .leaflet-control-scale { margin-bottom: 5px; } .leaflet-control-scale-line { border: 2px solid #777; border-top: none; line-height: 1.1; padding: 2px 5px 1px; white-space: nowrap; -moz-box-sizing: border-box; box-sizing: border-box; background: rgba(255, 255, 255, 0.8); text-shadow: 1px 1px #fff; } .leaflet-control-scale-line:not(:first-child) { border-top: 2px solid #777; border-bottom: none; margin-top: -2px; } .leaflet-control-scale-line:not(:first-child):not(:last-child) { border-bottom: 2px solid #777; } .leaflet-touch .leaflet-control-attribution, .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { box-shadow: none; } .leaflet-touch .leaflet-control-layers, .leaflet-touch .leaflet-bar { border: 2px solid rgba(0,0,0,0.2); background-clip: padding-box; } .leaflet-popup { position: absolute; text-align: center; margin-bottom: 20px; } .leaflet-popup-content-wrapper { padding: 1px; text-align: left; border-radius: 12px; } .leaflet-popup-content { margin: 13px 24px 13px 20px; line-height: 1.3; font-size: 13px; font-size: 1.08333em; min-height: 1px; } .leaflet-popup-content p { margin: 17px 0; margin: 1.3em 0; } .leaflet-popup-tip-container { width: 40px; height: 20px; position: absolute; left: 50%; margin-top: -1px; margin-left: -20px; overflow: hidden; pointer-events: none; } .leaflet-popup-tip { width: 17px; height: 17px; padding: 1px; margin: -10px auto 0; pointer-events: auto; -webkit-transform: rotate(45deg); -moz-transform: rotate(45deg); -ms-transform: rotate(45deg); transform: rotate(45deg); } .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: white; color: #333; box-shadow: 0 3px 14px rgba(0,0,0,0.4); } .leaflet-container a.leaflet-popup-close-button { position: absolute; top: 0; right: 0; border: none; text-align: center; width: 24px; height: 24px; font: 16px/24px Tahoma, Verdana, sans-serif; color: #757575; text-decoration: none; background: transparent; } .leaflet-container a.leaflet-popup-close-button:hover, .leaflet-container a.leaflet-popup-close-button:focus { color: #585858; } .leaflet-popup-scrolled { overflow: auto; } .leaflet-oldie .leaflet-popup-content-wrapper { -ms-zoom: 1; } .leaflet-oldie .leaflet-popup-tip { width: 24px; margin: 0 auto; -ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)"; filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678); } .leaflet-oldie .leaflet-control-zoom, .leaflet-oldie .leaflet-control-layers, .leaflet-oldie .leaflet-popup-content-wrapper, .leaflet-oldie .leaflet-popup-tip { border: 1px solid #999; } .leaflet-div-icon { background: #fff; border: 1px solid #666; } .leaflet-tooltip { position: absolute; padding: 6px; background-color: #fff; border: 1px solid #fff; border-radius: 3px; color: #222; white-space: nowrap; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; pointer-events: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); } .leaflet-tooltip.leaflet-interactive { cursor: pointer; pointer-events: auto; } .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { position: absolute; pointer-events: none; border: 6px solid transparent; background: transparent; content: ""; } .leaflet-tooltip-bottom { margin-top: 6px; } .leaflet-tooltip-top { margin-top: -6px; } .leaflet-tooltip-bottom:before, .leaflet-tooltip-top:before { left: 50%; margin-left: -6px; } .leaflet-tooltip-top:before { bottom: 0; margin-bottom: -12px; border-top-color: #fff; } .leaflet-tooltip-bottom:before { top: 0; margin-top: -12px; margin-left: -6px; border-bottom-color: #fff; } .leaflet-tooltip-left { margin-left: -6px; } .leaflet-tooltip-right { margin-left: 6px; } .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { top: 50%; margin-top: -6px; } .leaflet-tooltip-left:before { right: 0; margin-right: -12px; border-left-color: #fff; } .leaflet-tooltip-right:before { left: 0; margin-left: -12px; border-right-color: #fff; } @media print { .leaflet-control { -webkit-print-color-adjust: exact; print-color-adjust: exact; } } </style>
+<style>
+/* Mise en page : barre de titre, panneau de couches à gauche, carte plein cadre à droite ; empilé sur téléphone */
+:root {
+  --fond: #eef1ec; --panneau: #fbfcfa; --encre: #1c2721; --doux: #5a6a61; --trait: #d5ddd6;
+  --vert: #1f4d3a; --terre: #b5532e; --terre-clair: #f3dccf; --sol: #e7e4dc;
+  --tres: #9e1b1b; --eleve: #e39a3b; --faible: #cfcabf;
+  --c0: #f1e7d2; --c1: #e9c48e; --c2: #df9a55; --c3: #c4612f; --c4: #8c2a1c;
+  --lib-fort: #1c2721; --lib: #3f4a43; --lib-doux: #5b645e; --halo: #ffffff;
+  --f-eau: #b0c4bf; --f-foret: #cbdbb9; --f-parc: #d4e4c1; --f-indus: #e3ddd6; --f-route: #ffffff; --f-bord: #c9c1b2;
+  --titre: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+  --texte: "Source Sans 3", "Segoe UI", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --fond: #151b18; --panneau: #1b221e; --encre: #e6ece8; --doux: #9fb0a6; --trait: #2f3a34;
+  --vert: #7fbf9d; --terre: #e08a62; --terre-clair: #3a2a22; --sol: #262b28; --faible: #6f6a61;
+  --lib-fort: #f3f6f4; --lib: #d6ddd8; --lib-doux: #b3bdb6; --halo: #141a17;
+  --f-eau: #1e3634; --f-foret: #26352a; --f-parc: #2a3a2b; --f-indus: #2f2d2b; --f-route: #4c534e; --f-bord: #1a1f1c; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --fond: #151b18; --panneau: #1b221e; --encre: #e6ece8; --doux: #9fb0a6; --trait: #2f3a34;
+  --vert: #7fbf9d; --terre: #e08a62; --terre-clair: #3a2a22; --sol: #262b28; --faible: #6f6a61;
+  --lib-fort: #f3f6f4; --lib: #d6ddd8; --lib-doux: #b3bdb6; --halo: #141a17;
+  --f-eau: #1e3634; --f-foret: #26352a; --f-parc: #2a3a2b; --f-indus: #2f2d2b; --f-route: #4c534e; --f-bord: #1a1f1c; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--fond); color: var(--encre); font: 15px/1.45 var(--texte); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--vert); }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+header { background: var(--vert); color: #fff; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; }
+:root[data-theme="dark"] header { color: #10170f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) header { color: #10170f; } }
+header h1 { margin: 0; font: 700 1.35rem/1.1 var(--titre); letter-spacing: .01em; text-wrap: balance; }
+header p { margin: 0; font-size: .92rem; opacity: .9; }
+.corps { display: grid; grid-template-columns: minmax(280px, 340px) 1fr; min-height: 0; }
+aside { background: var(--panneau); border-right: 1px solid var(--trait); overflow-y: auto; padding-block: 14px 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+#carte { background: var(--sol); min-height: 0; }
+.chiffres { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.chiffre b { display: block; font: 700 1.5rem/1 var(--titre); color: var(--terre); font-variant-numeric: tabular-nums; }
+.chiffre span { font-size: .82rem; color: var(--doux); }
+h2 { margin: 0 0 8px; font: 600 .78rem/1.2 var(--titre); letter-spacing: .08em; text-transform: uppercase; color: var(--doux); }
+.echelle { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.echelle i { height: 12px; display: block; }
+.echelle-lib { display: flex; justify-content: space-between; font-size: .75rem; color: var(--doux); font-variant-numeric: tabular-nums; margin-top: 3px; }
+.niveaux { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: .86rem; }
+.niveaux span { display: inline-flex; align-items: center; gap: 6px; }
+.pastille { width: 12px; height: 12px; border-radius: 2px; display: inline-block; flex: none; }
+.zoomnote { font-size: .8rem; color: var(--doux); margin: 8px 0 0; }
+.groupe { display: flex; flex-direction: column; gap: 6px; }
+.groupe label { display: flex; align-items: center; gap: 8px; font-size: .92rem; cursor: pointer; }
+.groupe input { accent-color: var(--vert); width: 16px; height: 16px; }
+.groupe input:focus-visible { outline: 2px solid var(--terre); outline-offset: 2px; }
+.groupe small { color: var(--doux); font-size: .78rem; margin-left: 24px; margin-top: -4px; }
+/* clés de légende : la couleur de chaque couche, à côté de sa case */
+.cle { display: flex; flex-wrap: wrap; gap: 3px 12px; margin: -3px 0 3px 24px; font-size: .78rem; color: var(--doux); font-variant-numeric: tabular-nums; }
+.cle span { display: inline-flex; align-items: center; gap: 5px; }
+.cle i { width: 15px; height: 10px; border-radius: 2px; flex: none; display: inline-block; }
+.cle i.ligne { height: 0; width: 20px; border-radius: 0; border-top: 2px solid #2f6f6a; }
+.cle i.tirets { height: 0; width: 20px; border-radius: 0; border-top: 1.5px dashed var(--encre); }
+.cle i.point { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.cle i.relief { background: linear-gradient(90deg, rgba(40,40,40,.05), rgba(40,40,40,.55)); }
+.cle .nom-q { font: 600 .7rem var(--titre); letter-spacing: .06em; text-transform: uppercase; color: var(--lib); }
+.cle .nom-r { font: 500 .76rem var(--titre); color: var(--lib-doux); }
+table { width: 100%; border-collapse: collapse; font-size: .86rem; font-variant-numeric: tabular-nums; }
+th { text-align: left; font: 600 .74rem var(--titre); letter-spacing: .05em; text-transform: uppercase; color: var(--doux); padding: 4px 4px; border-bottom: 1px solid var(--trait); }
+td { padding: 5px 4px; border-bottom: 1px solid var(--trait); }
+td.n, th.n { text-align: right; }
+tbody tr { cursor: pointer; }
+tbody tr:hover, tbody tr:focus-visible { background: var(--terre-clair); outline: none; }
+.plate { font-size: .72rem; color: var(--terre); font-weight: 600; margin-left: 4px; }
+.sources { font-size: .76rem; color: var(--doux); line-height: 1.4; }
+.leaflet-container { font-family: var(--texte); background: var(--sol); }
+.leaflet-popup-content { margin: 12px 14px; font-size: .9rem; line-height: 1.4; min-width: 220px; }
+.fiche h3 { margin: 0 0 2px; font: 700 1.05rem var(--titre); }
+.fiche .niv { display: inline-block; padding: 1px 8px; border-radius: 10px; color: #fff; font-size: .78rem; font-weight: 600; margin-bottom: 6px; }
+.fiche dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0; }
+.fiche dt { color: #5a6a61; } .fiche dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+/* Noms sur la carte : communes, puis quartiers de plus en plus fins en zoomant (comme un plan de ville) */
+.etiquette, .quartier { pointer-events: none; }
+.etiquette span, .quartier span { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; line-height: 1;
+  font-family: var(--titre); color: var(--lib); text-shadow: 0 0 3px var(--halo), 0 0 3px var(--halo), 0 0 2px var(--halo), 0 0 1px var(--halo); }
+.etiquette span { font-weight: 700; font-size: 13px; color: var(--lib-fort); letter-spacing: .01em; }
+.q1 span { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.q2 span { font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.q3 span { font-weight: 600; font-size: 12px; }
+.q4 span { font-weight: 500; font-size: 11px; color: var(--lib-doux); }
+.rue { pointer-events: none; }
+.rue span { position: absolute; left: 0; top: 0; white-space: nowrap; line-height: 1; font: 500 11px var(--titre); letter-spacing: .01em; color: var(--lib-doux);
+  text-shadow: 0 0 3px var(--halo), 0 0 3px var(--halo), 0 0 2px var(--halo), 0 0 1px var(--halo); }
+.chargement { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 800; background: var(--panneau); color: var(--encre);
+  border: 1px solid var(--trait); padding: 4px 10px; border-radius: 12px; font-size: .82rem; }
+.cle i.q { height: 0; width: 22px; border-radius: 0; border-top-style: solid; }
+.cle i.fosse { height: 0; width: 22px; border-radius: 0; border-top: 3px dashed var(--encre); opacity: .7; }
+.cle i.buse { height: 0; width: 22px; border-radius: 0; border-top: 3px dotted var(--encre); opacity: .7; }
+.cle i.bassin { background: rgba(181,83,46,.22); box-shadow: inset 0 0 0 1.5px var(--terre); }
+.debits { display: grid; gap: 5px; font-size: .86rem; font-variant-numeric: tabular-nums; }
+.debits span { display: flex; align-items: center; gap: 10px; }
+.debits i { display: inline-block; width: 30px; border-top-style: solid; border-radius: 2px; flex: none; }
+.chercher { display: flex; gap: 6px; }
+.chercher input { flex: 1; min-width: 0; font: inherit; padding: 6px 9px; border: 1px solid var(--trait); border-radius: 6px; background: var(--panneau); color: var(--encre); text-transform: uppercase; }
+.chercher input::placeholder { text-transform: none; color: var(--doux); }
+.chercher button { font: 600 .9rem var(--titre); padding: 6px 12px; border: 0; border-radius: 6px; background: var(--vert); color: #fff; cursor: pointer; }
+:root[data-theme="dark"] .chercher button { color: #10170f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chercher button { color: #10170f; } }
+.chercher-msg { font-size: .8rem; color: var(--terre); min-height: 1em; margin: 4px 0 0; }
+.terrain a { color: var(--terre); font-weight: 600; }
+.terrain p { margin: 0 0 6px; font-size: .88rem; }
+.ident { pointer-events: none; }
+.ident span { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap; line-height: 1; font: 700 10.5px var(--titre);
+  letter-spacing: .03em; color: var(--encre); background: var(--panneau); border: 1.5px solid var(--terre); border-radius: 8px; padding: 2px 5px; }
+.fleche { pointer-events: none; }
+.fleche svg { position: absolute; left: -7px; top: -7px; }
+.carte-fiche { position: absolute; top: 10px; right: 10px; z-index: 800; width: min(320px, calc(100% - 70px)); max-height: calc(100% - 40px);
+  overflow: auto; background: var(--panneau); color: var(--encre); border: 1px solid var(--trait); border-radius: 10px;
+  box-shadow: 0 6px 22px rgba(0,0,0,.18); padding: 12px 14px 12px; font-size: .9rem; line-height: 1.4; }
+.carte-fiche .fermer { position: absolute; top: 4px; right: 6px; border: 0; background: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--doux); padding: 4px 6px; }
+.carte-fiche .fiche h3 { padding-right: 24px; }
+.carte-fiche .fiche dt { color: var(--doux); }
+@media (max-width: 760px) { .carte-fiche { top: auto; bottom: 10px; left: 10px; right: 10px; width: auto; max-height: 48%; } }
+.fiche .note { margin: 6px 0 0; font-size: .82rem; color: var(--terre); }
+.fiche a { color: var(--terre); font-weight: 600; }
+@media (max-width: 760px) {
+  .corps { grid-template-columns: 1fr; grid-template-rows: 62vh auto; }
+  #carte { order: -1; height: 62vh; }
+  aside { border-right: 0; border-top: 1px solid var(--trait); padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow: visible; }
+  .app { height: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .leaflet-zoom-anim .leaflet-zoom-animated { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <h1>AquaSentinelle CI · caniveaux et drainage d'Abidjan</h1>
+    <p>L'eau que chaque quartier envoie aux caniveaux cartographiés · base du relevé de terrain · démonstration</p>
+  </header>
+  <div class="corps">
+    <aside>
+      <section class="chiffres" aria-label="Chiffres clés">
+        <div class="chiffre"><b>562</b><span>tronçons de drainage dans OpenStreetMap (128 km)</span></div>
+        <div class="chiffre"><b>228</b><span>à l'échelle d'une rue (moins de 20 ha d'apport)</span></div>
+      </section>
+
+      <section>
+        <h2>Eau envoyée par le quartier</h2>
+        <div class="debits" id="cle-debits"></div>
+        <p class="zoomnote">Débit pendant une averse de référence de 100 mm/h (hypothèse à remplacer par la valeur de la SODEXAM). Un caniveau béton de 60 × 60 cm, pente 0,5 %, en évacue environ 0,6 m³/s s'il est plein et propre.</p>
+        <p class="zoomnote"><b>Cliquer un tronçon</b> allume la surface qui lui envoie son eau et ouvre sa fiche.</p>
+        <div class="cle" style="margin-left:0;margin-top:6px"><span><i class="q" style="border-top-width:3px;border-color:var(--encre);opacity:.7"></i>caniveau, canal</span><span><i class="fosse"></i>fossé en terre</span><span><i class="buse"></i>buse, dalot</span></div>
+      </section>
+
+      <section>
+        <h2>Retrouver un tronçon</h2>
+        <form class="chercher" id="chercher" autocomplete="off">
+          <input id="chercher-id" type="text" inputmode="text" placeholder="Identifiant, ex. KOU-003" aria-label="Identifiant du tronçon" maxlength="7">
+          <button type="submit">Aller</button>
+        </form>
+        <p class="chercher-msg" id="chercher-msg" aria-live="polite"></p>
+        <p class="zoomnote">L'identifiant est celui de la fiche de relevé et du QR code posé sur le caniveau. Les identifiants s'affichent sur la carte à partir du zoom 15, avec le sens de l'écoulement.</p>
+      </section>
+
+      <section class="groupe" aria-label="Couches">
+        <h2>Afficher</h2>
+        <label><input type="checkbox" id="c-caniveau" checked> Caniveaux et canaux</label>
+        <label><input type="checkbox" id="c-fosse" checked> Fossés en terre</label>
+        <label><input type="checkbox" id="c-grand" checked> Très grands bassins (plus de 200 ha)</label>
+        <small>débit surestimé : la méthode n'y sert pas à dimensionner</small>
+        <label><input type="checkbox" id="c-bassins"> Toutes les surfaces d'apport</label>
+        <div class="cle"><span><i class="bassin"></i>surface qui envoie son eau à un tronçon</span></div>
+        <label><input type="checkbox" id="c-coursdeau" checked> Cours d'eau (bassin ≥ 1 km²)</label>
+        <div class="cle"><span><i class="ligne" style="border-top-width:3px"></i>rivière (≥ 10 km²)</span><span><i class="ligne" style="border-top-width:1.5px"></i>ruisseau</span></div>
+        <label><input type="checkbox" id="c-sites" checked> Sites d'inondation constatés</label>
+        <div class="cle"><span><i class="point" style="background:#2f6f6a"></i>inondation</span><span><i class="point" style="background:#8a4b22"></i>glissement de terrain</span></div>
+      </section>
+
+      <section class="groupe" aria-label="Repères">
+        <h2>Repères</h2>
+        <label><input type="checkbox" id="c-quartiers" checked> Noms des quartiers et des rues</label>
+        <div class="cle"><span class="nom-q">Riviéra</span><span class="nom-r">Rue Lecoeur</span><span>plus de noms en zoomant</span></div>
+        <label><input type="checkbox" id="c-communes" checked> Limites des communes</label>
+        <div class="cle"><span><i class="tirets"></i>limite de commune</span></div>
+        <label><input type="checkbox" id="c-relief" checked> Relief</label>
+        <div class="cle"><span><i class="relief"></i>ombrage du relief (s'efface en zoomant)</span></div>
+        <small>Fond de plan © contributeurs OpenStreetMap :</small>
+        <div class="cle"><span><i style="background:var(--f-eau)"></i>eau</span><span><i style="background:var(--f-foret)"></i>forêt</span><span><i style="background:var(--f-parc)"></i>parc</span><span><i style="background:var(--f-indus)"></i>zone industrielle</span><span><i style="background:var(--f-route);box-shadow:inset 0 0 0 1px var(--f-bord)"></i>rue</span></div>
+      </section>
+
+      <section>
+        <h2>Par commune</h2>
+        <table>
+          <thead><tr><th>Commune</th><th class="n">Tronçons</th><th class="n">km</th><th class="n">≥ 10 m³/s</th></tr></thead>
+          <tbody id="tab-communes"></tbody>
+        </table>
+        <p class="zoomnote">Le réseau cartographié est très inégal : presque rien à Koumassi, Marcory et Gonzagueville, où la fiche permet d'ajouter les caniveaux manquants. Cliquer une ligne pour y aller.</p>
+      </section>
+
+      <section class="terrain">
+        <h2>Sur le terrain</h2>
+        <p><a href="docs/fiche_releve_caniveau.pdf" target="_blank" rel="noopener">Fiche de relevé (PDF, 2 pages A4)</a> : forme, dimensions B, b, H, d et D, état, photos, témoignage.</p>
+        <p class="zoomnote">Une version téléphone (KoboToolbox) calcule sur place la capacité du caniveau et la compare à l'eau envoyée.</p>
+      </section>
+
+      <p class="sources">Caniveaux, fossés, canaux : © contributeurs OpenStreetMap (Geofabrik, 9 novembre 2026), le canal de Vridi exclu · Surfaces d'apport : direction d'écoulement sur FABDEM V1-2 (30 m) · Part imperméable : toits Google Open Buildings v3 et chaussées OSM · Méthode rationnelle, ruissellement 0,9 sur l'imperméable et 0,3 ailleurs. Estimation : un tronçon peut recevoir moins d'eau si un caniveau non cartographié l'intercepte en amont.</p>
+    </aside>
+    <div id="carte" role="region" aria-label="Carte des caniveaux"></div>
+  </div>
+</div>
+
+<script src="../leaflet/leaflet.js"></script>
+<script>
+(async function () {
+  const css = getComputedStyle(document.documentElement);
+  const tok = n => css.getPropertyValue(n).trim();
+  const nf = n => (n == null ? '–' : Math.round(n).toLocaleString('fr-FR'));
+  const n1 = n => (n == null ? '–' : n.toLocaleString('fr-FR', { maximumFractionDigits: 1 }));
+  // zoom le plus éloigné : celui où tout le District tient dans la carte (11 sur un écran d'ordinateur, 10 sur un téléphone)
+  const DISTRICT = L.latLngBounds([5.2269, -4.3061], [5.5966, -3.7738]);
+  const carte = window._carte = L.map('carte', { zoomSnap: 1, minZoom: 10, maxZoom: 19, preferCanvas: true, attributionControl: true });
+  const zoomMin = () => Math.max(10, Math.min(12, carte.getBoundsZoom(DISTRICT, false, [24, 24])));
+  // ouverture : tout le District s'il tient ; sinon (téléphone) le centre de l'agglomération au zoom 11
+  carte.setMinZoom(zoomMin());
+  if (zoomMin() >= 11) carte.setView(DISTRICT.getCenter(), zoomMin()); else carte.setView([5.37, -4.02], 11);
+  carte.on('resize', () => carte.setMinZoom(zoomMin()));
+  carte.setMaxBounds([[5.12, -4.45], [5.70, -3.62]]);
+  carte.attributionControl.setPrefix(false).addAttribution('© OpenStreetMap · Google Open Buildings · FABDEM · WorldPop');
+  ['plan', 'fond', 'analyse', 'risque', 'routes', 'batiments', 'lignes', 'reperes'].forEach((p, i) => { carte.createPane(p).style.zIndex = 300 + i * 30; });
+  carte.getPane('reperes').style.pointerEvents = 'none';
+  // voile autour du District : au-dessus des cours d'eau, sous les étiquettes
+  const pVoile = carte.createPane('voile'); pVoile.style.zIndex = 495; pVoile.style.pointerEvents = 'none';
+  const rendu2 = L.svg({ padding: 0.4, pane: 'lignes' });
+  ['plan', 'fond', 'analyse', 'risque', 'routes', 'batiments'].forEach(p => { carte.getPane(p).style.pointerEvents = 'none'; });
+  const charge = document.createElement('div'); charge.className = 'chargement'; charge.hidden = true;
+  document.getElementById('carte').appendChild(charge);
+
+  // ---------- Chargement : tout part en même temps ; chaque couche n'attend que ses propres données ----------
+  const json = u => fetch(u).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  // fichiers compacts : octets compressés (zlib) puis encodés en base64 (les artefacts ne servent pas de binaire)
+  const octets = async url => { const t = await (await fetch(url)).text(), s = atob(t.trim()), b = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+    return new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer()); };
+  // collection 'AQG2' -> { meta, ent : [{ v : [propriétés], parts }] } ; coordonnées lon, lat à la suite (Float64Array)
+  async function collection(url) {
+    const u8 = await octets(url), lm = new DataView(u8.buffer).getUint32(4, true);
+    const meta = JSON.parse(new TextDecoder().decode(u8.subarray(8, 8 + lm)));
+    let p = 8 + lm, x = 0, y = 0;
+    const U = () => { let v = 0, m = 1, b; do { b = u8[p++]; v += (b & 127) * m; m *= 128; } while (b & 128); return v; };
+    const S = () => { const v = U(); return v % 2 ? -(v + 1) / 2 : v / 2; };
+    const [ox, oy] = meta.o, r = meta.r, np = meta.props.length, poly = meta.genre === 'polygone';
+    const anneau = () => { const n = U(), a = new Float64Array(2 * n);
+      for (let i = 0; i < n; i++) { x += S(); y += S(); a[2 * i] = ox + x * r; a[2 * i + 1] = oy + y * r; } return a; };
+    const ent = new Array(meta.n);
+    for (let k = 0; k < meta.n; k++) {
+      const v = []; for (let j = 0; j < np; j++) v.push(U());
+      const nb = U(), parts = [];
+      for (let j = 0; j < nb; j++) { if (poly) { const nr = U(), rs = []; for (let q = 0; q < nr; q++) rs.push(anneau()); parts.push(rs); } else parts.push(anneau()); }
+      ent[k] = { v, parts };
+    }
+    return { meta, ent };
+  }
+  const A = {
+    bornes: json('raster/bornes.json'), communes: json('couches/communes.geojson'),
+    sites: json('couches/sites_constates.geojson'), surfaces: collection('fond/surfaces_bas.txt'), lignes: collection('fond/lignes.txt'),
+    cours: collection('couches/cours_eau.txt'),
+    can: json('couches/caniveaux.geojson'), bas: collection('couches/bassins.txt')
+  };
+  // demandées tout de suite, sans attendre l'index des routes : les grandes voies du petit zoom
+  const princ = octets('routes/principales.txt');
+  // chargés une seule fois, au moment où ils servent (zoom, clic) ou juste après l'ouverture
+  const plusTard = f => { let p = null; return () => p || (p = f()); };
+  const ruesJson = plusTard(() => json('routes/etiquettes.json'));
+  const nomsOsmJson = plusTard(() => json('couches/cours_eau_noms_osm.geojson'));
+  const auRepos = f => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 3000 }) : setTimeout(f, 800));
+
+  // Images : versions allégées pour l'ouverture, complètes ensuite (même emprise, bornes.json)
+  let bornes = null;
+  const pBornes = A.bornes.then(b => (bornes = b));
+  const img = (n, op, pane, prio) => { let src = 'raster/' + n + '.webp';
+    if (prio) { const e = new Image(); e.fetchPriority = prio; e.decoding = 'async'; e.src = src; src = e; }
+    return L.imageOverlay(src, bornes[n], { opacity: op, pane: pane || 'analyse' }); };
+  // relief : ombres brunes et éclats crème, le plat reste transparent
+  const relief = L.layerGroup().addTo(carte);
+  const opRelief = z => (z <= 11 ? 0.7 : z === 12 ? 0.75 : z === 13 ? 0.62 : z === 14 ? 0.4 : z === 15 ? 0.26 : 0.16);
+  let reliefPlein = false;
+  pBornes.then(() => { if (!reliefPlein) ['ombrage_relief_bas', 'eclairage_relief_bas'].forEach(n => relief.addLayer(img(n, opRelief(carte.getZoom()), 'fond', 'low'))); });
+  // relief à 30 m : préchargé juste après l'ouverture, puis il remplace la version allégée
+  const reliefComplet = plusTard(() => pBornes.then(() => Promise.all(['ombrage_relief', 'eclairage_relief'].map(n => new Promise(ok => {
+    const im = new Image(); im.onload = im.onerror = ok; im.src = 'raster/' + n + '.webp'; })))).then(() => {
+    reliefPlein = true;
+    const anciennes = relief.getLayers(), z = carte.getZoom();
+    const neuves = ['ombrage_relief', 'eclairage_relief'].map(n => img(n, opRelief(z), 'fond'));
+    let n = 0;
+    const retirer = () => anciennes.forEach(o => relief.removeLayer(o));
+    neuves.forEach(l => { l.once('load', () => { if (++n === 2) retirer(); }); relief.addLayer(l); });
+    if (!carte.hasLayer(relief)) retirer();
+  }));
+
+  // ---------- Rendu vectoriel net : fond OpenStreetMap, routes et bâtiments redessinés à chaque zoom ----------
+  const racine = document.documentElement;
+  const SOMBRE = racine.dataset.theme === 'dark' || (racine.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const PAL = SOMBRE ? {
+    surf: { agricole: '#2b2f27', broussaille: '#2a3127', industrie: '#2f2d2b', foret: '#26352a', parc: '#2a3a2b', sport: '#2b3a2c',
+      cimetiere: '#2a3229', zone_humide: '#24352f', sable: '#3a3629', piste: '#34332f', eau: '#1e3634' },
+    eauLigne: '#2e5551', route: '#4c534e', routeMaj: '#5d5a4b', bord: '#1a1f1c', fer: '#8c877c', trait: 'rgba(0,0,0,.55)'
+  } : {
+    surf: { agricole: '#e9e5cf', broussaille: '#e1e6cc', industrie: '#e3ddd6', foret: '#cbdbb9', parc: '#d4e4c1', sport: '#d6e5c5',
+      cimetiere: '#d3dcc8', zone_humide: '#cde0d5', sable: '#f1e7c9', piste: '#d9d5ce', eau: '#b0c4bf' },
+    eauLigne: '#8fb0a9', route: '#ffffff', routeMaj: '#fff7e2', bord: '#c9c1b2', fer: '#8a857c', trait: 'rgba(40,28,18,.5)'
+  };
+  pBornes.then(() => L.imageOverlay('raster/' + (SOMBRE ? 'voile_sombre' : 'voile_clair') + '.webp', bornes.voile_clair, { pane: 'voile', interactive: false }).addTo(carte));
+  const W0 = 256, RAD = Math.PI / 180;
+  const mx = lon => (lon + 180) / 360 * W0;
+  const my = lat => { const s = Math.sin(lat * RAD); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * W0; };
+  const ilon = X => X / W0 * 360 - 180;
+  const ilat = Y => Math.atan(Math.sinh(Math.PI * (1 - 2 * Y / W0))) / RAD;
+  const coupe = (b, t) => !(b[0] > t[2] || b[2] < t[0] || b[1] > t[3] || b[3] < t[1]);
+  const boiteM = m => { m.w = [mx(m.b[0]), my(m.b[3]), mx(m.b[2]), my(m.b[1])]; };
+  const monde = a => { const o = new Float64Array(a.length); for (let i = 0; i < a.length; i += 2) { o[i] = mx(a[i]); o[i + 1] = my(a[i + 1]); } return o; };
+  // Couche dessinée sur des tuiles canvas : nette à tous les zooms, y compris sur écran haute définition
+  const Dessin = L.GridLayer.extend({
+    createTile(c, done) {
+      const t = document.createElement('canvas'), r = Math.min(2, window.devicePixelRatio || 1), s = this.getTileSize();
+      t.width = s.x * r; t.height = s.y * r;
+      const ctx = t.getContext('2d'); ctx.scale(r, r);
+      // emprise de la tuile en unités « monde » (256 au zoom 0) ; k = pixels par unité
+      const k = Math.pow(2, c.z), b = [c.x * s.x / k, c.y * s.y / k, (c.x + 1) * s.x / k, (c.y + 1) * s.y / k];
+      Promise.resolve().then(() => this.options.dessiner(ctx, b, k, c.z)).then(() => done(null, t), e => { console.error(e); done(null, t); });
+      return t;
+    }
+  });
+  function trace(ctx, xy, d, n, b, k, ferme) {
+    ctx.moveTo((xy[d] - b[0]) * k, (xy[d + 1] - b[1]) * k);
+    for (let i = 1; i < n; i++) ctx.lineTo((xy[d + 2 * i] - b[0]) * k, (xy[d + 2 * i + 1] - b[1]) * k);
+    if (ferme === 2) ctx.closePath();   // contour à tracer ; un remplissage se ferme tout seul
+  }
+  const boiteXY = xy => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (let i = 0; i < xy.length; i += 2) { const x = xy[i], y = xy[i + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return [x0, y0, x1, y1]; };
+  // Remplissage par paquets de 64 formes : Skia remplit un chemin géant bien plus lentement que plusieurs petits
+  const PAQUET = 64;
+  function paquets(ctx, formes, dessinerForme, finir) {
+    let n = 0;
+    ctx.beginPath();
+    for (const f of formes) { dessinerForme(f); if (++n === PAQUET) { finir(); ctx.beginPath(); n = 0; } }
+    if (n) finir();
+  }
+  const surligner = pts => L.polygon(pts, { pane: 'lignes', renderer: rendu2, color: SOMBRE ? '#ffffff' : '#111111', weight: 2.2, fill: false, interactive: false });
+
+  // 1. Fond de plan : eau, forêts, parcs, zones industrielles, cours d'eau OSM, voie ferrée, pistes d'aéroport
+  // fond allégé (sommets à moins de 8 m retirés, invisible jusqu'au zoom 12) puis fond complet à partir du zoom 13
+  const prepFond = SURF => { const CLS = SURF.meta.classes, s = {};
+    CLS.forEach(c => { s[c] = []; });
+    SURF.ent.forEach(e => e.parts.forEach(rs => { const w = rs.map(monde); s[CLS[e.v[0]]].push({ rs: w, b: boiteXY(w[0]) }); }));
+    return { CLS, surfaces: s }; };
+  const fondBas = A.surfaces.then(prepFond);
+  const fondComplet = plusTard(() => collection('fond/surfaces.txt').then(prepFond));
+  const lignesP = A.lignes.then(LIG => { const l = [];
+    LIG.ent.forEach(e => e.parts.forEach(a => { const xy = monde(a); l.push({ c: LIG.meta.classes[e.v[0]], xy, b: boiteXY(xy) }); }));
+    return l; });
+  async function dessinerPlan(ctx, b, k, z) {
+    const [{ CLS, surfaces }, lignesPlan] = await Promise.all([z >= 13 ? fondComplet() : fondBas, lignesP]);
+    for (const c of CLS) {
+      ctx.fillStyle = PAL.surf[c];
+      paquets(ctx, surfaces[c].filter(s => coupe(s.b, b)), s => { for (const r of s.rs) trace(ctx, r, 0, r.length / 2, b, k, true); }, () => ctx.fill('evenodd'));
+    }
+    ctx.lineCap = ctx.lineJoin = 'round';
+    const f = Math.pow(2, (z - 16) * 0.7);
+    for (const l of lignesPlan) {
+      if (!coupe(l.b, b)) continue;
+      const c = l.c;
+      if (c === 'ruisseau' && z < 14) continue;
+      ctx.beginPath(); trace(ctx, l.xy, 0, l.xy.length / 2, b, k, false);
+      if (c === 'fer') {
+        if (z < 12) continue;
+        ctx.setLineDash([]); ctx.strokeStyle = PAL.fer; ctx.lineWidth = Math.max(1.2, 3 * f); ctx.stroke();
+        if (z >= 14) { ctx.setLineDash([6, 6]); ctx.strokeStyle = SOMBRE ? '#2a2e2b' : '#ffffff'; ctx.lineWidth = Math.max(0.8, 1.6 * f); ctx.stroke(); ctx.setLineDash([]); }
+      } else if (c === 'piste_av') {
+        ctx.strokeStyle = SOMBRE ? '#444340' : '#cfcac2'; ctx.lineWidth = Math.max(2, 22 * f); ctx.stroke();
+      } else {
+        ctx.strokeStyle = PAL.eauLigne; ctx.lineWidth = Math.max(0.8, (c === 'ruisseau' ? 2 : c === 'canal' ? 5 : 4) * f); ctx.stroke();
+      }
+    }
+  }
+  const couchePlan = new Dessin({ pane: 'plan', dessiner: dessinerPlan, updateWhenZooming: false, keepBuffer: 1 }).addTo(carte);
+  const planPret = new Promise(ok => couchePlan.once('load', ok));
+
+  // 2. Routes et rues (OpenStreetMap) : grandes voies seules jusqu'au zoom 12, puis morceaux chargés selon la vue
+  let RIDX = null;
+  const pRidx = plusTard(() => json('routes/index.json').then(r => { RIDX = r; RIDX.morceaux.forEach(boiteM); return r; }));
+  const lireRoutes = u8 => {
+    const dv = new DataView(u8.buffer), n = dv.getUint32(4, true), ox = dv.getFloat64(8, true), oy = dv.getFloat64(16, true), R = 1e-6;
+    let p = 24;
+    const cl = u8.subarray(p, p + n); p += 2 * n;           // classe, puis drapeaux (pont, tunnel)
+    p += 2 * n;                                              // n° du nom (sert aux étiquettes, pas au dessin)
+    const nv = new Uint16Array(u8.buffer, p, n); p += 2 * n;
+    const U = () => { let v = 0, m = 1, b; do { b = u8[p++]; v += (b & 127) * m; m *= 128; } while (b & 128); return v; };
+    const S = () => { const v = U(); return v % 2 ? -(v + 1) / 2 : v / 2; };
+    let x = 0, y = 0, fx = 0, fy = 0;
+    const out = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const xy = new Float64Array(2 * nv[i]);
+      for (let j = 0; j < nv[i]; j++) {
+        const dx = S(), dy = S();
+        if (j === 0) { x = fx + dx; y = fy + dy; fx = x; fy = y; } else { x += dx; y += dy; }
+        xy[2 * j] = mx(ox + x * R); xy[2 * j + 1] = my(oy + y * R);
+      }
+      out[i] = { c: cl[i], xy, b: boiteXY(xy) };
+    }
+    return out;
+  };
+  const rCache = { 'principales.txt': princ.then(lireRoutes) };
+  const morceauRoutes = f => rCache[f] || (rCache[f] = octets('routes/' + f).then(lireRoutes));
+  // [zoom d'apparition, largeur au zoom 16 en px, pointillés]
+  const STY_R = [[10, 12], [10, 11], [10, 10], [11, 9], [12, 8], [14, 6], [15, 3.6], [15, 2.4, [4, 3]], [16, 1.6, [2, 3]]];
+  // jusqu'au zoom 12 : largeurs fixes par classe (px), pour garder la hiérarchie des voies au petit zoom
+  const LARG_BAS = [2.1, 1.9, 1.6, 1.2, 0.85];
+  async function dessinerRoutes(ctx, b, k, z) {
+    if (z > 12) await pRidx();
+    const ds = z <= 12 ? [await morceauRoutes('principales.txt')] : await Promise.all(RIDX.morceaux.filter(m => coupe(m.w, b)).map(m => morceauRoutes(m.f)));
+    const par = STY_R.map(() => []);
+    for (const d of ds) for (const r of d) if (z >= STY_R[r.c][0] && coupe(r.b, b)) par[r.c].push(r);
+    ctx.lineCap = ctx.lineJoin = 'round';
+    const larg = c => (z <= 12 ? LARG_BAS[c] * (z === 12 ? 1.15 : z === 11 ? 1 : 0.85) : Math.max(1.1, STY_R[c][1] * Math.pow(2, (z - 16) * 0.75)));
+    for (let c = STY_R.length - 1; c >= 0; c--) {   // bordures
+      if (!par[c].length || STY_R[c][2]) continue;
+      ctx.strokeStyle = PAL.bord; ctx.lineWidth = larg(c) + (z <= 12 ? (c <= 2 ? 1.3 : 0.9) : c <= 4 ? 2 : 1.4);
+      paquets(ctx, par[c], r => trace(ctx, r.xy, 0, r.xy.length / 2, b, k, false), () => ctx.stroke());
+    }
+    for (let c = STY_R.length - 1; c >= 0; c--) {   // chaussées, les grandes voies par-dessus
+      if (!par[c].length) continue;
+      ctx.setLineDash(STY_R[c][2] || []);
+      ctx.strokeStyle = STY_R[c][2] ? (SOMBRE ? '#6a6f69' : '#a39886') : (c <= 4 ? PAL.routeMaj : PAL.route);
+      ctx.lineWidth = STY_R[c][2] ? Math.max(0.8, STY_R[c][1] * Math.pow(2, (z - 16) * 0.5) * 0.6) : larg(c);
+      paquets(ctx, par[c], r => trace(ctx, r.xy, 0, r.xy.length / 2, b, k, false), () => ctx.stroke());
+      ctx.setLineDash([]);
+    }
+  }
+  const coucheRoutes = new Dessin({ pane: 'routes', dessiner: dessinerRoutes, updateWhenZooming: false, keepBuffer: 1 }).addTo(carte);
+  const routesPret = new Promise(ok => coucheRoutes.once('load', ok));
+
+  // 3. Les bâtiments en teinte neutre à partir du zoom 14 (le niveau de risque est dans l'autre carte)
+  // morceaux de 2,2 km ; dans chaque morceau, une grille de 16 × 16 dit quels bâtiments sont dans quelle case
+  let BIDX = null;
+  const pBidx = plusTard(() => json('bati/index.json').then(r => { BIDX = r; BIDX.morceaux.forEach(boiteM); return r; }));
+  const G = 16;
+  const lireBat = u8 => {
+    const dv = new DataView(u8.buffer), n = dv.getUint32(4, true), ox = dv.getFloat64(8, true), oy = dv.getFloat64(16, true);
+    let p = 24;
+    const nv = u8.subarray(p, p + n); p += n;
+    const code = u8.subarray(p, p + n); p += n;
+    const fl = u8.subarray(p, p + n); p += n;
+    const com = u8.subarray(p, p + n); p += n;
+    const att = new Uint16Array(u8.buffer, p, 7 * n); p += 14 * n;
+    const deb = new Uint32Array(n + 1); let tot = 0;
+    for (let i = 0; i < n; i++) { deb[i] = tot; tot += nv[i]; }
+    deb[n] = tot;
+    const xy = new Float64Array(2 * tot), boite = new Float64Array(4 * n);
+    let x = 0, y = 0, fx = 0, fy = 0, q = 0, e0 = Infinity, e1 = Infinity, e2 = -Infinity, e3 = -Infinity, marge = 0;
+    for (let i = 0; i < n; i++) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (let j = 0; j < nv[i]; j++) {
+        let v = 0, m = 1, b;
+        do { b = u8[p++]; v += (b & 127) * m; m *= 128; } while (b & 128);
+        const dx = v % 2 ? -(v + 1) / 2 : v / 2;
+        v = 0; m = 1;
+        do { b = u8[p++]; v += (b & 127) * m; m *= 128; } while (b & 128);
+        const dy = v % 2 ? -(v + 1) / 2 : v / 2;
+        if (j === 0) { x = fx + dx; y = fy + dy; fx = x; fy = y; } else { x += dx; y += dy; }
+        const X = mx(ox + x * 1e-6), Y = my(oy + y * 1e-6);
+        xy[q++] = X; xy[q++] = Y;
+        if (X < x0) x0 = X; if (X > x1) x1 = X; if (Y < y0) y0 = Y; if (Y > y1) y1 = Y;
+      }
+      boite[4 * i] = x0; boite[4 * i + 1] = y0; boite[4 * i + 2] = x1; boite[4 * i + 3] = y1;
+      if (x0 < e0) e0 = x0; if (y0 < e1) e1 = y0; if (x1 > e2) e2 = x1; if (y1 > e3) e3 = y1;
+      marge = Math.max(marge, x1 - x0, y1 - y0);
+    }
+    // index spatial : tri par case (tri par dénombrement)
+    const cw = (e2 - e0) / G || 1e-12, ch = (e3 - e1) / G || 1e-12;
+    const cas = new Uint16Array(n), debC = new Uint32Array(G * G + 1);
+    for (let i = 0; i < n; i++) {
+      const ci = Math.min(G - 1, Math.max(0, Math.floor(((boite[4 * i] + boite[4 * i + 2]) / 2 - e0) / cw)));
+      const cj = Math.min(G - 1, Math.max(0, Math.floor(((boite[4 * i + 1] + boite[4 * i + 3]) / 2 - e1) / ch)));
+      cas[i] = cj * G + ci; debC[cas[i] + 1]++;
+    }
+    for (let c = 1; c <= G * G; c++) debC[c] += debC[c - 1];
+    const pos = debC.slice(0, G * G), ordre = new Uint32Array(n);
+    for (let i = 0; i < n; i++) ordre[pos[cas[i]]++] = i;
+    return { n, nv, code, fl, com, att, deb, xy, boite, ext: [e0, e1], cw, ch, marge, debC, ordre };
+  };
+  // appelle f(i) pour chaque bâtiment dont la boîte touche l'emprise b, en ne parcourant que les cases utiles
+  function parcourir(d, b, f) {
+    const i0 = Math.max(0, Math.floor((b[0] - d.marge - d.ext[0]) / d.cw)), i1 = Math.min(G - 1, Math.floor((b[2] + d.marge - d.ext[0]) / d.cw));
+    const j0 = Math.max(0, Math.floor((b[1] - d.marge - d.ext[1]) / d.ch)), j1 = Math.min(G - 1, Math.floor((b[3] + d.marge - d.ext[1]) / d.ch));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const c = j * G + i;
+      for (let q = d.debC[c]; q < d.debC[c + 1]; q++) {
+        const k = d.ordre[q], o = 4 * k;
+        if (d.boite[o] > b[2] || d.boite[o + 2] < b[0] || d.boite[o + 1] > b[3] || d.boite[o + 3] < b[1]) continue;
+        f(k);
+      }
+    }
+  }
+  const bCache = {};
+  let enCours = 0;
+  const signaler = d => { enCours += d; charge.textContent = 'Chargement des bâtiments…'; charge.hidden = enCours <= 0; };
+  const morceauBat = m => bCache[m.f] || (bCache[m.f] = (signaler(1), octets('bati/' + m.f)).then(lireBat).finally(() => signaler(-1)));
+  const COUL_NEUTRE = SOMBRE ? '#3d423e' : '#dcd5c8';
+  async function dessinerBat(ctx, b, k, z) {
+    await pBidx();
+    const ds = await Promise.all(BIDX.morceaux.filter(m => coupe(m.w, b)).map(morceauBat));
+    const tous = [];
+    for (const d of ds) parcourir(d, b, i => { tous.push([d, i]); });
+    ctx.lineWidth = z >= 18 ? 0.9 : 0.6; ctx.strokeStyle = SOMBRE ? 'rgba(0,0,0,.5)' : 'rgba(90,76,58,.35)';
+    ctx.fillStyle = COUL_NEUTRE;
+    paquets(ctx, tous, ([d, i]) => trace(ctx, d.xy, 2 * d.deb[i], d.nv[i], b, k, z >= 16 ? 2 : 1), () => { ctx.fill(); if (z >= 16) ctx.stroke(); });
+  }
+  new Dessin({ pane: 'batiments', minZoom: 14, dessiner: dessinerBat, updateWhenZooming: false, keepBuffer: 1 }).addTo(carte);
+
+  carte.on('zoomend', () => { const z = carte.getZoom(); relief.eachLayer(l => l.setOpacity(opRelief(z))); if (z >= 12) reliefComplet(); });
+
+  // Cours d'eau calculés (les ruisseaux de 1 à 10 km² apparaissent au zoom 13) et noms OSM au survol
+  const geoCours = CE => ({ type: 'FeatureCollection', features: CE.ent.map(e => {
+    const parts = e.parts.map(a => { const c = []; for (let i = 0; i < a.length; i += 2) c.push([a[i], a[i + 1]]); return c; });
+    const bk = e.v[0] / 10;
+    return { type: 'Feature', properties: { bassin_km2: bk, classe: bk >= 10 ? 'Rivière (bassin ≥ 10 km²)' : 'Ruisseau (bassin 1 à 10 km²)' },
+      geometry: parts.length > 1 ? { type: 'MultiLineString', coordinates: parts } : { type: 'LineString', coordinates: parts[0] } };
+  }) });
+  // jusqu'au zoom 12 : rivières seules, d'autant plus épaisses que leur bassin est grand ; zoom 13 et plus inchangé
+  const styleCours = z => f => { const bk = f.properties.bassin_km2;
+    if (z >= 13) return { color: '#2f6f6a', weight: bk >= 10 ? 2 : 1, opacity: 0.55 };
+    const s = Math.log10(Math.max(bk, 10) / 10);
+    return { color: '#2f6f6a', weight: (z === 12 ? 0.8 : z === 11 ? 0.6 : 0.5) + s * (z === 12 ? 0.75 : 0.6), opacity: bk >= 10 ? 0.5 : 0 }; };
+  const coursEau = L.geoJSON(null, { renderer: rendu2, style: f => styleCours(carte.getZoom())(f),
+    onEachFeature: (f, l) => l.bindPopup(`<div class="fiche"><h3>${f.properties.classe}</h3><dl><dt>Bassin en amont</dt><dd>${n1(f.properties.bassin_km2)} km²</dd></dl></div>`) });
+  carte.on('zoomend', () => coursEau.setStyle(styleCours(carte.getZoom())));
+  A.cours.then(CE => { if (CE) coursEau.addData(geoCours(CE)); });
+  const nomsOsm = L.layerGroup();
+  const chargerNomsOsm = () => nomsOsmJson().then(g => { if (g && !nomsOsm.getLayers().length) L.geoJSON(g, { renderer: rendu2, style: { color: '#2f6f6a', weight: 0, opacity: 0 },
+    onEachFeature: (f, l) => { if (f.properties.nom) l.bindTooltip(f.properties.nom, { sticky: true }); } }).addTo(nomsOsm); });
+  coursEau.addTo(carte); nomsOsm.addTo(carte);
+
+  // Sites constatés : inondation (vert d'eau) et glissement (terre)
+  const SITE = { inondation: '#2f6f6a', glissement: '#8a4b22' };
+  const rayonSite = z => (z <= 11 ? 4 : z === 12 ? 5 : 6.5);
+  const sites = L.geoJSON(null, { pane: 'reperes',
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: rayonSite(carte.getZoom()), color: '#ffffff', weight: carte.getZoom() <= 12 ? 1.5 : 2, fillColor: SITE[f.properties.type] || SITE.inondation, fillOpacity: 1, pane: 'lignes', renderer: rendu2 }),
+    onEachFeature: (f, l) => l.bindPopup(`<div class="fiche"><h3>${f.properties.site}</h3><p style="margin:0">${f.properties.type === 'glissement' ? 'Glissement' : 'Inondation'} constaté · ${f.properties.commune}<br>Source : ${f.properties.source}</p></div>`) });
+  sites.addTo(carte);
+  A.sites.then(g => { if (g) sites.addData(g); });
+  carte.on('zoomend', () => { const z = carte.getZoom(); sites.eachLayer(l => { l.setRadius(rayonSite(z)); l.setStyle({ weight: z <= 12 ? 1.5 : 2 }); }); });
+
+  // ---------- 5. Caniveaux, fossés et canaux (OpenStreetMap) : l'eau que le quartier leur envoie ----------
+  const CLQ = [[0.5, '#f2d48f', 1.7, 'moins de 0,5 m³/s'], [2, '#e9a24a', 2.3, '0,5 à 2 m³/s'], [10, '#d0602b', 3.0, '2 à 10 m³/s'],
+    [30, '#a12a1e', 3.7, '10 à 30 m³/s'], [Infinity, '#5c1210', 4.4, '30 m³/s et plus']];
+  const classeQ = q => CLQ.findIndex(c => q < c[0]);
+  const echZ = z => (z <= 11 ? 0.55 : z === 12 ? 0.7 : z === 13 ? 0.85 : z === 14 ? 1 : z === 15 ? 1.15 : 1.35);
+  const rgba = (h, a) => `rgba(${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)},${a})`;
+  const echapper = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmt = (v, d) => (v == null ? '–' : v.toLocaleString('fr-FR', { maximumFractionDigits: d == null ? 1 : d }));
+  document.getElementById('cle-debits').innerHTML = CLQ.map(c => `<span><i style="border-top-width:${c[2] + 1}px;border-color:${c[1]}"></i>${c[3]}</span>`).join('');
+  const HALO = SOMBRE ? '#141a17' : '#ffffff';
+  const styleL = (p, z) => { const w = CLQ[classeQ(p.debit_envoye_m3s)][2] * echZ(z);
+    return { color: CLQ[classeQ(p.debit_envoye_m3s)][1], weight: w, opacity: 1, lineCap: p.buse_dalot || p.type === 'fossé' ? 'butt' : 'round',
+      dashArray: p.buse_dalot ? `${Math.max(1.5, w * 0.7)} ${w * 1.3}` : p.type === 'fossé' ? `${w * 2.6} ${w * 1.4}` : null }; };
+  const styleH = (p, z) => ({ color: HALO, weight: CLQ[classeQ(p.debit_envoye_m3s)][2] * echZ(z) + 2.6, opacity: 0.9, lineCap: 'round' });
+  // milieu de la ligne et direction (sens OSM = sens de l'écoulement), pour la flèche et l'identifiant
+  const milieu = ll => { const pts = ll.flat().map(q => [mx(q[1]), my(q[0])]), d = []; let tot = 0;
+    for (let i = 1; i < pts.length; i++) { const s = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); d.push(s); tot += s; }
+    let acc = 0;
+    for (let i = 1; i < pts.length; i++) {
+      if (acc + d[i - 1] >= tot / 2 || i === pts.length - 1) { const f = d[i - 1] ? (tot / 2 - acc) / d[i - 1] : 0;
+        const x = pts[i - 1][0] + f * (pts[i][0] - pts[i - 1][0]), y = pts[i - 1][1] + f * (pts[i][1] - pts[i - 1][1]);
+        return { mil: L.latLng(ilat(y), ilon(x)), ang: Math.atan2(pts[i][1] - pts[i - 1][1], pts[i][0] - pts[i - 1][0]) / RAD }; }
+      acc += d[i - 1];
+    } };
+  const [CAN, BAS] = await Promise.all([A.can, A.bas]);
+  const troncons = CAN.features.map(f => {
+    const ll = (f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates).map(l => l.map(([x, y]) => [y, x]));
+    const p = f.properties, z = carte.getZoom();
+    const t = Object.assign({ p, ll,
+      halo: L.polyline(ll, Object.assign({ renderer: rendu2, pane: 'lignes', interactive: false }, styleH(p, z))),
+      ligne: L.polyline(ll, Object.assign({ renderer: rendu2, pane: 'lignes' }, styleL(p, z))) }, milieu(ll));
+    t.ligne.on('click', e => { L.DomEvent.stopPropagation(e); ouvrirTroncon(t, e.latlng); });
+    return t;
+  }).sort((a, b) => a.p.debit_envoye_m3s - b.p.debit_envoye_m3s);   // les plus chargés dessinés par-dessus
+  const parId = new Map(troncons.map(t => [t.p.id_troncon, t]));
+  // surfaces d'apport : un polygone par tracé (cours d'eau compris), allumées au clic
+  const parElem = new Map(), surfW = [];
+  const classeElem = new Map(troncons.map(t => [t.p.elem, classeQ(t.p.debit_envoye_m3s)]));
+  BAS.ent.forEach(e => {
+    parElem.set(e.v[0], e.parts.map(rs => rs.map(a => { const r = []; for (let i = 0; i < a.length; i += 2) r.push([a[i + 1], a[i]]); return r; })));
+    e.parts.forEach(rs => { const w = rs.map(monde); surfW.push({ c: classeElem.has(e.v[0]) ? classeElem.get(e.v[0]) : -1, rs: w, b: boiteXY(w[0]) }); });
+  });
+  const toutesSurfaces = new Dessin({ pane: 'analyse', updateWhenZooming: false, keepBuffer: 1, dessiner: (ctx, b, k) => {
+    const ici = surfW.filter(s => coupe(s.b, b));
+    for (let c = -1; c < CLQ.length; c++) {
+      ctx.fillStyle = c < 0 ? 'rgba(120,110,95,.12)' : rgba(CLQ[c][1], SOMBRE ? 0.28 : 0.22);
+      paquets(ctx, ici.filter(s => s.c === c), s => { for (const r of s.rs) trace(ctx, r, 0, r.length / 2, b, k, true); }, () => ctx.fill('evenodd'));
+    }
+    ctx.lineWidth = 0.8; ctx.strokeStyle = SOMBRE ? 'rgba(255,255,255,.3)' : 'rgba(110,70,40,.45)';
+    paquets(ctx, ici, s => { for (const r of s.rs) trace(ctx, r, 0, r.length / 2, b, k, 2); }, () => ctx.stroke());
+  } });
+  // surface allumée au-dessus des bâtiments et des rues (teinte légère), sous les traits des caniveaux
+  const pSurb = carte.createPane('surbrillance'); pSurb.style.zIndex = 465; pSurb.style.pointerEvents = 'none';
+  const rendu4 = L.svg({ padding: 0.4, pane: 'surbrillance' });
+  const TERRE = tok('--terre');
+  const fiche = t => { const p = t.p, c = classeQ(p.debit_envoye_m3s), s = p.section_beton_min_cm;
+    return `<div class="fiche"><h3>${p.id_troncon} · ${p.buse_dalot ? 'buse ou dalot' : p.type}</h3>
+    <span class="niv" style="background:${CLQ[c][1]}${c <= 1 ? ';color:#1c2721' : ''}">${fmt(p.debit_envoye_m3s, p.debit_envoye_m3s < 1 ? 2 : 1)} m³/s envoyés</span>
+    <dl><dt>Commune</dt><dd>${echapper(p.commune)}</dd>${p.nom_osm ? `<dt>Nom</dt><dd>${echapper(p.nom_osm)}</dd>` : ''}
+    <dt>Longueur</dt><dd>${nf(p.longueur_m)} m</dd><dt>Surface qui envoie l'eau</dt><dd>${fmt(p.surface_apport_ha)} ha</dd>
+    <dt>Part imperméable</dt><dd>${fmt(p.impermeable_pct, 0)} %</dd><dt>Ruissellement</dt><dd>${fmt(p.coef_ruissellement, 2)}</dd>
+    <dt>Pente retenue</dt><dd>${fmt(p.pente_retenue_pct, 1)} %</dd>
+    <dt>Section béton nécessaire</dt><dd>${s == null ? '–' : `${nf(s)} × ${nf(s)} cm`}</dd>
+    <dt>Bâtiments dans la surface</dt><dd>${nf(p.batiments_bassin)}</dd><dt>dont à risque élevé</dt><dd>${nf(p.batiments_risque_bassin)}</dd>
+    <dt>Site constaté à 400 m</dt><dd>${p.site_constate_400m ? 'oui' : 'non'}</dd></dl>
+    ${p.grand_bassin ? '<p class="note">Plus de 200 ha : débit surestimé, la méthode ne sert pas à dimensionner ici.</p>' : ''}
+    ${p.sens_a_verifier ? '<p class="note">Le relief contredit le sens indiqué dans OpenStreetMap : à vérifier sur place.</p>' : ''}
+    ${p.cours_eau_canalise ? '<p class="note" style="color:#5a6a61">Suit un talweg : sans doute un cours d\'eau canalisé.</p>' : ''}
+    <p style="margin:8px 0 0"><a href="https://www.google.com/maps?q=${t.mil.lat.toFixed(6)},${t.mil.lng.toFixed(6)}" target="_blank" rel="noopener">Y aller (Google Maps)</a></p></div>`; };
+  // fiche dans un cadre fixe à droite de la carte : une bulle cacherait la surface allumée
+  const cadreFiche = document.createElement('div'); cadreFiche.className = 'carte-fiche'; cadreFiche.hidden = true;
+  cadreFiche.setAttribute('role', 'dialog'); cadreFiche.setAttribute('aria-label', 'Fiche du tronçon');
+  document.getElementById('carte').appendChild(cadreFiche);
+  L.DomEvent.disableClickPropagation(cadreFiche); L.DomEvent.disableScrollPropagation(cadreFiche);
+  let enCoursFiche = [];
+  const fermer = () => { enCoursFiche.forEach(m => carte.removeLayer(m)); enCoursFiche = []; cadreFiche.hidden = true; };
+  carte.on('click', e => { const c = e.originalEvent && e.originalEvent.target; if (c && c.closest && c.closest('.leaflet-interactive')) return; fermer(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fermer(); });
+  function ouvrirTroncon(t, ll, cadrer) {
+    fermer();
+    const polys = [];
+    for (const e of t.p.amont) for (const pg of parElem.get(e) || []) polys.push(pg);
+    const mes = [];
+    if (polys.length) mes.push(L.polygon(polys, { renderer: rendu4, pane: 'surbrillance', fillRule: 'nonzero', color: TERRE, weight: 1.4, opacity: 0.9,
+      fillColor: TERRE, fillOpacity: SOMBRE ? 0.26 : 0.2, interactive: false }).addTo(carte));
+    mes.push(L.polyline(t.ll, { renderer: rendu2, pane: 'lignes', color: SOMBRE ? '#ffffff' : '#111111', weight: styleL(t.p, carte.getZoom()).weight + 5,
+      opacity: 0.35, interactive: false }).addTo(carte));
+    t.halo.bringToFront(); t.ligne.bringToFront();
+    enCoursFiche = mes;
+    cadreFiche.innerHTML = '<button class="fermer" type="button" aria-label="Fermer la fiche">×</button>' + fiche(t);
+    cadreFiche.querySelector('.fermer').addEventListener('click', fermer);
+    cadreFiche.hidden = false;
+    if (cadrer) {   // recherche : on montre le tronçon et toute la surface qui lui envoie son eau
+      const bb = (polys.length ? mes[0].getBounds() : t.ligne.getBounds()).extend(t.ligne.getBounds()), etroit = carte.getSize().x < 700;
+      carte.fitBounds(bb, { maxZoom: 15, animate: false, paddingTopLeft: [40, 40], paddingBottomRight: etroit ? [40, 40] : [360, 40] });
+    }
+  }
+  // filtres et dessin dans l'ordre : halos, puis traits ; flèches de sens à partir du zoom 15
+  const gHalo = L.layerGroup().addTo(carte), gLigne = L.layerGroup().addTo(carte), gFleches = L.layerGroup();
+  const cCan = document.getElementById('c-caniveau'), cFos = document.getElementById('c-fosse'), cGrand = document.getElementById('c-grand');
+  const visible = t => (t.p.type === 'fossé' ? cFos.checked : cCan.checked) && (!t.p.grand_bassin || cGrand.checked);
+  let visibles = [], nomsPrets = false;
+  const fleche = a => `<svg width="14" height="14" viewBox="-7 -7 14 14" style="transform:rotate(${a.toFixed(1)}deg)"><path d="M-3.5 -4 L2.5 0 L-3.5 4" fill="none" stroke="${HALO}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M-3.5 -4 L2.5 0 L-3.5 4" fill="none" stroke="${SOMBRE ? '#f3f6f4' : '#1c2721'}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  function afficher() {
+    gHalo.clearLayers(); gLigne.clearLayers(); gFleches.clearLayers();
+    visibles = troncons.filter(visible);
+    visibles.forEach(t => gHalo.addLayer(t.halo));
+    visibles.forEach(t => gLigne.addLayer(t.ligne));
+    visibles.forEach(t => gFleches.addLayer(L.marker(t.mil, { pane: 'reperes', interactive: false, keyboard: false,
+      icon: L.divIcon({ className: 'fleche', html: fleche(t.ang), iconSize: null }) })));
+    if (nomsPrets) placerNoms();
+  }
+  afficher();
+  const majFleches = () => { if (carte.getZoom() >= 15) gFleches.addTo(carte); else carte.removeLayer(gFleches); };
+  majFleches();
+  carte.on('zoomend', () => { const z = carte.getZoom(); troncons.forEach(t => { t.ligne.setStyle(styleL(t.p, z)); t.halo.setStyle(styleH(t.p, z)); }); majFleches(); });
+  [cCan, cFos, cGrand].forEach(c => c.addEventListener('change', afficher));
+  // recherche par identifiant (fiche de relevé, QR code)
+  const aller = id => {
+    let v = String(id || '').trim().toUpperCase().replace(/\s+/g, '');
+    const m = v.match(/^([A-Z]{3})-?(\d{1,3})$/); if (m) v = m[1] + '-' + m[2].padStart(3, '0');
+    const t = parId.get(v), msg = document.getElementById('chercher-msg');
+    if (!t) { msg.textContent = v ? `Aucun tronçon « ${v} » dans la carte.` : ''; return false; }
+    msg.textContent = '';
+    if (!visible(t)) { (t.p.type === 'fossé' ? cFos : cCan).checked = true; if (t.p.grand_bassin) cGrand.checked = true; afficher(); }
+    ouvrirTroncon(t, null, true);
+    return true;
+  };
+  document.getElementById('chercher').addEventListener('submit', e => { e.preventDefault(); aller(document.getElementById('chercher-id').value); });
+
+  // Communes : limites, étiquettes, tableau
+  const communes = await A.communes;
+  const lim = L.geoJSON(communes, { pane: 'lignes', renderer: rendu2, style: { color: '#1c2721', weight: 1.2, opacity: 0.8, fill: false, dashArray: '4 3' }, interactive: false }).addTo(carte);
+  const etiq = L.layerGroup().addTo(carte);
+  // Largeur des noms, pour qu'ils ne se chevauchent pas : [graisse, taille, majuscules, interlettrage]
+  await document.fonts.ready;
+  const regle = document.createElement('canvas').getContext('2d');
+  const STYLE = [[700, 13, false, 0.01], [600, 12, true, 0.06], [600, 11, true, 0.05], [600, 12, false, 0], [500, 11, false, 0], [500, 11, false, 0.01]];
+  const mesurer = (t, r) => { const [g, s, maj, ls] = STYLE[r]; regle.font = `${g} ${s}px ${tok('--titre')}`;
+    const x = maj ? t.toUpperCase() : t; return { w: regle.measureText(x).width + ls * s * x.length, h: s * 1.15 }; };
+  const echap = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const nomsCommunes = [];
+  communes.features.forEach(f => {
+    let best = null, ba = 0;
+    f.geometry.coordinates.forEach(poly => { const r = poly[0]; let a = 0, cx = 0, cy = 0;
+      for (let i = 0; i < r.length - 1; i++) { const k = r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1]; a += k; cx += (r[i][0] + r[i + 1][0]) * k; cy += (r[i][1] + r[i + 1][1]) * k; }
+      if (Math.abs(a) > ba) { ba = Math.abs(a); best = [cy / (3 * a), cx / (3 * a)]; } });
+    if (!best) return;
+    nomsCommunes.push(Object.assign({ ll: L.latLng(best), n: echap(f.properties.nom), aire: ba }, mesurer(f.properties.nom, 0)));
+  });
+  nomsCommunes.sort((a, b) => a.aire - b.aire);   // les petites communes d'abord : elles ont le moins de place
+  // Quartiers (OpenStreetMap) : rang 1 au zoom 12, puis quartiers, sous-quartiers et lieux-dits ;
+  // un nom n'est affiché que s'il ne chevauche ni une commune ni un nom plus important
+  let quartiers = [];
+  const chargerQuartiers = plusTard(() => json('couches/quartiers.geojson').then(g => {
+    quartiers = ((g || { features: [] }).features).map(f => Object.assign({ ll: L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]),
+      n: echap(f.properties.nom), r: f.properties.rang, z: f.properties.zoom_min }, mesurer(f.properties.nom, f.properties.rang)));
+    if (typeof nomsPrets === 'undefined' || nomsPrets) placerNoms();
+  }));
+  if (carte.getZoom() >= 12) chargerQuartiers();
+  carte.on('zoomend', () => { if (carte.getZoom() >= 12) chargerQuartiers(); });
+  // Noms de rues : points d'ancrage le long des portions droites, grandes voies d'abord (prêts avant le zoom 14)
+  let rues = [];
+  const qCouche = L.layerGroup().addTo(carte), cQuartiers = document.getElementById('c-quartiers');
+  function placerNoms() {
+    qCouche.clearLayers(); etiq.clearLayers();
+    const z = carte.getZoom(), vue = carte.getBounds().pad(0.05), pris = [];
+    const autour = (p, q) => [p.x - q.w / 2 - 7, p.y - q.h / 2 - 4, p.x + q.w / 2 + 7, p.y + q.h / 2 + 4];
+    const boite = q => autour(carte.latLngToContainerPoint(q.ll), q);
+    const libre = b => !pris.some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
+    // noms des communes : toujours affichés ; décalés au-dessus, au-dessous ou à côté si la place est prise
+    const serre = (p, q) => [p.x - q.w / 2 - 3, p.y - q.h / 2 - 1, p.x + q.w / 2 + 3, p.y + q.h / 2 + 1];
+    if (carte.hasLayer(etiq)) for (const c of nomsCommunes) {
+      const p0 = carte.latLngToContainerPoint(c.ll), dy = c.h + 2, dx = c.w / 2 + 6;
+      let p = p0;   // le plus petit décalage qui libère la place
+      for (const [ox, oy] of [[0, 0], [0, -0.55], [0, 0.55], [0, -1], [0, 1], [0.5, 0], [-0.5, 0], [1, 0], [-1, 0], [1, -1], [-1, 1], [1, 1], [-1, -1]]) {
+        const q = L.point(p0.x + ox * dx, p0.y + oy * dy);
+        if (libre(serre(q, c))) { p = q; break; }
+      }
+      pris.push(serre(p, c));
+      L.marker(carte.containerPointToLatLng(p), { pane: 'reperes', interactive: false, keyboard: false,
+        icon: L.divIcon({ className: 'etiquette', html: `<span>${c.n}</span>`, iconSize: null }) }).addTo(etiq);
+    }
+    // identifiants des tronçons (zoom 15 et plus), de part et d'autre du trait, les plus chargés d'abord
+    if (z >= 15) for (const t of visibles.slice().sort((x, y) => y.p.debit_envoye_m3s - x.p.debit_envoye_m3s)) {
+      if (!vue.contains(t.mil)) continue;
+      if (!t.lw) { regle.font = `700 10.5px ${tok('--titre')}`; t.lw = regle.measureText(t.p.id_troncon).width + 14; }
+      const p0 = carte.latLngToContainerPoint(t.mil), a = t.ang * RAD, nx = -Math.sin(a), ny = Math.cos(a), d = 15;
+      for (const s of [1, -1]) {
+        const q = L.point(p0.x + nx * s * d, p0.y + ny * s * d), b = [q.x - t.lw / 2 - 2, q.y - 10, q.x + t.lw / 2 + 2, q.y + 10];
+        if (!libre(b)) continue;
+        pris.push(b);
+        L.marker(carte.containerPointToLatLng(q), { pane: 'reperes', interactive: false, keyboard: false,
+          icon: L.divIcon({ className: 'ident', html: `<span>${t.p.id_troncon}</span>`, iconSize: null }) }).addTo(qCouche);
+        break;
+      }
+    }
+    if (!cQuartiers.checked) return;
+    for (const q of quartiers) {
+      if (q.z > z || !vue.contains(q.ll)) continue;
+      const b = boite(q);
+      if (!libre(b)) continue;
+      pris.push(b);
+      L.marker(q.ll, { pane: 'reperes', interactive: false, keyboard: false,
+        icon: L.divIcon({ className: 'quartier q' + q.r, html: `<span>${q.n}</span>`, iconSize: null }) }).addTo(qCouche);
+    }
+    // noms de rues le long des voies : grandes voies dès le zoom 14, toutes les rues nommées à partir du zoom 15
+    if (z < 14) return;
+    const mpp = 156543.03 * Math.cos(5.35 * RAD) / Math.pow(2, z), deja = {};
+    for (const r of rues) {
+      if (z < (r.c <= 3 ? 14 : r.c <= 5 ? 15 : 16) || r.w + 18 > r.len / mpp || !vue.contains(r.ll)) continue;
+      const p = carte.latLngToContainerPoint(r.ll);
+      if ((deja[r.n] || []).some(o => Math.hypot(o.x - p.x, o.y - p.y) < 280)) continue;
+      const a = r.ang * RAD, ca = Math.abs(Math.cos(a)), sa = Math.abs(Math.sin(a));
+      const hw = ca * r.w / 2 + sa * r.h / 2, hh = sa * r.w / 2 + ca * r.h / 2, b = [p.x - hw - 3, p.y - hh - 2, p.x + hw + 3, p.y + hh + 2];
+      if (!libre(b)) continue;
+      pris.push(b); (deja[r.n] = deja[r.n] || []).push(p);
+      L.marker(r.ll, { pane: 'reperes', interactive: false, keyboard: false,
+        icon: L.divIcon({ className: 'rue', html: `<span style="transform:translate(-50%,-50%) rotate(${r.ang}deg)">${r.t}</span>`, iconSize: null }) }).addTo(qCouche);
+    }
+  }
+  carte.on('moveend', placerNoms);
+  cQuartiers.addEventListener('change', placerNoms);
+  document.getElementById('c-communes').addEventListener('change', () => setTimeout(placerNoms));
+  const chargerRues = plusTard(() => Promise.all([ruesJson(), pRidx()]).then(([t]) => {
+    rues = (t || []).map(([i, lon, lat, ang, len, c]) => Object.assign({ n: i, t: echap(RIDX.noms[i]), ll: L.latLng(lat, lon), ang, len, c }, mesurer(RIDX.noms[i], 5)))
+      .sort((a, b) => a.c - b.c || b.len - a.len);
+    if (carte.getZoom() >= 14) placerNoms();
+  }));
+  carte.on('zoomend', () => { if (carte.getZoom() >= 13) chargerRues(); });
+  // Tableau par commune : nombre de tronçons, longueur, tronçons très chargés
+  const tb = document.getElementById('tab-communes'), parCom = {};
+  communes.features.forEach(f => { parCom[f.properties.nom] = { n: 0, km: 0, gros: 0, b: L.geoJSON(f).getBounds(), bt: null }; });
+  troncons.forEach(t => { const c = parCom[t.p.commune]; if (!c) return; c.n++; c.km += t.p.longueur_m / 1000; if (t.p.debit_envoye_m3s >= 10) c.gros++;
+    c.bt = c.bt ? c.bt.extend(t.ligne.getBounds()) : L.latLngBounds(t.ligne.getBounds().getSouthWest(), t.ligne.getBounds().getNorthEast()); });
+  Object.entries(parCom).sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0])).forEach(([nom, c]) => {
+    const tr = document.createElement('tr'); tr.tabIndex = 0;
+    tr.innerHTML = `<td>${nom}</td><td class="n">${c.n}</td><td class="n">${fmt(c.km, 1)}</td><td class="n">${c.gros}</td>`;
+    const va = () => carte.fitBounds(c.bt || c.b, { padding: [20, 20] });
+    tr.addEventListener('click', va); tr.addEventListener('keydown', e => { if (e.key === 'Enter') va(); });
+    tb.appendChild(tr);
+  });
+  // Cases à cocher
+  const bascule = (id, couche) => document.getElementById(id).addEventListener('change', async e => {
+    const c = typeof couche === 'function' ? await couche() : couche;
+    if (e.target.checked) c.addTo(carte); else { carte.removeLayer(c); if (c.eachLayer) c.eachLayer(l => carte.removeLayer(l)); }
+  });
+  bascule('c-coursdeau', L.layerGroup([coursEau, nomsOsm])); bascule('c-sites', sites);
+  bascule('c-communes', L.layerGroup([lim, etiq])); bascule('c-relief', relief); bascule('c-bassins', toutesSurfaces);
+  document.getElementById('c-coursdeau').checked = true;
+  nomsPrets = true;
+  placerNoms();
+  // après l'ouverture, au repos : relief complet, puis ce qui servira en zoomant
+  Promise.all([planPret, routesPret]).then(() => setTimeout(() => auRepos(() =>
+    chargerQuartiers().then(() => reliefComplet()).then(() => fondComplet()).then(() => chargerNomsOsm()).then(() => pRidx())
+      .then(() => chargerRues()).then(() => pBidx())), 200));
+  // lien direct vers un tronçon : caniveaux.html#KOU-003 (QR code posé sur le caniveau)
+  const ancre = () => { const h = decodeURIComponent(location.hash.slice(1)); if (h) aller(h); };
+  window.addEventListener('hashchange', ancre);
+  ancre();
+})();
+</script>
