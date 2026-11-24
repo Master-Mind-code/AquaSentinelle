@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block titre %}Tableau de bord décideur · AquaSentinelle CI{% endblock %}
+
+{% block contenu %}
+<div class="entete-page">
+  <div>
+    <p class="sur-titre">Supervision & Décision Stratégique · Livrable M5</p>
+    <h1>Tableau de bord décideur : zones prioritaires & exposition</h1>
+    <p class="petit">Vue d'aide à la décision pour la Mairie d'Attécoubé, l'ONPC et le commandement opérationnel. Classement explicable des zones fondé sur la susceptibilité physique, la population exposée et l'historique des sinistres.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="bouton leger" onclick="window.print()">{{ icone('printer') }} Imprimer l'ordre du jour</button>
+    <a class="bouton" href="/operateur/alertes">{{ icone('siren') }} File des alertes</a>
+  </div>
+</div>
+
+<!-- 4 Cartes Bento KPI (Conforme MASTER.md) -->
+<div class="grille-bento" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:14px;margin-bottom:20px">
+  <div class="carte indicateur" style="background:var(--carte);backdrop-filter:blur(16px);border:1px solid var(--bord);border-radius:var(--rayon);padding:18px">
+    <div class="petit" style="display:flex;align-items:center;justify-content:space-between">
+      <span>ZONES PRIORITAIRES (P1)</span>
+      <span style="color:var(--rouge)">{{ icone('octagon-alert') }}</span>
+    </div>
+    <div class="valeur" style="font-size:32px;font-weight:700;color:var(--rouge);margin:6px 0">{{ zones_prioritaires_nb }}</div>
+    <div class="petit" style="color:var(--ardoise)">Dont Attécoubé, Yopougon et Anyama</div>
+  </div>
+
+  <div class="carte indicateur" style="background:var(--carte);backdrop-filter:blur(16px);border:1px solid var(--bord);border-radius:var(--rayon);padding:18px">
+    <div class="petit" style="display:flex;align-items:center;justify-content:space-between">
+      <span>POPULATION EXPOSÉE MENACÉE</span>
+      <span style="color:var(--accent)">{{ icone('users') }}</span>
+    </div>
+    <div class="valeur" style="font-size:32px;font-weight:700;color:var(--texte-clair);margin:6px 0">{{ "{:,}".format(population_totale_menacee).replace(',', ' ') }} hab.</div>
+    <div class="petit" style="color:var(--ardoise)">Dans les bassins et talwegs critiques</div>
+  </div>
+
+  <div class="carte indicateur" style="background:var(--carte);backdrop-filter:blur(16px);border:1px solid var(--bord);border-radius:var(--rayon);padding:18px">
+    <div class="petit" style="display:flex;align-items:center;justify-content:space-between">
+      <span>CANIVEAUX À CURER (24-48H)</span>
+      <span style="color:var(--orange)">{{ icone('waves') }}</span>
+    </div>
+    <div class="valeur" style="font-size:32px;font-weight:700;color:var(--orange);margin:6px 0">{{ points_a_curer_nb }}</div>
+    <div class="petit" style="color:var(--ardoise)">Exutoires saturés avant forte pluie</div>
+  </div>
+
+  <div class="carte indicateur" style="background:var(--carte);backdrop-filter:blur(16px);border:1px solid var(--bord);border-radius:var(--rayon);padding:18px">
+    <div class="petit" style="display:flex;align-items:center;justify-content:space-between">
+      <span>CRUES FLUVIALES (7 JOURS)</span>
+      <span style="color:var(--accent)">{{ icone('radio-tower') }}</span>
+    </div>
+    <div class="valeur" style="font-size:32px;font-weight:700;color:var(--accent);margin:6px 0">{{ crues_prevues_nb }}</div>
+    <div class="petit" style="color:var(--ardoise)">Stations au-delà du seuil orange</div>
+  </div>
+</div>
+
+<!-- Formule d'explicabilité (Critère de validation : classement explicable) -->
+<div class="carte" style="background:rgba(56, 189, 248, 0.08);border:1px solid var(--bord-accent);border-radius:var(--rayon);padding:16px;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <span style="color:var(--accent)">{{ icone('info') }}</span>
+    <b style="color:var(--texte-clair);font-size:15px">Formule de Classement Transparent & Explicable des Risques</b>
+  </div>
+  <p style="margin:0;font-size:14px;color:var(--ardoise)">
+    Le <b>Score Global de Priorité</b> (sur 100) est calculé par la somme pondérée vérifiable :<br>
+    <code style="background:rgba(0,0,0,0.3);padding:2px 8px;border-radius:4px;color:var(--accent);display:inline-block;margin-top:6px">
+      Score = (0.40 × Susceptibilité_Physique) + (0.35 × Indice_Population_Exposée) + (0.25 × Indice_Historique_Sinistres)
+    </code>
+  </p>
+</div>
+
+<!-- Tableau de classement explicable des zones -->
+<div class="carte" style="background:var(--carte);border:1px solid var(--bord);border-radius:var(--rayon);overflow:hidden;margin-bottom:24px">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <h2 style="font-size:18px;margin:0;display:flex;align-items:center;gap:8px">
+      {{ icone('shield-check') }} Classement Prioritaire des Zones Surveillées
+    </h2>
+    <span class="petit" style="color:var(--doux)">Trié par Score de Priorité Décroissant</span>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left">
+      <thead>
+        <tr style="background:rgba(15, 23, 42, 0.8);border-bottom:1px solid var(--bord);color:var(--doux)">
+          <th style="padding:12px 16px">Rang</th>
+          <th style="padding:12px 16px">Zone & Territoire</th>
+          <th style="padding:12px 16px">Niveau Actuel</th>
+          <th style="padding:12px 16px">Susceptibilité (40%)</th>
+          <th style="padding:12px 16px">Pop. Exposée (35%)</th>
+          <th style="padding:12px 16px">Événements (25%)</th>
+          <th style="padding:12px 16px">Score Priorité</th>
+          <th style="padding:12px 16px">Action Préventive Requise</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for z in classement %}
+        <tr style="border-bottom:1px solid var(--bord);transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+          <td style="padding:12px 16px;font-weight:700;color:{{ 'var(--rouge)' if loop.index <= 2 else 'var(--accent)' }}">
+            #{{ loop.index }}
+          </td>
+          <td style="padding:12px 16px">
+            <b style="color:var(--texte-clair)">{{ z.nom }}</b>
+            <div class="petit" style="color:var(--doux)">{{ z.region }}</div>
+          </td>
+          <td style="padding:12px 16px">
+            <span class="niveau {{ z.niveau or 'vert' }}" style="padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700">
+              {{ (z.niveau or 'vert') | upper }}
+            </span>
+          </td>
+          <td style="padding:12px 16px">
+            <div style="font-weight:600;color:{{ 'var(--rouge)' if z.susceptibilite_note >= 80 else 'var(--orange)' }}">
+              {{ z.susceptibilite_label }} ({{ z.susceptibilite_note }}/100)
+            </div>
+            <div class="petit" style="color:var(--doux)">{{ z.motif_topo }}</div>
+          </td>
+          <td style="padding:12px 16px">
+            <div style="font-weight:600;color:var(--texte-clair)">{{ "{:,}".format(z.population_exposee).replace(',', ' ') }} hab.</div>
+            <div style="background:rgba(255,255,255,0.1);height:4px;border-radius:2px;width:100px;margin-top:4px">
+              <div style="background:var(--accent);height:100%;border-radius:2px;width:{{ [z.population_exposee // 200, 100] | min }}%"></div>
+            </div>
+          </td>
+          <td style="padding:12px 16px">
+            <b style="color:{{ 'var(--rouge)' if z.evenements_nb > 1 else 'var(--ardoise)' }}">{{ z.evenements_nb }} drame(s)</b>
+            {% if z.derniere_date %}
+            <div class="petit" style="color:var(--doux)">Dernier : {{ z.derniere_date }}</div>
+            {% endif %}
+          </td>
+          <td style="padding:12px 16px">
+            <div style="font-size:16px;font-weight:800;color:{{ 'var(--rouge)' if z.score_priorite >= 75 else ('var(--orange)' if z.score_priorite >= 60 else 'var(--vert)') }}">
+              {{ "%.1f" | format(z.score_priorite) }} / 100
+            </div>
+          </td>
+          <td style="padding:12px 16px">
+            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;background:{{ z.action_couleur_fond }};color:{{ z.action_couleur_texte }};border:1px solid {{ z.action_couleur_bord }}">
+              {{ z.action_recommandee }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Section Curage préventif relié -->
+<div class="carte" style="background:var(--carte);border:1px solid var(--bord);border-radius:var(--rayon);padding:20px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="font-size:18px;margin:0;color:var(--orange);display:flex;align-items:center;gap:8px">
+        {{ icone('waves') }} Plan d'Action Curage Préventif Immédiat
+      </h2>
+      <p class="petit" style="margin:4px 0 0">Points de contrôle dont le blocage amont fait chuter les seuils d'alerte de 15 %.</p>
+    </div>
+    <span class="badge" style="background:var(--orange-pale);color:var(--orange);border:1px solid var(--orange-bord);padding:4px 10px;border-radius:var(--rayon-pilule);font-weight:700">
+      {{ a_curer | length }} exutoire(s) prioritaire(s)
+    </span>
+  </div>
+
+  {% if a_curer %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px">
+    {% for c in a_curer %}
+    <div style="background:rgba(15, 23, 42, 0.6);border:1px solid var(--bord);border-radius:var(--rayon-sm);padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <b style="color:var(--accent);font-size:15px">{{ c.point_id }} · {{ c.zone }}</b>
+        <span class="petit" style="color:var(--orange)">Bouché</span>
+      </div>
+      <p class="petit" style="margin:0 0 8px;color:var(--ardoise)">{{ c.description }}</p>
+      <div class="petit" style="color:var(--doux);display:flex;justify-content:space-between">
+        <span>Signalé le {{ c.recu_le.strftime('%d/%m/%Y') if c.recu_le else 'Récemment' }}</span>
+        <a href="/operateur/points" style="color:var(--accent);text-decoration:none">Voir le point →</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="petit" style="color:var(--vert);margin:0">Aucun caniveau critique en attente de curage d'urgence sur les zones surveillées.</p>
+  {% endif %}
+</div>
+{% endblock %}

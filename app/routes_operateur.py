@@ -13,7 +13,7 @@ from starlette.concurrency import run_in_threadpool
 from app.cycle import cycle_complet, traiter_zone
 from app.db import journaliser, transaction
 from app.securite import hacher_mot_de_passe, verifier_mot_de_passe
-from app.services import alertes, curage, ia, pluie, pluviometre, points
+from app.services import alertes, curage, historique, ia, pluie, pluviometre, points
 from app.settings import reglages
 from app.web import admin, noter_echec, noter_reussite, operateur, rendu, trop_d_echecs, verifier_csrf
 from src.accord import interpretation, kappa_cohen, matrice_confusion
@@ -78,6 +78,95 @@ def carte(request: Request, op=Depends(operateur)):
     repartition = {n: sum(1 for z in zones if z["niveau"] == n) for n in ("rouge", "orange", "vert")}
     return rendu(request, "carte.html", zones=zones, repartition=repartition, a_curer=a_curer,
                  derniere_collecte=derniere_collecte, crues=crues, points_suivis=points_suivis)
+
+
+# --- Tableau de bord décideur (Livrable M5 / T30) ------------------------------------------------
+
+SUSCEPTIBILITE_ZONES = {
+    "attecoube": {"label": "Élevée", "note": 94, "pop": 14200, "topo": "Talwegs encaissés, pentes 28-35 %"},
+    "yopougon": {"label": "Élevée", "note": 88, "pop": 18500, "topo": "Rupture de pente Micao, bassin imperméabilisé"},
+    "anyama": {"label": "Élevée", "note": 85, "pop": 8800, "topo": "Remblais instables, versants dénudés"},
+    "abobo": {"label": "Moyenne", "note": 70, "pop": 16000, "topo": "Ravinements voirie, cuvettes fermées"},
+    "abidjan-centre": {"label": "Moyenne", "note": 68, "pop": 12500, "topo": "Plateau / Adjamé vallons lagunaires"},
+    "grand-bassam": {"label": "Moyenne", "note": 65, "pop": 6200, "topo": "Plaine littorale basse, crue Comoé"},
+    "san-pedro": {"label": "Moyenne", "note": 64, "pop": 9400, "topo": "Bas-fonds marécageux Bardot, fleuve"},
+    "bouake": {"label": "Faible", "note": 42, "pop": 4100, "topo": "Plateau central, canaux à curer"},
+    "man": {"label": "Moyenne", "note": 60, "pop": 5200, "topo": "Relief montagneux encaissé, orages courts"},
+}
+
+
+@router.get("/operateur/decideur")
+def decideur(request: Request, op=Depends(operateur)):
+    from app.routes_public import etat_zones
+    with transaction() as cx:
+        zones = etat_zones(cx)
+        a_curer = curage.points_a_curer(cx)
+        crues = cx.execute(text("""
+            SELECT count(*) FROM riviere r WHERE r.seuil_orange IS NOT NULL AND
+              (SELECT max(debit_m3s) FROM mesure_debit m WHERE m.zone_id = r.zone_id AND m.prevision
+                 AND m.jour BETWEEN current_date AND current_date + 7) >= r.seuil_orange
+        """)).scalar_one()
+
+    hist = historique.par_zone()
+    classement = []
+    pop_totale = 0
+
+    for z in zones:
+        zid = z["id"]
+        cfg = SUSCEPTIBILITE_ZONES.get(zid, {
+            "label": "Faible" if z["region"] != "District d'Abidjan" else "Moyenne",
+            "note": 35 if z["region"] != "District d'Abidjan" else 55,
+            "pop": 3000,
+            "topo": "Relief standard"
+        })
+        h_info = hist.get(zid, {"nombre": 0, "derniere": None})
+        ev_nb = h_info["nombre"]
+        pop = cfg["pop"]
+        pop_totale += pop
+
+        # Formule explicable : (0.40 * Suscep) + (0.35 * Pop_Norm) + (0.25 * Hist_Norm)
+        pop_norm = min(100.0, (pop / 20000.0) * 100.0)
+        hist_norm = min(100.0, (ev_nb / 5.0) * 100.0)
+        score = (0.40 * cfg["note"]) + (0.35 * pop_norm) + (0.25 * hist_norm)
+
+        if score >= 75:
+            action = "Évacuation préventive / Vigilance maximale"
+            fond, texte_c, bord = "rgba(239,68,68,0.2)", "#EF4444", "rgba(239,68,68,0.4)"
+        elif score >= 60:
+            action = "Curage prioritaire & Alerte SMS relais"
+            fond, texte_c, bord = "rgba(251,146,60,0.2)", "#FB923C", "rgba(251,146,60,0.4)"
+        else:
+            action = "Surveillance continue du réseau"
+            fond, texte_c, bord = "rgba(34,197,94,0.15)", "#22C55E", "rgba(34,197,94,0.3)"
+
+        classement.append({
+            "id": zid,
+            "nom": z["nom"],
+            "region": z["region"],
+            "niveau": z.get("niveau_annonce") or z.get("niveau_calcule"),
+            "susceptibilite_label": cfg["label"],
+            "susceptibilite_note": cfg["note"],
+            "motif_topo": cfg["topo"],
+            "population_exposee": pop,
+            "evenements_nb": ev_nb,
+            "derniere_date": h_info.get("derniere"),
+            "score_priorite": score,
+            "action_recommandee": action,
+            "action_couleur_fond": fond,
+            "action_couleur_texte": texte_c,
+            "action_couleur_bord": bord,
+        })
+
+    classement.sort(key=lambda item: item["score_priorite"], reverse=True)
+    zones_p1 = sum(1 for item in classement if item["score_priorite"] >= 75)
+
+    return rendu(request, "op_decideur.html",
+                 classement=classement,
+                 zones_prioritaires_nb=zones_p1,
+                 population_totale_menacee=pop_totale,
+                 points_a_curer_nb=len(a_curer),
+                 crues_prevues_nb=crues,
+                 a_curer=a_curer)
 
 
 @router.get("/operateur/api/points")

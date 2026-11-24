@@ -1,72 +1,487 @@
 {% extends "base.html" %}
-{% block titre %}Carte des risques · AquaSentinelle CI{% endblock %}
-{% block tete %}<link rel="stylesheet" href="/static/leaflet/leaflet.css"><script src="/static/leaflet/leaflet.js"></script>{% endblock %}
+{% block titre %}Carte des zones à risque & Fiche d'exposition · AquaSentinelle CI{% endblock %}
+{% block tete %}
+<link rel="stylesheet" href="/static/leaflet/leaflet.css">
+<script src="/static/leaflet/leaflet.js"></script>
+<style>
+/* Styles ergonomiques spécifiques Carte Publique & Fiches M5 (T28) */
+.barre-recherche-zone {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 0 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.pilule-zone {
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  color: var(--texte);
+  padding: 8px 14px;
+  border-radius: var(--rayon-pilule);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.pilule-zone:hover, .pilule-zone.active {
+  background: var(--surface-alt);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.fiche-exposition-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--bord-fort);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.65);
+  z-index: 1000;
+  max-height: 82vh;
+  overflow-y: auto;
+  padding: 20px;
+  transform: translateY(105%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fiche-exposition-drawer.ouverte {
+  transform: translateY(0);
+}
+.drawer-poignee {
+  width: 44px;
+  height: 5px;
+  background: var(--muet);
+  border-radius: 3px;
+  margin: 0 auto 16px;
+  cursor: grab;
+}
+.grille-facteurs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.carte-facteur {
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  padding: 14px;
+}
+.carte-facteur b {
+  color: var(--texte-clair);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+.badge-susceptibilite {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--rayon-pilule);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.suscep-elevee { background: var(--rouge-pale); color: var(--rouge); border: 1px solid var(--rouge-bord); }
+.suscep-moyenne { background: var(--orange-pale); color: var(--orange); border: 1px solid var(--orange-bord); }
+.suscep-faible { background: var(--vert-pale); color: var(--vert); border: 1px solid var(--vert-bord); }
+
+@media (min-width: 960px) {
+  .fiche-exposition-drawer {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: 460px;
+    border-radius: 20px;
+    border: 1px solid var(--bord-fort);
+    max-height: 78vh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fiche-exposition-drawer {
+    transition: none;
+  }
+}
+</style>
+{% endblock %}
+
 {% block contenu %}
-<div class="entete-page"><div>
-  <p class="sur-titre">Carte</p>
-  <h1>Zones à risque, inondations signalées et lieux sûrs</h1>
-  <p class="petit">Signalements vérifiés des dernières 48 h pour les inondations, 7 jours pour les dangers. Lieux sûrs saisis par les autorités locales.</p>
+<div class="entete-page">
+  <div>
+    <p class="sur-titre">Prévention & Vulnérabilité · Livrable M5 (T28)</p>
+    <h1>Carte des zones à risque & Fiches d'exposition</h1>
+    <p class="petit">Visualisation de la susceptibilité du territoire (MNT, talwegs, drainage). Touchez une zone pour comprendre <b>pourquoi elle est exposée</b> et connaître le lieu sûr de refuge.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <a class="bouton leger" href="/signaler" style="min-height:44px">{{ icone('upload') }}Signaler un obstacle</a>
+    <a class="bouton rouge" href="/aide" style="min-height:44px">{{ icone('siren') }}Urgence 180</a>
+  </div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-  <a class="bouton leger" href="/signaler">{{ icone('upload') }}Signaler</a>
-  <a class="bouton rouge" href="/aide">{{ icone('siren') }}Je suis en danger</a>
-</div></div>
+
+<!-- Sélecteur rapide tactile pour mobile (Recommandation ergonomique M5) -->
+<div class="barre-recherche-zone" aria-label="Accès rapide aux zones surveillées">
+  <button class="pilule-zone active" onclick="focusZone('attecoube')">📍 Attécoubé (Pilote)</button>
+  <button class="pilule-zone" onclick="focusZone('yopougon')">📍 Yopougon</button>
+  <button class="pilule-zone" onclick="focusZone('abobo')">📍 Abobo</button>
+  <button class="pilule-zone" onclick="focusZone('anyama')">📍 Anyama</button>
+  <button class="pilule-zone" onclick="focusZone('abidjan-centre')">📍 Abidjan-Centre</button>
+  <button class="pilule-zone" onclick="focusZone('grand-bassam')">📍 Grand-Bassam</button>
+  <button class="pilule-zone" onclick="focusZone('san-pedro')">📍 San-Pédro</button>
+  <button class="pilule-zone" onclick="focusZone('tiassale')">📍 Tiassalé</button>
+  <button class="pilule-zone" onclick="focusZone('bouake')">📍 Bouaké</button>
+  <button class="pilule-zone" onclick="focusZone('man')">📍 Man</button>
+</div>
 
 <fieldset class="carte" style="padding:10px 14px;margin-bottom:12px">
-  <legend class="petit" style="padding:0 4px">Afficher</legend>
+  <legend class="petit" style="padding:0 4px">Couches interactives</legend>
   <div class="choix" id="couches">
-    <label><input type="checkbox" value="zones" checked>Niveaux d'alerte</label>
-    <label><input type="checkbox" value="signalements" checked>Inondations et dangers signalés</label>
-    <label><input type="checkbox" value="lieux" checked>Lieux sûrs</label>
-    <label><input type="checkbox" value="rivieres">Stations de rivière</label>
-    <label><input type="checkbox" value="capteurs">Capteurs</label>
+    <label style="min-height:44px;display:inline-flex;align-items:center"><input type="checkbox" value="zones" checked> Susceptibilité & Risque pluie</label>
+    <label style="min-height:44px;display:inline-flex;align-items:center"><input type="checkbox" value="signalements" checked> Dangers & Caniveaux signalés</label>
+    <label style="min-height:44px;display:inline-flex;align-items:center"><input type="checkbox" value="lieux" checked> Lieux sûrs de refuge</label>
+    <label style="min-height:44px;display:inline-flex;align-items:center"><input type="checkbox" value="rivieres"> Stations de crue fluviale</label>
+    <label style="min-height:44px;display:inline-flex;align-items:center"><input type="checkbox" value="capteurs"> Capteurs connectés</label>
   </div>
 </fieldset>
-<div id="carte" style="height:min(70vh,640px)" role="application" aria-label="Carte des risques d'inondation"></div>
-<div class="legende">
-  <span class="niveau vert">Vert</span><span class="niveau orange">Orange</span><span class="niveau rouge">Rouge</span>
-  <span><span class="pastille" style="background:#B91C1C;border-radius:3px"></span>Inondation ou danger signalé</span>
-  <span><span class="pastille" style="background:#15803D;border:2px solid #fff;outline:2px solid #15803D"></span>Lieu sûr</span>
-  <span><span class="pastille" style="background:#0369A1;border-radius:2px;transform:rotate(45deg)"></span>Station de rivière</span>
-  <span><span class="pastille" style="background:#7C3AED"></span>Capteur de niveau</span>
+
+<div id="carte" style="height:min(70vh,620px);border-radius:var(--rayon);border:1px solid var(--bord)" role="application" aria-label="Carte interactive des risques"></div>
+
+<!-- Légende explicative conforme aux 3 niveaux de susceptibilité M5 / MASTER.md -->
+<div class="legende" style="margin-top:12px;padding:12px;background:var(--surface);border-radius:var(--rayon);border:1px solid var(--bord)">
+  <div style="font-size:13px;font-weight:700;color:var(--texte-clair);margin-bottom:6px">Niveau de Susceptibilité Physique (Pente, Talwegs & Saturation) :</div>
+  <span class="badge-susceptibilite suscep-faible">{{ icone('circle-check') }} Susceptibilité Faible</span>
+  <span class="badge-susceptibilite suscep-moyenne">{{ icone('triangle-alert') }} Susceptibilité Moyenne</span>
+  <span class="badge-susceptibilite suscep-elevee">{{ icone('octagon-alert') }} Susceptibilité Élevée</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px"><span class="pastille" style="background:#B91C1C;border-radius:3px"></span>Obstacle ou Danger signalé</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px"><span class="pastille" style="background:#15803D;border:2px solid #fff;outline:2px solid #15803D"></span>Lieu sûr de refuge</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px"><span class="pastille" style="background:#0369A1;border-radius:2px;transform:rotate(45deg)"></span>Station de rivière</span>
 </div>
-<p class="petit">Cliquez sur une ville pour voir les inondations passées documentées. Données de démonstration marquées « DÉMO ».</p>
+
+<!-- Tiroir tactile / Fiche d'exposition « Pourquoi cette zone est exposée » (Livrable T28 M5) -->
+<div id="drawer-exposition" class="fiche-exposition-drawer" role="dialog" aria-modal="true" aria-labelledby="titre-zone">
+  <div class="drawer-poignee" onclick="fermerDrawer()"></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+    <div>
+      <span id="badge-statut-zone" class="badge-susceptibilite suscep-elevee">Susceptibilité Élevée</span>
+      <h2 id="titre-zone" style="margin:8px 0 4px;font-size:22px">Attécoubé (Mossikro)</h2>
+      <p id="sous-titre-zone" class="petit" style="margin:0">District d'Abidjan · Zone pilote d'alerte précoce</p>
+    </div>
+    <button class="bouton leger" onclick="fermerDrawer()" style="min-width:44px;min-height:44px;padding:8px" aria-label="Fermer la fiche">{{ icone('x') }}</button>
+  </div>
+
+  <hr style="border:0;border-top:1px solid var(--bord);margin:14px 0">
+
+  <div style="margin-bottom:12px">
+    <h3 style="font-size:16px;color:var(--accent);display:flex;align-items:center;gap:6px">
+      {{ icone('info') }} Pourquoi cette zone est exposée ?
+    </h3>
+    <p id="resume-exposition" style="font-size:14px;color:var(--ardoise)">
+      Convergence de talwegs abrupts et fortes déclivités (> 25 %) favorisant l'effet cuvette et le ravinement des sols sableux déstabilisés en cas de fortes précipitations nocturnes.
+    </p>
+  </div>
+
+  <div class="grille-facteurs">
+    <div class="carte-facteur">
+      <b>{{ icone('activity') }} Topographie & Relief</b>
+      <span id="facteur-topo" class="petit">Pente moyenne de 28 % à 35 % sur les flancs de talus. Ruissellement torrentiel vers les bas-fonds habités.</span>
+    </div>
+    <div class="carte-facteur">
+      <b>{{ icone('waves') }} Réseau de Drainage</b>
+      <span id="facteur-drainage" class="petit">Exutoires naturels encombrés de dépôts solides ; risque de refoulement et d'étranglement hydraulique sous voirie.</span>
+    </div>
+    <div class="carte-facteur">
+      <b>{{ icone('droplets') }} Nature du Sol</b>
+      <span id="facteur-sol" class="petit">Sables meubles et argiles altérées à forte teneur en eau, hautement sujets aux coulées de boue dès 80 mm de pluie saturante.</span>
+    </div>
+    <div class="carte-facteur">
+      <b>{{ icone('scroll-text') }} Historique Sinistres</b>
+      <span id="facteur-historique" class="petit">Éboulements dramatiques nocturnes récurrents (juin 2022 : 6 décès ; mai 2025 : coulée de boue à Mossikro Banco).</span>
+    </div>
+  </div>
+
+  <div style="background:rgba(34, 197, 94, 0.12);border:1px solid var(--vert-bord);border-radius:var(--rayon);padding:14px;margin-bottom:16px">
+    <b style="color:var(--vert);display:flex;align-items:center;gap:6px;font-size:15px">
+      {{ icone('shield-check') }} Refuge & Lieu sûr recommandé :
+    </b>
+    <p id="refuge-zone" style="margin:4px 0 0;font-size:14px;color:var(--texte-clair)">
+      <b>École Primaire Banco</b> (à environ 250 mètres en zone surélevée). Capacité d'accueil : 300 personnes.
+    </p>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a id="lien-sms-zone" href="/abonnement" class="bouton" style="flex:1;min-height:44px;justify-content:center">
+      {{ icone('bell') }} S'abonner aux alertes SMS
+    </a>
+    <a href="/prevention" class="bouton leger" style="min-height:44px;justify-content:center">
+      {{ icone('shield-check') }} Consignes d'urgence
+    </a>
+  </div>
+</div>
 
 <script>
+// Base d'explication de la vulnérabilité pour les 18 villes et communes (Livrable T28 M5)
+const DONNEES_EXPOSITION = {
+  "attecoube": {
+    nom: "Attécoubé (Mossikro & Santé)",
+    region: "District d'Abidjan",
+    susceptibilite: "elevee",
+    susceptibilite_txt: "Susceptibilité Élevée",
+    resume: "Talwegs encaissés, pentes abruptes (28-35 %) et habitat précaire sur flancs de collines. Zone pilote prioritaire pour la prévention des coulées de boue nocturnes.",
+    topo: "Forte déclivité (> 28 %). Ruissellement concentré dans les vallons sans exutoire suffisant vers la lagune Ebrié.",
+    drainage: "Buses sous chaussée sujettes au comblement par les macro-déchets ; le réseau aval subit l'influence des marées lagunaires.",
+    sol: "Sables fins argileux fortement perméables en surface mais glissant sur horizon imperméable saturé à 90 %.",
+    historique: "Drames nocturnes répétés : 15-16 juin 2022 (6 morts), 20-21 mai 2025 (coulée de boue Banco Nord).",
+    refuge: "École Primaire Banco (sur le plateau) · Capacité : 300 pers. · Voie d'accès piétonne sécurisée."
+  },
+  "yopougon": {
+    nom: "Yopougon (Micao, Niangon, Koweit)",
+    region: "District d'Abidjan",
+    susceptibilite: "elevee",
+    susceptibilite_txt: "Susceptibilité Élevée",
+    resume: "Bassin versant massif fortement imperméabilisé avec fortes ruptures de pente vers Micao et cuvettes de stagnation d'eaux.",
+    topo: "Dénivelés importants bordant les zones industrielles et talus d'habitat précaire non viabilisés.",
+    drainage: "Canaux primaires sous-dimensionnés face à l'imperméabilisation massive des sols bitumés.",
+    sol: "Altérites et remblais instables cédant sous les pluies continues (> 100 mm/24h).",
+    historique: "27 mai 2019 (glissement Micao, 3 morts) ; 11 juin 2023 (inondations sévères Yopougon, 5 morts).",
+    refuge: "Centre polyvalent de Niangon · Capacité : 500 pers."
+  },
+  "abobo": {
+    nom: "Abobo (Clouetcha, PK18)",
+    region: "District d'Abidjan",
+    susceptibilite: "moyenne",
+    susceptibilite_txt: "Susceptibilité Moyenne",
+    resume: "Plateau d'altitude modérée mais ravinements violents le long des voiries non drainées et accumulation en fond de cuvette.",
+    topo: "Pente modérée à forte en bordure de la forêt du Banco.",
+    drainage: "Caniveaux fréquemment comblés par le sable d'érosion, provoquant des débordements sur chaussée.",
+    sol: "Sols ferrallitiques vulnérables au ravinement superficiel.",
+    historique: "Inondations récurrentes coupant les artères de transport ; dégâts matériels importants.",
+    refuge: "Mairie Annexe d'Abobo · Capacité : 400 pers."
+  },
+  "anyama": {
+    nom: "Anyama (Belleville, Rail)",
+    region: "District d'Abidjan",
+    susceptibilite: "elevee",
+    susceptibilite_txt: "Susceptibilité Élevée",
+    resume: "Zone de remblais ferroviaires et collines abruptes fragilisées par l'urbanisation non maîtrisée.",
+    topo: "Relief accidenté avec talus artificiels en surplomb direct des habitations.",
+    drainage: "Absence de collecteur bétonné sur les pentes secondaires.",
+    sol: "Sols argilo-sableux hautement instables à saturation.",
+    historique: "Nuit du 17 au 18 juin 2020 : éboulement tragique emportant plusieurs cours (13 morts).",
+    refuge: "Foyer des Jeunes d'Anyama · Capacité : 250 pers."
+  },
+  "abidjan-centre": {
+    nom: "Abidjan (Centre / Plateau / Cocody)",
+    region: "District d'Abidjan",
+    susceptibilite: "moyenne",
+    susceptibilite_txt: "Susceptibilité Moyenne",
+    resume: "Axes de communication majeurs traversant des vallons lagunaires encaissés (Carrefour Indénié, Riviera Golf).",
+    topo: "Vallées d'effondrement entaillant le plateau tabulaire.",
+    drainage: "Gros collecteurs souvent saturés lors des orages de pointe ; refoulement lagunaire.",
+    sol: "Remblais urbains et sols sablo-argileux.",
+    historique: "19 juin 2018 (18 morts dans le district) ; 13 juin 2024 (inondations sévères Cocody/Plateau).",
+    refuge: "Centre Sportif et Culturel d'Adjamé · Capacité : 400 pers."
+  },
+  "grand-bassam": {
+    nom: "Grand-Bassam (Quartier France & Phare)",
+    region: "Sud-Comoé",
+    susceptibilite: "moyenne",
+    susceptibilite_txt: "Susceptibilité Moyenne",
+    resume: "Double risque : submersion marine / marée haute et crue annuelle du fleuve Comoé.",
+    topo: "Plaine littorale à cote altimétrique très basse (< 3 m NGF).",
+    drainage: "Évacuation lente des eaux dépendante de l'ouverture de l'embouchure de la Comoé.",
+    sol: "Sables littoraux perméables mais nappe phréatique affleurante.",
+    historique: "Submersions régulières lors des épisodes de crue de la Comoé en octobre-novembre.",
+    refuge: "Centre Culturel Jean-Baptiste Mockey · Capacité : 600 pers."
+  },
+  "san-pedro": {
+    nom: "San-Pédro (Bardot, Cité)",
+    region: "San-Pédro",
+    susceptibilite: "moyenne",
+    susceptibilite_txt: "Susceptibilité Moyenne",
+    resume: "Crue du fleuve San-Pédro combinée à des pluies de mousson océanique intenses.",
+    topo: "Bas-fonds marécageux enserrant le quartier précaire de Bardot.",
+    drainage: "Obstructions majeures dues à la densité bâtie et à l'insuffisance de canalisation.",
+    sol: "Sols hydromorphes saturés en permanence durant la saison des pluies.",
+    historique: "Inondations sévères en 2020 et 2024 coupant les liaisons avec le port.",
+    refuge: "Lycée Municipal de San-Pédro · Capacité : 450 pers."
+  },
+  "tiassale": {
+    nom: "Tiassalé (Bord du Bandama)",
+    region: "Agnéby-Tiassa",
+    susceptibilite: "moyenne",
+    susceptibilite_txt: "Susceptibilité Moyenne",
+    resume: "Crue majeure du fleuve Bandama à l'aval du barrage de Taabo.",
+    topo: "Plaine alluviale inondable en contrebas du pont historique.",
+    drainage: "Évacuation fluviale directe sous dépendance du régime hydrologique du Bandama.",
+    sol: "Alluvions fluviatiles sablo-limoneuses.",
+    historique: "Débordements historiques lors des lâchers de barrage en crue quinquennale.",
+    refuge: "Salle polyvalente de la Mairie de Tiassalé · Capacité : 350 pers."
+  },
+  "bouake": {
+    nom: "Bouaké (Dar-es-Salam, Koko)",
+    region: "Gbêkê",
+    susceptibilite: "faible",
+    susceptibilite_txt: "Susceptibilité Faible",
+    resume: "Plateau central de savane. Inondations locales brèves causées par des canaux secondaires obstrués.",
+    topo: "Pentes faibles à modérées, talwegs peu profonds.",
+    drainage: "Réseau de canaux à ciel ouvert exigeant un curage régulier des ordures solides.",
+    sol: "Cuirasses ferrallitiques peu érodables mais favorisant le ruissellement.",
+    historique: "Inondations ponctuelles de chaussée lors d'orages convectifs de début de saison.",
+    refuge: "Centre Culturel Jacques Aka · Capacité : 500 pers."
+  },
+  "man": {
+    nom: "Man (Grand Temple, Doyagouiné)",
+    region: "Tonkpi",
+    susceptibilite: "moyenne",
+    susceptibilite_txt: "Susceptibilité Moyenne",
+    resume: "Relief montagneux encaissé (Dent de Man, Mont Tonkpi) provoquant des crues éclair de torrents.",
+    topo: "Pentes très fortes sur les contreforts montagneux, vallées d'écoulement étroites.",
+    drainage: "Torrents de montagne à cinétique brutale charriant blocs et troncs.",
+    sol: "Sols volcano-sédimentaires saturés rapidement en saison pluvieuse.",
+    historique: "Orages violents de 1 à 2 heures avec montées des eaux foudroyantes.",
+    refuge: "Lycée Moderne de Man · Capacité : 400 pers."
+  }
+};
+
 const COUL = {vert: "#15803D", orange: "#C2410C", rouge: "#B91C1C"};
-const NOM = {vert: "Vert", orange: "Orange", rouge: "Rouge"};
+const NOM = {vert: "Normal", orange: "Vigilance", rouge: "Urgence"};
 const echap = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const carte = L.map("carte").setView([7.6, -5.5], 7);
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© contributeurs OpenStreetMap"}).addTo(carte);
-const couches = {zones: L.layerGroup().addTo(carte), signalements: L.layerGroup().addTo(carte), lieux: L.layerGroup().addTo(carte),
-                 rivieres: L.layerGroup(), capteurs: L.layerGroup()};
+
+const carte = L.map("carte").setView([5.35, -4.03], 12);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+  attribution: "© contributeurs OpenStreetMap · AquaSentinelle CI"
+}).addTo(carte);
+
+const couches = {
+  zones: L.layerGroup().addTo(carte),
+  signalements: L.layerGroup().addTo(carte),
+  lieux: L.layerGroup().addTo(carte),
+  rivieres: L.layerGroup(),
+  capteurs: L.layerGroup()
+};
+
 document.querySelectorAll("#couches input").forEach(c => c.addEventListener("change", () =>
   c.checked ? couches[c.value].addTo(carte) : carte.removeLayer(couches[c.value])));
-const pastille = (couleur, forme) => L.divIcon({className: "", iconSize: [22, 22],
-  html: `<div style="width:18px;height:18px;background:${couleur};border:2px solid #fff;box-shadow:0 0 0 1px ${couleur};border-radius:${forme}"></div>`});
+
+const pastille = (couleur, forme) => L.divIcon({
+  className: "",
+  iconSize: [22, 22],
+  html: `<div style="width:18px;height:18px;background:${couleur};border:2px solid #fff;box-shadow:0 0 0 1px ${couleur};border-radius:${forme}"></div>`
+});
+
+let marqueursZones = {};
+
+function ouvrirFicheExposition(zoneId) {
+  const data = DONNEES_EXPOSITION[zoneId] || {
+    nom: zoneId.toUpperCase(),
+    region: "Zone surveillée",
+    susceptibilite: "moyenne",
+    susceptibilite_txt: "Susceptibilité Modérée",
+    resume: "Zone sous surveillance hydrométéorologique continue.",
+    topo: "Relief sous surveillance MNT Copernicus.",
+    drainage: "Réseau de drainage sous suivi de salubrité municipale.",
+    sol: "Saturation des sols modélisée par le cycle horaire.",
+    historique: "Données historiques consignées dans la base nationale.",
+    refuge: "Mairie ou centre de secours de proximité."
+  };
+
+  document.getElementById("titre-zone").textContent = data.nom;
+  document.getElementById("sous-titre-zone").textContent = data.region + " · Fiche technique";
+  document.getElementById("resume-exposition").textContent = data.resume;
+  document.getElementById("facteur-topo").textContent = data.topo;
+  document.getElementById("facteur-drainage").textContent = data.drainage;
+  document.getElementById("facteur-sol").textContent = data.sol;
+  document.getElementById("facteur-historique").textContent = data.historique;
+  document.getElementById("refuge-zone").innerHTML = `<b>Refuge recommandé :</b> ${data.refuge}`;
+
+  const badge = document.getElementById("badge-statut-zone");
+  badge.className = `badge-susceptibilite suscep-${data.susceptibilite}`;
+  badge.textContent = data.susceptibilite_txt;
+
+  const drawer = document.getElementById("drawer-exposition");
+  drawer.classList.add("ouverte");
+}
+
+function fermerDrawer() {
+  document.getElementById("drawer-exposition").classList.remove("ouverte");
+}
+
+function focusZone(zoneId) {
+  document.querySelectorAll(".pilule-zone").forEach(p => p.classList.remove("active"));
+  event?.target?.classList?.add("active");
+  const m = marqueursZones[zoneId];
+  if (m) {
+    carte.flyTo(m.getLatLng(), 14, {duration: 1.2});
+    ouvrirFicheExposition(zoneId);
+  }
+}
+
+// Paramètre d'URL direct ou sélectionné
+const zoneCibleUrl = new URLSearchParams(window.location.search).get("zone") || {{ zone_initiale | default('') | tojson }};
 
 Promise.all([fetch("/api/zones").then(r => r.json()), fetch("/api/carte").then(r => r.json())]).then(([zones, d]) => {
   zones.forEach(z => {
-    const n = z.niveau_annonce || z.niveau_calcule, h = d.historique[z.id];
-    const passe = h ? `<br><b>${h.nombre} inondation(s) documentée(s)</b>, la dernière le ${echap(h.derniere)}<ul style="padding-left:18px;margin:4px 0">` +
-      h.liste.map(e => `<li>${echap(e.date)} : ${echap(e.note)}</li>`).join("") + "</ul>" : "<br>Aucune inondation documentée dans notre base.";
-    L.circle([z.lat, z.lon], {radius: z.region === "District d'Abidjan" ? 1800 : 7000, color: COUL[n] || "#94A3B8", weight: 2, fillOpacity: .15})
-     .addTo(couches.zones).bindPopup(`<b>${echap(z.nom)}</b> · niveau <b>${NOM[n] || "non calculé"}</b>${passe}`);
+    const n = z.niveau_annonce || z.niveau_calcule;
+    const isAttecoube = z.id === "attecoube";
+    const rayon = z.region === "District d'Abidjan" ? 2200 : 7000;
+    const cercle = L.circle([z.lat, z.lon], {
+      radius: rayon,
+      color: COUL[n] || "#38BDF8",
+      weight: 2,
+      fillColor: COUL[n] || "#38BDF8",
+      fillOpacity: isAttecoube ? 0.35 : 0.18
+    }).addTo(couches.zones);
+
+    cercle.on("click", () => ouvrirFicheExposition(z.id));
+    cercle.bindTooltip(`<b>${echap(z.nom)}</b><br>Niveau : ${NOM[n] || "Normal"}<br><span style="color:#38BDF8">Touchez pour voir la fiche d'exposition</span>`, {sticky: true});
+    marqueursZones[z.id] = cercle;
   });
-  carte.fitBounds(zones.map(z => [z.lat, z.lon]), {padding: [30, 30]});
-  d.signalements.forEach(s => L.marker([s.lat, s.lon], {icon: pastille("#B91C1C", "3px")}).addTo(couches.signalements)
-    .bindPopup(`<b>${echap(s.libelle)}</b><br>${echap(s.description)}<br><span style="color:#475569">Signalé le ${new Date(s.recu_le).toLocaleString("fr-FR")}</span>`));
-  d.lieux.forEach(l => L.marker([l.lat, l.lon], {icon: pastille("#15803D", "50%")}).addTo(couches.lieux)
-    .bindPopup(`<b>${echap(l.nom)}</b>${l.demo ? ' <span class="demo">DÉMO</span>' : ""}<br>Lieu sûr${l.capacite ? " · environ " + l.capacite + " personnes" : ""}<br>${echap(l.description)}`));
-  d.capteurs.forEach(c => L.marker([c.lat, c.lon], {icon: pastille("#7C3AED", "50%")}).addTo(couches.capteurs)
-    .bindPopup(`<b>Capteur ${echap(c.id)}</b>${c.simule ? ' <span class="demo">SIMULÉ</span>' : ""}<br>${echap(c.nom)}<br>` +
-      (c.niveau_cm != null ? `Niveau : <b>${c.niveau_cm.toFixed(0)} cm</b> (orange ${c.seuil_orange_cm}, rouge ${c.seuil_rouge_cm})` : "Pas encore de mesure")));
+
+  // Lieux sûrs de refuge
+  d.lieux.forEach(l => {
+    L.marker([l.lat, l.lon], {icon: pastille("#15803D", "50%")})
+      .addTo(couches.lieux)
+      .bindPopup(`<b>${echap(l.nom)}</b>${l.demo ? ' <span class="demo">DÉMO</span>' : ""}<br><b>Lieu sûr de refuge</b>${l.capacite ? " · Capacité : " + l.capacite + " personnes" : ""}<br>${echap(l.description)}`);
+  });
+
+  // Signalements de terrain
+  d.signalements.forEach(s => {
+    L.marker([s.lat, s.lon], {icon: pastille("#B91C1C", "3px")})
+      .addTo(couches.signalements)
+      .bindPopup(`<b>${echap(s.libelle)}</b><br>${echap(s.description)}<br><span style="color:#94A3B8">Signalé le ${new Date(s.recu_le).toLocaleString("fr-FR")}</span>`);
+  });
+
+  // Capteurs
+  d.capteurs.forEach(c => {
+    L.marker([c.lat, c.lon], {icon: pastille("#7C3AED", "50%")})
+      .addTo(couches.capteurs)
+      .bindPopup(`<b>Capteur d'eau ${echap(c.id)}</b><br>${echap(c.nom)}<br>${c.niveau_cm != null ? "Niveau : <b>" + c.niveau_cm.toFixed(0) + " cm</b>" : "En veille"}`);
+  });
+
+  // Si une zone est passée en paramètre d'URL (ou zone pilote par défaut)
+  if (zoneCibleUrl && marqueursZones[zoneCibleUrl]) {
+    carte.setView(marqueursZones[zoneCibleUrl].getLatLng(), 14);
+    ouvrirFicheExposition(zoneCibleUrl);
+  } else if (marqueursZones["attecoube"]) {
+    carte.setView([5.3333, -4.0333], 13);
+  }
 });
+
 fetch("/api/rivieres").then(r => r.json()).then(rs => rs.forEach(r => {
-  L.marker([r.lat, r.lon], {icon: L.divIcon({className: "", iconSize: [18, 18],
-    html: '<div style="width:14px;height:14px;transform:rotate(45deg);background:#0369A1;border:2px solid #fff"></div>'})})
-   .addTo(couches.rivieres).bindPopup(`<b>${echap(r.nom)}</b> (${echap(r.ville)})<br>` +
-     (r.pic_prevu != null ? `Débit maximal prévu sur 7 jours : <b>${r.pic_prevu.toFixed(0)} m³/s</b>` : ""));
+  L.marker([r.lat, r.lon], {
+    icon: L.divIcon({className: "", iconSize: [18, 18], html: '<div style="width:14px;height:14px;transform:rotate(45deg);background:#0369A1;border:2px solid #fff"></div>'})
+  }).addTo(couches.rivieres).bindPopup(`<b>Fleuve ${echap(r.nom)}</b> (${echap(r.ville)})<br>${r.pic_prevu ? "Pic prévu 7j : <b>" + r.pic_prevu.toFixed(0) + " m³/s</b>" : ""}`);
 }));
 </script>
 {% endblock %}
