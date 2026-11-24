@@ -291,3 +291,36 @@ LEFT JOIN LATERAL (
   ORDER BY recu_le DESC LIMIT 1
 ) o ON true
 WHERE p.actif;
+
+-- Livraison cartographique v0 de M2 (T17). Les attributs source restent en JSONB
+-- afin de préserver les champs des couches v0 jusqu'au modèle de données T19.
+CREATE TABLE IF NOT EXISTS t17_couche (
+  id              text PRIMARY KEY,
+  libelle         text NOT NULL,
+  categorie       text NOT NULL CHECK (categorie IN ('coeur', 'second_plan')),
+  format_source   text NOT NULL,
+  type_geometrie  text,
+  crs             integer NOT NULL DEFAULT 4326,
+  resolution_m    integer,
+  source_commit   text NOT NULL,
+  chemins_source  jsonb NOT NULL DEFAULT '[]'::jsonb,
+  dictionnaire    jsonb NOT NULL DEFAULT '{}'::jsonb,
+  nb_entites      bigint NOT NULL DEFAULT 0,
+  importee_le     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS t17_entite (
+  id              bigserial PRIMARY KEY,
+  couche_id       text NOT NULL REFERENCES t17_couche(id) ON DELETE CASCADE,
+  source_id       text NOT NULL,
+  commune         text,
+  attributs       jsonb NOT NULL DEFAULT '{}'::jsonb,
+  geom            geometry(Geometry, 4326) NOT NULL,
+  source_commit   text NOT NULL,
+  UNIQUE (couche_id, source_id)
+);
+
+CREATE INDEX IF NOT EXISTS t17_entite_geom_gist ON t17_entite USING gist (geom);
+CREATE INDEX IF NOT EXISTS t17_entite_couche_commune_idx ON t17_entite (couche_id, commune);
+CREATE INDEX IF NOT EXISTS t17_entite_attributs_gin ON t17_entite USING gin (attributs);
+CREATE INDEX IF NOT EXISTS zone_contour_gist ON zone USING gist (contour);
