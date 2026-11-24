@@ -42,8 +42,13 @@ def guide_video(request: Request):
 # --- Carte publique ------------------------------------------------------------------------------
 
 @router.get("/carte")
-def carte_publique(request: Request):
-    return rendu(request, "carte_publique.html", types=signalements.TYPES)
+def carte_publique(request: Request, zone: str = ""):
+    return rendu(request, "carte_publique.html", types=signalements.TYPES, zone_initiale=zone)
+
+
+@router.get("/carte/{zone_id}")
+def carte_fiche_zone(request: Request, zone_id: str):
+    return rendu(request, "carte_publique.html", types=signalements.TYPES, zone_initiale=zone_id)
 
 
 @router.get("/api/carte")
